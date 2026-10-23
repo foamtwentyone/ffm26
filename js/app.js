@@ -79,14 +79,20 @@
   }
 
   // ================== сохранения ==================
+  const ls = FM.Store.ls;
+  const infoOf = (s) => `${s.manager} · ${s.teams[s.user].name} · ${FM.fmtDate(s.date, true)}`;
+  const localMeta = (key) => { try { return JSON.parse(ls.get(key + '_meta') || 'null'); } catch (e) { return null; } };
+
+  // Локально и (на странице claude.ai) в облако. Возвращает false, если не удалось сохранить никуда.
   function save(key = SAVE_AUTO) {
-    try {
-      localStorage.setItem(key, JSON.stringify(g().s));
-      return true;
-    } catch (e) {
-      toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
-      return false;
-    }
+    const s = g().s;
+    s.savedAt = Date.now();
+    const str = JSON.stringify(s);
+    const info = infoOf(s);
+    const ok = ls.set(key, str) && ls.set(key + '_meta', JSON.stringify({ info, ts: s.savedAt }));
+    FM.Store.cloudSave(key, str, info);
+    if (!ok && !UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
+    return ok || !!UI.cloud;
   }
   function loadState(state) {
     UI.g = new FM.Game(state);
@@ -94,26 +100,40 @@
     UI.tablesLid = UI.g.userTeam().league;
     render();
   }
-  function loadKey(key) {
+  // Загружает более свежую из двух копий: локальную или облачную.
+  async function loadSlot(key) {
+    const lm = localMeta(key);
+    const cm = await FM.Store.cloudMeta(key);
     try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return false;
-      loadState(JSON.parse(raw));
-      return true;
+      if (cm && (!lm || cm.ts > lm.ts)) {
+        const st = await FM.Store.cloudLoad(key);
+        if (st) return loadState(st);
+      }
+      const raw = ls.get(key);
+      if (raw) return loadState(JSON.parse(raw));
+      toast('Сохранение не найдено.');
     } catch (e) {
       toast('Сохранение повреждено.');
-      return false;
     }
   }
-  function slotInfo(key) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      const s = JSON.parse(raw);
-      return `${s.manager} · ${s.teams[s.user].name} · ${FM.fmtDate(s.date, true)}`;
-    } catch (e) { return null; }
+  async function slotMetas() {
+    const keys = [SAVE_AUTO, SAVE_SLOT + 1, SAVE_SLOT + 2, SAVE_SLOT + 3];
+    const out = {};
+    for (const k of keys) out[k] = localMeta(k);
+    UI.cloud = await FM.Store.init();
+    if (UI.cloud) {
+      const cms = await Promise.all(keys.map((k) => FM.Store.cloudMeta(k)));
+      keys.forEach((k, i) => { const cm = cms[i]; if (cm && (!out[k] || cm.ts > out[k].ts)) out[k] = { info: cm.info, ts: cm.ts }; });
+    }
+    return out;
   }
-  function download(name, text) {
+  async function download(name, text) {
+    const dl = window.claude && window.claude.use ? await window.claude.use('downloads').catch(() => null) : null;
+    if (dl) {
+      try { await dl.save({ filename: name, data: text }); }
+      catch (e) { if (e && e.code !== 'declined') toast('Не удалось сохранить файл.'); }
+      return;
+    }
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     a.download = name;
@@ -135,7 +155,7 @@
   }
   function customDb() {
     try {
-      const raw = localStorage.getItem(DB_KEY);
+      const raw = ls.get(DB_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   }
@@ -144,24 +164,26 @@
   function startScreen() {
     const db = customDb() || FM.leagues;
     let lid = db[0].id;
-    const auto = slotInfo(SAVE_AUTO);
+    let metas = {};
     const draw = () => {
       const L = db.find((x) => x.id === lid);
+      const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
         <div class="muted">Симуляция сезона 2026/27: Мир РПЛ, Лига PARI и Вторая лига</div></div>
       <main>
-        ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
+        ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
           <div class="row">
-            <label class="grow">Имя тренера<br><input id="mgr" value="${esc(localStorage.getItem('ffm26_mgr') || 'Тренер')}" style="width:100%"></label>
+            <label class="grow">Имя тренера<br><input id="mgr" value="${esc(ls.get('ffm26_mgr') || 'Тренер')}" style="width:100%"></label>
             <button class="btn" id="loadfile">Загрузить из файла</button>
-            ${[1, 2, 3].map((i) => slotInfo(SAVE_SLOT + i) ? `<button class="btn" data-slot="${i}">Слот ${i}</button>` : '').join('')}
+            ${[1, 2, 3].map((i) => metas[SAVE_SLOT + i] ? `<button class="btn" data-slot="${i}" title="${esc(metas[SAVE_SLOT + i].info)}">Слот ${i}</button>` : '').join('')}
           </div>
+          ${UI.cloud ? '<div class="small muted" style="margin-top:8px">Сохранения синхронизируются между вашими устройствами.</div>' : ''}
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
-        <div class="seg" style="margin-bottom:12px">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
+        <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
         <div class="teams-pick">${L.teams.slice().sort((a, b) => b.rep - a.rep).map((t) => `
           <button class="tp" data-pick="${t.id}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           <div class="stars">${'★'.repeat(Math.max(1, Math.round((t.rep - 40) / 10)))}</div></div></button>`).join('')}</div>
@@ -169,7 +191,7 @@
       app.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; draw(); });
       app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
         const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
-        try { localStorage.setItem('ffm26_mgr', mgr); } catch (e) { /* без сохранения имени */ }
+        ls.set('ffm26_mgr', mgr);
         UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined);
         UI.tab = 'home';
         UI.tablesLid = UI.g.userTeam().league;
@@ -177,11 +199,14 @@
         render();
       });
       const c = app.querySelector('#cont');
-      if (c) c.onclick = () => loadKey(SAVE_AUTO);
-      app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadKey(SAVE_SLOT + b.dataset.slot));
+      if (c) c.onclick = () => loadSlot(SAVE_AUTO);
+      app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.slot));
       app.querySelector('#loadfile').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     };
+    for (const k of [SAVE_AUTO, SAVE_SLOT + 1, SAVE_SLOT + 2, SAVE_SLOT + 3]) metas[k] = localMeta(k);
     draw();
+    // облачные сохранения подтягиваются позже; перерисовываем, только пока пользователь на этом экране
+    slotMetas().then((m) => { if (!UI.g) { metas = m; draw(); } });
   }
 
   // ================== каркас ==================
@@ -926,21 +951,31 @@
     const G = g();
     main.innerHTML = `<div class="grid">
       <div class="card"><h3>Сохранения</h3>
-        ${[1, 2, 3].map((i) => `<div class="list-item"><b>Слот ${i}</b><span class="grow small muted">${esc(slotInfo(SAVE_SLOT + i) || 'пусто')}</span>
-          <button class="btn sm" data-save="${i}">Сохранить</button><button class="btn sm" data-load="${i}" ${slotInfo(SAVE_SLOT + i) ? '' : 'disabled'}>Загрузить</button></div>`).join('')}
-        <div class="small muted" style="margin:8px 0">Игра автоматически сохраняется после каждого матча.</div>
+        ${[1, 2, 3].map((i) => `<div class="list-item"><b>Слот ${i}</b><span class="grow small muted" id="slot${i}">${esc((localMeta(SAVE_SLOT + i) || {}).info || 'пусто')}</span>
+          <button class="btn sm" data-save="${i}">Сохранить</button><button class="btn sm" data-load="${i}">Загрузить</button></div>`).join('')}
+        <div class="small muted" style="margin:8px 0">Игра автоматически сохраняется после каждого матча${UI.cloud ? ' — и в облако, так что продолжить можно с другого устройства' : ''}.</div>
         <div class="row"><button class="btn" id="exp">Экспорт в файл</button><button class="btn" id="imp">Импорт из файла</button></div></div>
       <div class="card"><h3>База данных</h3>
         <div class="small" style="margin-bottom:10px">Составы РПЛ собраны по заявкам и составам на матчи лета–осени 2026 года, цены — оценка на уровне Transfermarkt. По ФНЛ и Второй лиге открытых данных мало: недостающих игроков игра генерирует, они помечены «*». В редакторе можно исправить любого игрока или клуба.</div>
         <div class="row"><button class="btn primary" id="editor">Редактор базы</button></div></div>
       <div class="card"><h3>Игра</h3><div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
     main.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => { if (save(SAVE_SLOT + b.dataset.save)) toast('Сохранено'); render(); });
-    main.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => loadKey(SAVE_SLOT + b.dataset.load));
+    main.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.load));
+    slotMetas().then((m) => {
+      [1, 2, 3].forEach((i) => { const el = main.querySelector('#slot' + i); if (el && m[SAVE_SLOT + i]) el.textContent = m[SAVE_SLOT + i].info; });
+    });
     main.querySelector('#exp').onclick = () => download(`ffm26_${G.userTeam().id}_${G.s.date}.json`, JSON.stringify(G.s));
     main.querySelector('#imp').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     main.querySelector('#editor').onclick = () => editor();
-    main.querySelector('#newgame').onclick = () => {
-      if (!confirm('Начать новую игру? Текущая карьера останется в автосохранении до первого сохранения новой.')) return;
+    const ng = main.querySelector('#newgame');
+    ng.onclick = () => {
+      // подтверждение вторым нажатием: системные диалоги на странице claude.ai не показываются
+      if (!ng.dataset.sure) {
+        ng.dataset.sure = '1';
+        ng.textContent = 'Точно? Нажмите ещё раз';
+        return;
+      }
+      save();
       UI.g = null;
       startScreen();
     };
@@ -1041,13 +1076,13 @@
       };
       el.querySelector('#e-exp').onclick = () => download('ffm26_database.json', JSON.stringify(exportDb(G), null, 1));
       el.querySelector('#e-def').onclick = () => {
-        try { localStorage.setItem(DB_KEY, JSON.stringify(exportDb(G))); toast('Новые игры будут начинаться с этой базой'); draw(); }
-        catch (e) { toast('Не хватило места в хранилище браузера.'); }
+        if (ls.set(DB_KEY, JSON.stringify(exportDb(G)))) { toast('Новые игры будут начинаться с этой базой'); draw(); }
+        else toast('Не хватило места в хранилище браузера.');
       };
-      el.querySelector('#e-reset').onclick = () => { localStorage.removeItem(DB_KEY); toast('Встроенная база восстановлена'); draw(); };
+      el.querySelector('#e-reset').onclick = () => { ls.del(DB_KEY); toast('Встроенная база восстановлена'); draw(); };
       el.querySelector('#e-imp').onclick = () => pickFile((db) => {
         if (!Array.isArray(db) || !db[0] || !db[0].teams) return toast('Это не файл базы.');
-        try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch (e) { return toast('Не хватило места в хранилище браузера.'); }
+        if (!ls.set(DB_KEY, JSON.stringify(db))) return toast('Не хватило места в хранилище браузера.');
         closeModal();
         UI.g = null;
         startScreen();
