@@ -48,7 +48,7 @@
         for (const T of L.teams) {
           const team = {
             id: T.id, name: T.name, city: T.city, stadium: T.stadium, cap: T.cap, colors: T.colors,
-            rep: T.rep, money: T.money, league: L.id, reserveOf: T.reserveOf || null,
+            rep: T.rep, money: T.money, league: L.id, reserveOf: T.reserveOf || null, logoData: T.logoData || undefined,
             players: [], formation: '4-3-3', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 },
             form: [], sponsor: 0, fin: { income: 0, expense: 0, log: [] },
           };

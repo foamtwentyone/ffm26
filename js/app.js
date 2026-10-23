@@ -24,6 +24,8 @@
     return ratio >= 2.5 ? t.colors[1] : bg > 0.35 ? '#111111' : '#ffffff';
   };
   function badge(t, cls = '') {
+    if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
+    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="img/logos/${t.id}.png" alt="${esc(t.name)}" loading="lazy"></span>`;
     const init = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase();
     return `<span class="badge ${cls}" style="background:${t.colors[0]};color:${badgeText(t)}">${esc(init)}</span>`;
   }
@@ -1073,7 +1075,7 @@
         teams: L.teams.map((tid) => {
           const t = G.teams[tid];
           return {
-            id: t.id, name: t.name, city: t.city, stadium: t.stadium, cap: t.cap, colors: t.colors, rep: t.rep, money: Math.round(t.money), reserveOf: t.reserveOf || undefined,
+            id: t.id, name: t.name, city: t.city, stadium: t.stadium, cap: t.cap, colors: t.colors, rep: t.rep, money: Math.round(t.money), reserveOf: t.reserveOf || undefined, logoData: t.logoData,
             players: '\n' + G.squad(t).map((p) => [p.name, p.pos, p.age, p.value, p.nat, p.ovr, p.pot, p.gen ? 'g' : ''].join('|')).join('\n'),
           };
         }),
@@ -1097,7 +1099,8 @@
           <label>Название<br><input id="t-name" value="${esc(t.name)}"></label><label>Город<br><input id="t-city" value="${esc(t.city)}"></label>
           <label>Стадион<br><input id="t-stad" value="${esc(t.stadium)}"></label><label>Мест<br><input id="t-cap" type="number" value="${t.cap}" style="width:90px"></label>
           <label>Репутация<br><input id="t-rep" type="number" value="${t.rep}" style="width:70px"></label><label>Деньги, тыс. €<br><input id="t-money" type="number" value="${Math.round(t.money)}" style="width:110px"></label>
-          <label>Цвета<br><input id="t-c1" type="color" value="${t.colors[0]}" style="width:44px;padding:0"><input id="t-c2" type="color" value="${t.colors[1]}" style="width:44px;padding:0"></label></div>
+          <label>Цвета<br><input id="t-c1" type="color" value="${t.colors[0]}" style="width:44px;padding:0"><input id="t-c2" type="color" value="${t.colors[1]}" style="width:44px;padding:0"></label>
+          <div>Эмблема<br><div class="row">${badge(t, 'lg')}<label class="btn sm">Загрузить<input id="t-logo" type="file" accept="image/*" hidden></label>${t.logoData ? '<button class="btn sm" id="t-logo-del">Вернуть стандартную</button>' : ''}</div></div></div>
         <div class="tbl-wrap"><table class="ed" id="e-tab"><tr><th>Имя</th><th>Поз</th><th>Возр</th><th>Страна</th><th>Рейт</th><th>Потенц.</th><th>Цена, тыс. €</th><th>Ген.</th><th></th></tr>
           ${sq.map((p) => edRow(p)).join('')}</table></div>
         <div class="row" style="margin-top:10px"><button class="btn" id="e-add">+ Игрок</button><span class="grow"></span>
@@ -1105,6 +1108,29 @@
         <h3 style="margin-top:16px">Вся база</h3>
         <div class="row"><button class="btn" id="e-exp">Экспорт базы (JSON)</button><button class="btn" id="e-imp">Импорт базы → новая игра</button>
           <button class="btn" id="e-def">Сделать базой для новых игр</button><button class="btn danger" id="e-reset" ${customDb() ? '' : 'disabled'}>Вернуть встроенную базу</button></div>`, 'wide');
+      el.querySelector('#t-logo').onchange = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const img = new Image();
+        img.onload = () => {
+          // уменьшаем до 128×128, чтобы эмблема не раздувала сохранение
+          const c = document.createElement('canvas');
+          c.width = c.height = 128;
+          const k = Math.min(128 / img.width, 128 / img.height);
+          const w = img.width * k, h = img.height * k;
+          c.getContext('2d').drawImage(img, (128 - w) / 2, (128 - h) / 2, w, h);
+          t.logoData = c.toDataURL('image/png');
+          URL.revokeObjectURL(img.src);
+          save();
+          render();
+          draw();
+          toast('Эмблема обновлена');
+        };
+        img.onerror = () => toast('Не удалось прочитать картинку.');
+        img.src = URL.createObjectURL(f);
+      };
+      const del = el.querySelector('#t-logo-del');
+      if (del) del.onclick = () => { delete t.logoData; save(); render(); draw(); };
       el.querySelector('#e-l').onchange = (e) => { lid = e.target.value; draw(); };
       el.querySelector('#e-t').onchange = (e) => { tid = e.target.value; draw(); };
       el.querySelector('#e-add').onclick = () => {
