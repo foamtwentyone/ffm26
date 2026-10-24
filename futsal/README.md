@@ -86,6 +86,7 @@
 ```bash
 python3 futsal/tools/scrape.py   # скачивает заявки и карточки игроков в futsal/tools/.cache
 python3 futsal/tools/mosff.py    # московская зона Первой лиги с mosff.ru (нужен Playwright)
+python3 futsal/tools/nagradion.py # составы, сохранённые с сайтов «Наградиона» в futsal/tools/.cache/saved
 python3 futsal/tools/build.py    # пересобирает лиги futsal/js/data/sl.js, vlw.js, vle.js, pl1–pl4.js и academy.js
 python3 futsal/tools/logos.py    # скачивает эмблемы и пересобирает futsal/js/data/logos.js
 ```

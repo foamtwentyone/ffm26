@@ -101,6 +101,8 @@ PL = {
     'Сигма-К': ('sigma', 'pl3', 'Копейск', '—', ['#1d1d1b', '#f2e600'], 46),
     'СБЕР': ('sber', 'pl3', 'Курган', '—', ['#21a038', '#ffffff'], 46),
     'Спарта': ('sparta', 'pl3', 'Талица', '—', ['#c8102e', '#1d1d1b'], 48),
+    'Штурм': ('sturm', 'pl3', 'Сургут', '—', ['#1d2a5b', '#ffffff'], 47),
+    'ЧелГУ': ('chelgu', 'pl3', 'Челябинск', '—', ['#0057b8', '#ffffff'], 45),
     'Вектор': ('vektor', 'pl3', 'Тюмень', '—', ['#1d2a5b', '#c8102e'], 47),
     'Факел-Динамо': ('fakel_dinamo', 'pl3', 'Тюмень', '—', ['#1d1d1b', '#ffffff'], 47),
     'Трейд': ('treid', 'pl3', 'Курган', '—', ['#1f5aa6', '#ffffff'], 45),
@@ -140,13 +142,16 @@ mosff = json.load(open(D + '/mosff.json', encoding='utf8')) if os.path.exists(D 
 for t in mosff:
     for p in t['players']:
         pinfo[f"mosff_{p['pid']}"] = {'full': p['full'], 'games': int(p['stats'][0] or 0), 'goals': int(p['stats'][1] or 0)}
-all_teams = all_teams + mosff
+# составы с сайтов «Наградиона», сохранённые вручную (tools/nagradion.py): амплуа и дат рождения там нет
+nagr = json.load(open(D + '/nagradion.json', encoding='utf8')) if os.path.exists(D + '/nagradion.json') else []
+all_teams = all_teams + mosff + nagr
 # приоритет источников: заявка Кубка 2026/27, затем московская зона, затем Кубок 2025/26
 cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
 mos = {t['name'] for t in mosff}
 teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 'cup' and t['name'] in PL)
          or (t['league'] == 'mosff' and t['name'] in PL and t['name'] not in cup26)
-         or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26 | mos)]
+         or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26 | mos)
+         or (t['league'] == 'nagr' and t['name'] in PL and t['name'] not in cup26 | mos | {x['name'] for x in all_teams if x['league'] == 'cup25'})]
 missing = set(PL) - {t['name'] for t in teams}
 if missing: sys.exit(f'нет заявок: {missing}')
 
@@ -159,7 +164,7 @@ for t in teams:
         main = t['league'] == 'sl' or t['name'] in ('Ухта',)
         cur = seen.get(key)
         # заявки текущего сезона важнее прошлогодних (Кубок 2025/26)
-        old = t['league'] == 'cup25'  # mosff — тоже текущий сезон
+        old = t['league'] in ('cup25', 'nagr')  # mosff — тоже текущий сезон
         if cur is None or (cur[3] and not old) or (cur[3] == old and (g > cur[0] or (g == cur[0] and main and not cur[2]))):
             seen[key] = (g, t['team_id'], main, old)
 
@@ -180,10 +185,12 @@ for t in teams:
         cg = max(info.get('games', 0), g)
         share = min(1, g / gm)
         exp = min(1, math.log10(1 + cg) / math.log10(250))
+        if t['league'] == 'nagr': share, exp = 0.6, 0.4  # на «Наградионе» нет статистики — средняя роль в команде
         if pos == 'GK':
             adj = -10 + 9 * share + 7 * exp
         else:
             prod = min(1, (gs / max(g, 1)) / 0.7) * min(1, g / 4)
+            if t['league'] == 'nagr': prod = 0.3
             adj = -10 + 7 * share + 6 * exp + 3 * prod
         if age < 20: adj -= (20 - age) * 1.2
         if age > 33: adj -= (age - 33) * 0.8
