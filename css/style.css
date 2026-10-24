@@ -469,3 +469,50 @@ th { color: #b4bde6; }
 .tag.free { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); background: color-mix(in srgb, var(--good) 12%, transparent); }
 .haggle { display: inline-flex; align-items: center; gap: 6px; }
 .modal h3 { margin-top: 18px; }
+
+/* ===== крупнее и проще: меньше мелких элементов ===== */
+body { font-size: 16px; }
+.small { font-size: 14px; }
+.tag { font-size: 13px; padding: 3px 10px; }
+th { font-size: 13px; }
+.kv span:first-child { font-size: 12px; }
+.hm-tag { font-size: 14px; }
+.crumb-hint { font-size: 14px; }
+.chip { font-size: 15px; padding: 6px 14px; }
+.cmp-row { grid-template-columns: 40px 1fr 110px 1fr 40px; }
+.cmp-row span { font-size: 13px; letter-spacing: .04em; text-transform: none; font-family: var(--f-body); }
+.cmp-row b { font-size: 17px; }
+.cmp-bar { height: 8px; }
+.sched, .mini { font-size: 16px; padding: 8px; }
+.kvl { padding: 9px 0; font-size: 16px; }
+.news { font-size: 15px; line-height: 1.45; padding: 4px 0; }
+.news + .news { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.dash-simple { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.tile .chev { width: 30px; height: 30px; font-size: 16px; }
+
+/* панель разделов */
+.mainnav { max-width: 1280px; margin: 14px auto 0; padding-left: var(--gl); padding-right: var(--gr); display: flex; gap: 8px; flex-wrap: wrap; }
+.mainnav button { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 14px; border: 1px solid var(--stroke); background: var(--glass); color: var(--muted); font-family: var(--f-head); font-weight: 500; font-size: 16px; letter-spacing: .03em; transition: background .2s, color .2s; }
+.mainnav button:hover { color: var(--text); background: var(--glass2); }
+.mainnav button.on { color: var(--accent-ink); background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; }
+.mainnav .ni { display: inline-flex; width: 20px; height: 20px; }
+.mainnav .ni svg { width: 20px; height: 20px; }
+.mainnav .dot { margin-left: 2px; }
+.mainnav .more { display: none; }
+.mdots { font-style: normal; font-size: 14px; letter-spacing: -1px; line-height: 20px; }
+@media (max-width: 860px) {
+  .burger { display: none; }
+  .mainnav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; margin: 0; gap: 0; flex-wrap: nowrap; padding: 6px max(6px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(6, 10, 28, .94); backdrop-filter: blur(14px); border-top: 1px solid var(--stroke); }
+  .mainnav button { flex: 1; flex-direction: column; gap: 3px; padding: 6px 2px; border: 0; background: none; font-size: 12px; border-radius: 12px; }
+  .mainnav button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+  .mainnav button:nth-child(n+5):not(.more) { display: none; }
+  .mainnav .more { display: inline-flex; }
+  .mainnav .ni, .mainnav .ni svg { width: 24px; height: 24px; }
+  .mainnav .dot { position: absolute; top: 2px; right: 18%; min-width: 18px; height: 18px; line-height: 18px; font-size: 11px; }
+  body { padding-bottom: 84px; }
+  .cmp-row { grid-template-columns: 30px 1fr 92px 1fr 30px; gap: 6px; }
+  .dash-simple { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) { .strip .chip[data-tab="inbox"] { display: inline-flex; } }
+.card.tight { overflow-x: auto; }
+@media (max-width: 860px) { #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); } }

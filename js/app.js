@@ -294,6 +294,9 @@
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
     ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['menu', 'Сохранения и база'],
   ];
+  // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
+  const NAV = ['home', 'squad', 'tables', 'transfers', 'fixtures', 'finance', 'inbox'];
+  const NAV_NAME = { squad: 'Состав', tables: 'Турниры', fixtures: 'Матчи' };
   // короткая подсказка под заголовком раздела: что здесь можно сделать
   const TAB_HINTS = {
     squad: 'Нажмите на позицию на поле и выберите игрока. «Автосостав» поставит сильнейших. ОСН — в старте, ЗАП — на скамейке.',
@@ -342,14 +345,15 @@
         <button class="next-btn" id="go">Далее <span>▶</span></button>
       </div></header>
       <div class="strip"><div class="strip-in">
-        <button class="chip" data-tab="club" title="Клуб и руководство">${icon('shield')}</button>
-        <div class="when">Сезон ${seasonLabel(s)} · Неделя ${weekNo(s)}<span class="hide-m"> · ${FM.fmtDateWd(s.date)}</span></div>
+        <div class="when">Сезон ${seasonLabel(s)}<span class="hide-m"> · Неделя ${weekNo(s)} · ${FM.fmtDateWd(s.date)}</span></div>
         <div class="chips">
           <button class="chip" data-tab="squad" title="Травмированные игроки"><b class="cross">✚</b>${injured}</button>
           <button class="chip" data-tab="inbox" title="Непрочитанные письма">✉ ${unread}</button>
           <button class="chip cash" data-tab="finance" title="Деньги клуба"><b>€</b>${FM.money(u.money).replace(' €', '')}</button>
         </div>
       </div></div>
+      <nav class="mainnav">${NAV.map((id) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="ni">${icon(TAB_ICONS[id])}</span><span>${NAV_NAME[id] || esc(TABS.find((t) => t[0] === id)[1])}</span>${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
+        <button class="more" id="more"><span class="ni"><i class="mdots">•••</i></span><span>Ещё</span></button></nav>
       ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><div><h1>${esc(title)}</h1>${TAB_HINTS[UI.tab] ? `<div class="crumb-hint">${TAB_HINTS[UI.tab]}</div>` : ''}</div></div>` : ''}
       <main id="main"></main>
       <div class="drawer hidden" id="drawer"><nav>
@@ -358,6 +362,7 @@
       </nav></div>`;
     const drawer = app.querySelector('#drawer');
     app.querySelector('#burger').onclick = () => drawer.classList.remove('hidden');
+    app.querySelector('#more').onclick = () => drawer.classList.remove('hidden');
     drawer.onclick = (e) => { if (e.target === drawer) drawer.classList.add('hidden'); };
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => go(b.dataset.tab));
     app.querySelector('#go').onclick = goOn;
@@ -417,41 +422,13 @@
     const st = teamStrength(t, lineup);
     return { def: Math.round(st.def), mid: Math.round(st.mid), att: Math.round(st.att) };
   }
-  // 5 звёзд — средний рейтинг состава около 80, одна — около 50
-  const starsOf = (r) => FM.clamp(Math.round(((r.def + r.mid + r.att) / 3 - 47) / 6.5 * 2) / 2, 0.5, 5);
   const stars = (v) => `<span class="stars" style="--v:${v}" title="${v} из 5">★★★★★</span>`;
-  const formDots = (f) => `<span class="fdots">${f.slice(-5).map((x) => `<i class="${x}">${{ W: 'В', D: 'Н', L: 'П' }[x]}</i>`).join('') || '<span class="muted small">нет матчей</span>'}</span>`;
-  const lines = (r) => `<div class="lines"><span>ЗАЩ<b>${r.def}</b></span><span>ПЗЩ<b>${r.mid}</b></span><span>НАП<b>${r.att}</b></span></div>`;
   const tile = (title, target, body, cls = '', ic = '') => `<section class="tile ${cls}" data-go="${target}"><header>${ic ? `<span class="hic">${icon(ic)}</span>` : ''}<span class="tt">${title}</span><span class="chev">›</span></header><div class="tb">${body}</div></section>`;
   const shortDate = (d) => { const x = FM.parseDate(d); return `${x.getUTCDate()}.${String(x.getUTCMonth() + 1).padStart(2, '0')}`; };
-  const ring = (v, label, cls = '') => `<div class="ring ${cls}" style="--v:${v};--c:${v < 45 ? 'var(--bad)' : v < 75 ? 'var(--warn)' : 'var(--good)'}"><b>${label}</b></div>`;
   const cmpRow = (label, a, b) => {
     const w = (v) => FM.clamp((v - 40) * 2.2, 6, 100);
     return `<div class="cmp-row"><b>${a}</b><div class="cmp-bar l"><i style="width:${w(a)}%"></i></div><span>${label}</span><div class="cmp-bar r"><i style="width:${w(b)}%"></i></div><b>${b}</b></div>`;
   };
-
-  // плитка еврокубков: свой турнир и место в нём, иначе — лидер Лиги чемпионов
-  function euroTile() {
-    const G = g(), s = G.s, u = G.userTeam();
-    if (!s.euro || !Object.keys(s.euro).length) return tile('Еврокубки', 'tables', '<div class="muted">Стартуют в новом сезоне</div>', '', 'globe');
-    const mine = FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
-    const E = mine || FM.EURO.find((x) => s.euro[x.id]);
-    const e = s.euro[E.id];
-    let body;
-    if (e.winner) body = `<div class="kvl"><span>Победитель</span><b>${esc(T(e.winner).name)}</b></div>`;
-    else if (mine && e.phase === 'league') {
-      const row = G.euroTable(E.id).find((r) => r.id === u.id);
-      body = `<div class="kvl"><span>Общий этап</span><b>${row.pos}-е место · ${row.pts} очк.</b></div><div class="small muted" style="margin-top:6px">1–4 место — сразу в 1/4 финала, 5–12 — стыки</div>`;
-    } else if (mine) {
-      const R = e.ko[e.ko.length - 1];
-      const alive = e.final ? [s.matches[e.final].h, s.matches[e.final].a].includes(u.id) : R && R.ties.some((t) => (t.hi === u.id || t.lo === u.id) && (!t.winner || t.winner === u.id));
-      body = `<div class="kvl"><span>Стадия</span><b>${e.final ? 'финал' : esc(R ? R.name : '')}</b></div><div style="margin-top:8px"><span class="tag" style="color:${alive ? 'var(--good)' : 'var(--bad)'}">${alive ? 'Команда в борьбе' : 'Команда выбыла'}</span></div>`;
-    } else {
-      const lead = G.euroTable(E.id)[0];
-      body = `<div class="muted small">Ваш клуб в этом сезоне не играет в еврокубках</div><div class="kvl" style="margin-top:6px"><span>Лидер ЛЧ</span><b>${esc(T(lead.id).name)}</b></div>`;
-    }
-    return tile(mine ? E.name : 'Еврокубки', 'tables:' + E.id, body, '', 'star');
-  }
 
   function viewHome(main) {
     const G = g(), s = G.s, u = G.userTeam();
@@ -460,71 +437,55 @@
     const tab = G.table(u.league);
     const myRow = tab.find((r) => r.id === u.id);
     const conf = Math.round(s.board.conf);
-    const sq = G.squad(u);
-    const xi = u.lineup.map(P).filter(Boolean);
-    const fit = xi.length ? Math.round(xi.reduce((a, p) => a + p.fit, 0) / xi.length) : 100;
-    const myR = lineRatings(u);
     const upcoming = Object.values(s.matches).filter((m) => !m.played && (m.h === u.id || m.a === u.id)).sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 5);
-    const topSc = sq.filter((p) => p.st.g).sort((a, b) => b.st.g - a.st.g)[0];
-    const topAs = sq.filter((p) => p.st.a).sort((a, b) => b.st.a - a.st.a)[0];
-    const topRt = sq.filter((p) => p.st.apps >= 3).sort((a, b) => b.st.rsum / b.st.apps - a.st.rsum / a.st.apps)[0];
-    const arrivals = s.seasonLog.filter((x) => x.to === u.id).slice(0, 3);
-    const departures = s.seasonLog.filter((x) => x.from === u.id).slice(0, 3);
     const c = s.cup;
     const inCup = c && !c.winner && c.alive.includes(u.id);
     const lastMsg = s.inbox[0];
     const unread = s.inbox.filter((m) => !m.read).length;
-    const trophies = s.history.reduce((a, x) => a + (x.cup ? 1 : 0) + (x.pos === 1 && s.leagues[x.league] && s.leagues[x.league].tier === 1 ? 1 : 0) + (x.euro ? x.euro.length : 0), 0);
-    const young = sq.filter((p) => p.age <= 23).sort((a, b) => (b.pot - b.ovr) - (a.pot - a.ovr)).slice(0, 3);
 
     let hero = tile('Следующий матч', 'fixtures', '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>', 'w2', 'ball');
     if (nm) {
       const h = T(nm.h), a = T(nm.a);
       const rh = lineRatings(h), ra = lineRatings(a);
       const side = (t) => `<div class="hm-team">${badge(t, 'xl')}<b data-team="${t.id}">${esc(t.name)}</b>
-        <span class="small">${esc(s.leagues[t.league].short)} · ${G.positionOf(t.id)}-е место</span>${formDots(t.form)}</div>`;
+        <span class="small">${G.positionOf(t.id)}-е место</span></div>`;
       hero = `<section class="tile w2 hero-match" data-go="fixtures" style="--hcb:${glow(h)};--acb:${glow(a)}">
         <header><span class="hic">${icon('ball')}</span><span class="tt">Следующий матч</span><span class="chev">›</span></header>
         <div class="tb">
           <div class="hm">${side(h)}
             <div class="hm-mid"><span class="hm-date">${FM.fmtDateWd(nm.date)}</span><span class="hm-vs">VS</span>
               <span class="hm-tag">${esc(compName(nm.comp))}${roundText(nm) ? ` · ${esc(roundText(nm))}` : ''}</span>
-              <span class="hm-tag">${esc(h.stadium)}</span></div>
+              </div>
             ${side(a)}</div>
-          <div class="cmp">${cmpRow('ЗАЩ', rh.def, ra.def)}${cmpRow('ПЗЩ', rh.mid, ra.mid)}${cmpRow('НАП', rh.att, ra.att)}</div>
-          <div class="hm-foot">${stars(starsOf(rh))}<span class="muted small">сила по стартовым составам</span>${stars(starsOf(ra))}</div>
+          <div class="cmp">${cmpRow('Защита', rh.def, ra.def)}${cmpRow('Полузащита', rh.mid, ra.mid)}${cmpRow('Атака', rh.att, ra.att)}</div>
         </div></section>`;
     }
 
-    main.innerHTML = `<div class="dash">
+    // Кубки показываем, только если клуб в них участвует
+    const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
+    const cupRows = [];
+    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? 'победа!' : 'завершён') : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (euroMine) {
+      const e = s.euro[euroMine.id];
+      let st;
+      if (e.winner) st = e.winner === u.id ? 'победа!' : 'завершён';
+      else if (e.phase === 'league') st = `${G.euroTable(euroMine.id).find((r) => r.id === u.id).pos}-е место`;
+      else { const R = e.ko[e.ko.length - 1]; st = e.final ? 'финал' : R ? esc(R.name) : ''; }
+      cupRows.push(`<div class="kvl"><span>${esc(euroMine.name)}</span><b>${st}</b></div>`);
+    }
+    main.innerHTML = `<div class="dash dash-simple">
       ${hero}
-      ${tile('Управление командой', 'squad', `<div class="tm-row">${ring(fit, fit + '%')}
-        <div><div class="muted small">Схема ${u.formation} · готовность состава</div>${lines(myR)}<div class="row">${stars(starsOf(myR))}${formDots(u.form)}</div></div></div>`, 'w2', 'shirt')}
-      ${tile('Руководство', 'club', `<div class="tm-row">${ring(conf, conf + '%', 'sm')}
-        <div><span class="muted small">Задача на сезон</span><b>${esc(G.expectText())}</b></div></div>`, '', 'shield')}
-      ${tile('Расписание', 'fixtures', upcoming.map((m) => {
+      ${tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
+      ${tile('Ближайшие матчи', 'fixtures', upcoming.slice(0, 4).map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}" title="${home ? 'Дома' : 'В гостях'}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${esc(compShort(m.comp))}</span></div>`;
-      }).join('') || '<div class="muted">Сезон завершён</div>', 'w2', 'calendar')}
-      ${tile(esc(L.short), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
-      <div class="stack">
-        ${tile('Приходы', 'transfers:search', `<div class="tr-in"><span class="arr in">${icon('in')}</span>${arrivals.length || 'Нет'}</div>${arrivals.map((x) => `<div class="small ell muted">${esc(x.name)}</div>`).join('')}`, 'short')}
-        ${tile('Уходы', 'transfers:mine', `<div class="tr-out"><span class="arr out">${icon('out')}</span>${departures.length || 'Нет'}</div>${departures.map((x) => `<div class="small ell muted">${esc(x.name)}</div>`).join('')}`, 'short')}
-      </div>
-      ${tile('Свежие новости', 'inbox', s.news.slice(0, 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>', '', 'news')}
-      ${tile('Статистика игроков', 'stats', `
-        ${topSc ? `<div class="leader"><span class="li">${icon('ball')}</span><div class="grow"><b data-player="${topSc.id}">${esc(topSc.name)}</b><div class="small muted">Лучший бомбардир</div></div><b class="big">${topSc.st.g}</b></div>` : ''}
-        ${topAs ? `<div class="leader"><span class="li">${icon('assist')}</span><div class="grow"><b data-player="${topAs.id}">${esc(topAs.name)}</b><div class="small muted">Лучший ассистент</div></div><b class="big">${topAs.st.a}</b></div>` : ''}
-        ${topRt ? `<div class="leader"><span class="li">${icon('medal')}</span><div class="grow"><b data-player="${topRt.id}">${esc(topRt.name)}</b><div class="small muted">Высший средний рейтинг</div></div><b class="big">${(topRt.st.rsum / topRt.st.apps).toFixed(1)}</b></div>` : ''}
-        ${!topSc && !topAs && !topRt ? '<div class="muted">Сезон ещё не начался</div>' : ''}`, '', 'chart')}
-      ${tile('Кубок России', 'tables:cup', !G.isRussian(u) ? '<div class="muted">Разыгрывается между российскими клубами</div>' : c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:8px">${inCup ? '<span class="tag" style="color:var(--good)">Команда в борьбе</span>' : '<span class="tag" style="color:var(--bad)">Команда выбыла</span>'}</div>`) : '', '', 'cup')}
-      ${euroTile()}
-      ${tile('Финансы', 'finance', `<div class="kvl"><span>Баланс</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>
-        <div class="kvl"><span>Зарплаты / нед</span><b>${FM.money(G.wageBill(u))}</b></div><div class="kvl"><span>Спонсоры / нед</span><b>${FM.money(u.sponsor)}</b></div>`, '', 'coin')}
-      ${tile('Молодёжь', 'squad', young.map((p) => `<div class="kvl"><span data-player="${p.id}">${esc(p.name)} <span class="muted">${p.age}</span></span>${ovr(p.ovr)}</div>`).join('') || '<div class="muted">Молодых игроков нет</div>', '', 'star')}
-      ${tile('Почта', 'inbox', lastMsg ? `<div class="kvl"><span>Непрочитанных</span><b>${unread}</b></div><div class="news ell2">${esc(lastMsg.title)}</div>` : '<div class="muted">Писем нет</div>', '', 'mail')}
-      ${tile('Лиги', 'tables', s.order.map((id) => { const lead = T(G.table(id)[0].id); return `<div class="mini"><span class="grow ell">${esc(s.leagues[id].short)}</span>${badge(lead, 'sm')}<span class="muted small ell">${esc(lead.name)}</span></div>`; }).join(''), '', 'globe')}
-      ${tile('Тренер', 'club', `<div class="kvl"><span>Сезонов</span><b>${s.history.length + 1}</b></div><div class="kvl"><span>Трофеев</span><b>${trophies}</b></div><div class="kvl"><span>Трансферное окно</span><b class="small">${G.windowText()}</b></div>`, '', 'user')}
+        return `<div class="sched"><b>${shortDate(m.date)}</b>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
+      }).join('') || '<div class="muted">Сезон завершён</div>', '', 'calendar')}
+      ${tile('Клуб', 'club', `<div class="kvl"><span>Деньги</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>
+        <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
+        <div class="kvl"><span>Доверие руководства</span><b class="${conf < 45 ? 'bad' : conf < 75 ? 'warn' : 'good'}">${conf}%</b></div>
+        <div class="kvl"><span>Трансферное окно</span><b>${G.inWindow() ? 'открыто' : 'закрыто'}</b></div>`, '', 'shield')}
+      ${tile(unread ? `Почта · ${unread} новых` : 'Новости', 'inbox', (unread && lastMsg ? `<div class="news"><b>${esc(lastMsg.title)}</b></div>` : '') + (s.news.slice(0, unread ? 2 : 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>'), '', 'mail')}
+      ${cupRows.length ? tile('Кубки', euroMine ? 'tables:' + euroMine.id : 'tables:cup', cupRows.join(''), '', 'cup') : ''}
     </div>`;
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));
   }
@@ -600,12 +561,12 @@
         </div>
       </div>
       <div class="card tight"><div class="tbl-wrap"><table>
-        <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num">Цена</th></tr>
+        <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
         ${sq.map((p) => `<tr class="click ${UI.sel && UI.sel.pid === p.id ? 'sel' : ''}" data-row="${p.id}">
           <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
           <td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
           <td class="hide-m">${fitBar(p.fit)}</td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
-          <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
+          <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`).join('')}
       </table></div><div class="small muted" style="padding:10px">Нажмите на позицию на поле или на скамейке, затем на игрока. Без выбора позиции — откроется карточка игрока. «*» — сгенерированный игрок.</div></div>
     </div>`;
 
