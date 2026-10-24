@@ -1,4 +1,5 @@
-# Шаг 2 из 2: собирает файлы лиг js/data/sl.js, vlw.js, vle.js из скачанных заявок РФС (scrape.py).
+# Шаг 2 из 3: собирает файлы лиг js/data/sl.js, vlw.js, vle.js, plw.js, ple.js и академии js/data/academy.js
+# из скачанных заявок РФС (scrape.py).
 # Рейтинг игрока = уровень клуба + роль в команде (доля сыгранных матчей сезона, опыт, результативность) − поправка на возраст.
 import json, math, os, sys
 
@@ -65,6 +66,41 @@ META = {
     'Норильск-2': ('norilsk2', 'Норильск', 'МСК «Сопка» (Красноярск)', 500, ['#f39200', '#1d1d1b'], 44, 40, 53),
     'София': ('sofia', 'Тюмень', 'СК «Софи-Лэнд»', 500, ['#c2185b', '#ffffff'], 42, 50, 52),
 }
+# Первая лига: клубы из заявок Кубка России, которых нет в Суперлиге и Высшей лиге. Цвета — по эмблемам.
+# Города «Платона» и «Старт Алюмики» на сайте РФС не указаны.
+# название: (id, зона, город, площадка, цвета, уровень игроков)
+PL = {
+    'Столица': ('stolitsa', 'W', 'Москва', '—', ['#1d4f91', '#d71920'], 49),
+    'Старт Алюмика': ('start_alumika', 'W', '—', '—', ['#c9a24b', '#1d1d1b'], 49),
+    'Волна-ФФК': ('volna', 'W', 'Нижний Новгород', '—', ['#39b54a', '#1d1d1b'], 47),
+    'Витязь': ('vityaz', 'W', 'Маркс', '—', ['#1d2a5b', '#c8102e'], 47),
+    'МБЛ': ('mbl', 'W', 'Саратов', '—', ['#4fb6e3', '#ffffff'], 47),
+    'Доминанта': ('dominanta', 'W', 'Оренбург', '—', ['#1d1d1b', '#c9a24b'], 46),
+    'Механический завод': ('mehzavod', 'W', 'Переволоцкий', '—', ['#2a6ebb', '#ffffff'], 45),
+    'Платон': ('platon', 'W', '—', '—', ['#1d1d1b', '#ffffff'], 47),
+    'Мир': ('mir', 'W', 'Челябинск', '—', ['#e30613', '#ffffff'], 47),
+    'Сигма-К': ('sigma', 'W', 'Копейск', '—', ['#1d1d1b', '#f2e600'], 46),
+    'Вектор': ('vektor', 'E', 'Тюмень', '—', ['#1d2a5b', '#c8102e'], 47),
+    'Факел-Динамо': ('fakel_dinamo', 'E', 'Тюмень', '—', ['#1d1d1b', '#ffffff'], 47),
+    'Трейд': ('treid', 'E', 'Курган', '—', ['#1f5aa6', '#ffffff'], 45),
+    'Газпромнефть – СШ им. К. Еременко': ('gpn_noyabrsk', 'E', 'Ноябрьск', '—', ['#0072bc', '#f58220'], 47),
+    'Нефтяник': ('neftyanik', 'E', 'Сургут', '—', ['#1f9ad6', '#ffffff'], 47),
+    'РН-Ремонт НПО': ('rn_remont', 'E', 'Губкинский', '—', ['#1d1d1b', '#ffd100'], 46),
+    'АлтПолитех': ('altpoliteh', 'E', 'Барнаул', '—', ['#e8542f', '#ffffff'], 47),
+    'Виджей спортс': ('vj_sports', 'E', 'Барнаул', '—', ['#1d1d1b', '#c9a24b'], 46),
+    'Сибирьэнергосервис': ('sibenergo', 'E', 'Новосибирск', '—', ['#1d5fa8', '#f39200'], 47),
+    'Провинция': ('provintsiya', 'E', 'Кемерово', '—', ['#1d1d1b', '#f5c400'], 46),
+    'АЯН': ('ayan', 'E', 'Чита', '—', ['#d71920', '#1d1d1b'], 44),
+}
+for name, (tid, zone, city, arena, colors, level) in PL.items():
+    META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
+
+
+# ЮФЛ U-19 и U-17: молодёжные составы — академии основных клубов (Кузбасс, ЦСКА и Ровесник в игре без взрослых команд)
+YOUTH = {'Водник': 'vodnik', 'Газпром-Югра': 'gazprom', 'ИрАэро': 'iraero', 'КПРФ': 'kprf', 'Кристалл': 'kristall',
+         'Новая генерация': 'newgen', 'Норильск': 'norilsk', 'Синара': 'sinara', 'Торпедо': 'torpedo', 'Тюмень': 'tyumen',
+         'Ухта': 'ukhta', 'ЮКИОР': 'surgut'}
+
 RESERVE = {'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
            'surgut2': 'surgut', 'newgen2': 'newgen', 'norilsk2': 'norilsk'}
 WEST = {'Водник', 'Волга Ульяновск', 'Газпром-Югра-2', 'Заря Луганск', 'КПРФ-2', 'Металлург', 'Саратов-Волга', 'ТЗМС-2', 'Ухта', 'Факел ЯМАЛ'}
@@ -72,6 +108,9 @@ WEST = {'Водник', 'Волга Ульяновск', 'Газпром-Югр�
 def num(x):
     x = (x or '').split(' ')[0]
     return int(x) if x.isdigit() else 0
+
+all_teams = teams
+teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 'cup' and t['name'] in PL)]
 
 # Игрок, заявленный и за основу, и за дубль, остаётся там, где сыграл больше матчей в этом сезоне (при равенстве — в основе).
 seen = {}
@@ -84,7 +123,7 @@ for t in teams:
         if cur is None or g > cur[0] or (g == cur[0] and main and not cur[2]):
             seen[key] = (g, t['team_id'], main)
 
-leagues = {'sl': [], 'vlw': [], 'vle': []}
+leagues = {'sl': [], 'vlw': [], 'vle': [], 'plw': [], 'ple': []}
 for t in teams:
     meta = META[t['name']]
     tid, city, stadium, cap, colors, rep, money, level = meta
@@ -114,7 +153,8 @@ for t in teams:
             name, nat = f'{first} {last}', NAT_BY_NAME.get(p['name'], 'RUS')
         rows.append((pos, -ovr, f'{name}|{pos}|{age}|0|{nat}|{ovr}'))
     rows.sort(key=lambda r: (['GK', 'DF', 'UN', 'FW'].index(r[0]), r[1]))
-    lg = 'sl' if t['league'] == 'sl' else ('vlw' if t['name'] in WEST else 'vle')
+    if t['league'] == 'cup': lg = 'plw' if PL[t['name']][1] == 'W' else 'ple'
+    else: lg = 'sl' if t['league'] == 'sl' else ('vlw' if t['name'] in WEST else 'vle')
     extra = f", reserveOf: '{RESERVE[tid]}'" if tid in RESERVE else ''
     leagues[lg].append(f"    {{ id: '{tid}', name: '{t['name']}', city: '{city}', stadium: '{stadium}', cap: {cap}, colors: ['{colors[0]}', '{colors[1]}'], rep: {rep}, money: {money}{extra}, players: `\n" + '\n'.join(r[2] for r in rows) + '` },\n')
     print(t['name'], len(rows), file=sys.stderr)
@@ -137,6 +177,46 @@ HEAD = {
             "FM.addLeague({\n  id: 'vle', name: 'Высшая лига «Восток»', short: 'ВЛ-В', tier: 2, conf: 'E', weekday: 6,\n"
             "  autumn: { from: '09-05', rounds: 12 }, spring: { from: '02-06', rounds: 6 },\n"
             "  ticket: 1.5, prize: [80, 60, 45, 35, 30, 25, 20, 15, 12],\n  teams: [\n"),
+    'plw': ("// Первая лига 2026/27, зона «Запад». Любительские клубы; заявки — из Кубка России (futsal.rfs.ru, октябрь 2026).\n"
+            "// В реальности Первая лига проводится по регионам с финальным турниром; в игре — две зоны, победитель выходит в Высшую лигу.\n"
+            "FM.addLeague({\n  id: 'plw', name: 'Первая лига «Запад»', short: 'ПЛ-З', tier: 3, conf: 'W', weekday: 0,\n"
+            "  autumn: { from: '09-13', rounds: 11 }, spring: { from: '02-14', rounds: 7 },\n"
+            "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2],\n  teams: [\n"),
+    'ple': ("// Первая лига 2026/27, зона «Восток». Любительские клубы; заявки — из Кубка России (futsal.rfs.ru, октябрь 2026).\n"
+            "// В реальности Первая лига проводится по регионам с финальным турниром; в игре — две зоны, победитель выходит в Высшую лигу.\n"
+            "FM.addLeague({\n  id: 'ple', name: 'Первая лига «Восток»', short: 'ПЛ-В', tier: 3, conf: 'E', weekday: 0,\n"
+            "  autumn: { from: '09-13', rounds: 13 }, spring: { from: '02-14', rounds: 9 },\n"
+            "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2, 2],\n  teams: [\n"),
 }
 for lg, items in leagues.items():
     open(f'{OUT}/{lg}.js', 'w', encoding='utf8').write(HEAD[lg] + '\n'.join(items) + '  ],\n});\n')
+
+# ---------- академии ----------
+# Рейтинг воспитанника = уровень основы клуба − 20 + роль в молодёжной команде − поправка за возраст; потенциал выше
+# у тех, кто много играет и забивает. Игроки, уже заявленные за взрослые команды, в академию не попадают.
+level_of = {m[0]: m[7] for m in META.values()}
+acad = {}
+for t in sorted(all_teams, key=lambda t: t['league'] != 'u19'):
+    if t['league'] not in ('u19', 'u17'): continue
+    club = YOUTH.get(t['name'].replace(' U-19', '').replace(' U-17', ''))
+    if not club: continue
+    gm = max([num(p['stats'][0]) for p in t['players'] if p['stats']] + [1])
+    for p in t['players']:
+        if ',' not in p.get('birth', ''): continue  # без даты рождения
+        key = (p['name'], p['birth'][:10])
+        if key in seen or any(key == k for k, _ in acad.get(club, [])): continue
+        age = int(p['birth'].split(',')[1].split()[0])
+        st = p['stats'] + ['0'] * 5
+        g, gs = num(st[0]), num(st[1])
+        share = min(1, g / gm)
+        pos = POS.get(p['amp'], 'UN')
+        prod = 0 if pos == 'GK' else min(1, (gs / max(g, 1)) / 0.8) * min(1, g / 3)
+        ovr = round(level_of[club] - 20 - 4 + 5 * share + 3 * prod - max(0, 18 - age) * 1.5)
+        pot = min(88, ovr + 12 + round(5 * prod + 3 * share) + max(0, 18 - age) * 2)
+        last, first = p['name'].split(' ', 1)
+        acad.setdefault(club, []).append((key, f'{first} {last}|{pos}|{age}|{max(35, ovr)}|{pot}'))
+with open(f'{OUT}/academy.js', 'w', encoding='utf8') as f:
+    f.write('// Академии клубов: молодёжные составы ЮФЛ U-19 и U-17 2026/27 (futsal.rfs.ru). Строка: Имя|Позиция|Возраст|Рейтинг|Потенциал.\n')
+    f.write('// Каждое лето из академии в основу переходят 1–3 старших воспитанника; когда академия пустеет, игра генерирует новых.\n')
+    f.write('FM.ACADEMY = {\n' + ''.join(f"  {club}: `\n" + '\n'.join(x[1] for x in rows) + '`,\n' for club, rows in sorted(acad.items())) + '};\n')
+print('академии:', {k: len(v) for k, v in acad.items()}, file=sys.stderr)

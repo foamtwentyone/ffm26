@@ -256,7 +256,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футзальный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: Суперлига и Высшая лига России — реальные заявки клубов</div></div>
+        <div class="muted">Сезон 2026/27: Суперлига, Высшая и Первая лиги России — реальные заявки клубов</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
@@ -307,7 +307,7 @@
   const TAB_HINTS = {
     squad: 'Нажмите на позицию на поле и выберите игрока. «Автосостав» поставит сильнейших. ОСН — в старте, ЗАП — на скамейке.',
     fixtures: 'Все матчи сезона. Нажмите на сыгранный матч, чтобы открыть отчёт.',
-    tables: 'Таблицы лиг, Кубок России, стыки и еврокубки.',
+    tables: 'Таблицы лиг, плей-офф и Кубок России.',
     stats: 'Статистика ваших игроков с сортировкой и лидеры всех лиг.',
     transfers: 'Найдите игрока и нажмите на него, чтобы начать переговоры. Суммы вводятся в миллионах €.',
     finance: 'Деньги клуба, зарплаты и все поступления и расходы.',
@@ -774,7 +774,7 @@
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num" title="Победы в серии 6-метровых">ВП</th><th class="num" title="Поражения в серии 6-метровых">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', L.tier === 1 ? '1/4 финала плей-офф' : 'плей-офф'], ['po', 'стыковой турнир за 1/4 финала'], ['down', 'вылет (меняется с победителем Высшей лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', L.tier === 1 ? '1/4 финала плей-офф' : L.tier === 2 ? 'плей-офф' : 'выход в Высшую лигу'], ['po', 'стыковой турнир за 1/4 финала'], ['down', L.tier === 1 ? 'вылет (меняется с победителем Высшей лиги)' : 'вылет (меняется с победителем зоны Первой лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
@@ -855,7 +855,7 @@
     const cols = [['apps', 'Матчи', 'И'], ['mins', 'Минуты', 'Мин'], ['g', 'Голы', 'Г'], ['a', 'Ассисты', 'П'], ['ga', 'Гол+пас', 'Г+П'], ['r', 'Средняя оценка', 'Оц'], ['cs', 'Сухие матчи', 'Сух'], ['yc', 'Жёлтые', 'ЖК'], ['rc', 'Красные', 'КК']];
     const hideM = new Set(['mins', 'ga', 'yc', 'rc']);
     main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}
-        <div class="seg">${[['all', 'Все турниры'], ['league', 'Чемпионат'], ['cups', 'Кубки и еврокубки']].map(([k, n]) => `<button data-sc="${k}" class="${k === scope ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <div class="seg">${[['all', 'Все турниры'], ['league', 'Чемпионат'], ['cups', 'Кубок России']].map(([k, n]) => `<button data-sc="${k}" class="${k === scope ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="small muted">Голов: <b>${tot.g}</b> · передач: <b>${tot.a}</b> · нажмите на заголовок столбца, чтобы отсортировать</span></div>
       <div class="sortbar">${cols.filter(([k]) => ['apps', 'g', 'a', 'r', 'cs'].includes(k)).map(([k, n]) => `<button data-ts="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="card tight"><div class="tbl-wrap"><table class="ts"><tr><th>#</th><th>Поз</th><th>Игрок</th>${cols.map(([k, n, sh]) => `<th class="num sort ${k === key ? 'on' : ''} ${hideM.has(k) ? 'hide-m' : ''}" data-ts="${k}" title="${n}">${sh}${k === key ? ' ▾' : ''}</th>`).join('')}</tr>

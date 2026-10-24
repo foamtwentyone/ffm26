@@ -237,4 +237,4 @@ FM.EURO = [];
 
 // Репутация по стоимости состава (тыс. €): 3 млн ≈ 72, 30 млн ≈ 92.
 FM.repFromValue = (sv) => Math.round(FM.clamp(72 + 20 * Math.log10(Math.max(sv, 1) / 3000), 35, 99));
-FM.wageFor = (value, tier) => Math.max([0, 0.5, 0.15][tier] || 0.15, value * 0.006);
+FM.wageFor = (value, tier) => Math.max([0, 0.5, 0.15, 0.05][tier] || 0.05, value * 0.006);

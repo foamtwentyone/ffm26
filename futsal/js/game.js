@@ -39,6 +39,18 @@
       return p;
     }
 
+    // Академии: { клуб: [{ name, pos, born, ovr, pot, year }] }, year — сезон, в котором записан рейтинг
+    static parseAcademy(src, season) {
+      const out = {};
+      for (const club in src) {
+        out[club] = src[club].split('\n').map((x) => x.trim()).filter(Boolean).map((line) => {
+          const [name, pos, age, ovr, pot] = line.split('|');
+          return { name, pos, born: season - +age, ovr: +ovr, pot: +pot, year: season };
+        });
+      }
+      return out;
+    }
+
     // Компактная копия состояния для сохранения: у ~18 тыс. игроков опускаются нули и значения по умолчанию.
     packState() {
       const s = this.s;
@@ -70,6 +82,7 @@
       };
       const g = new Game(s);
       g.buildWorld(db || FM.leagues);
+      s.academy = Game.parseAcademy(FM.ACADEMY || {}, s.season);
       g.newSeason(true);
       const t = g.teams[teamId];
       g.msg('Добро пожаловать!', `Совет директоров клуба «${t.name}» утвердил вас главным тренером. Задача на сезон: ${g.expectText()}. Трансферное окно открыто до 7 сентября.`, 'board');
@@ -381,12 +394,16 @@
         for (let i = 1; i <= 6; i++) z[i] = 'up';
         for (let i = 7; i <= 10 && i <= n; i++) z[i] = 'po';
         if (this.lowerLeagues().length) z[n] = 'down';
-      } else for (let i = 1; i <= 8 && i <= n; i++) z[i] = 'up';
+      } else if (L.tier === 2) {
+        for (let i = 1; i <= 8 && i <= n; i++) z[i] = 'up';
+        if (this.thirdLeagues().some((id) => this.s.leagues[id].conf === L.conf)) z[n] = 'down';
+      } else z[1] = 'up';
       return z;
     }
 
     topLeague() { return this.s.order.find((id) => this.s.leagues[id].tier === 1); }
     lowerLeagues() { return this.s.order.filter((id) => this.s.leagues[id].tier === 2); }
+    thirdLeagues() { return this.s.order.filter((id) => this.s.leagues[id].tier === 3); }
 
     setExpectation() {
       const t = this.userTeam();
@@ -400,6 +417,11 @@
       const t = this.userTeam();
       const L = this.s.leagues[t.league];
       const n = L.teams.length;
+      if (L.tier === 3) {
+        if (e <= 2) return 'победа в зоне и выход в Высшую лигу';
+        if (e <= 5) return 'место в верхней половине таблицы';
+        return 'достойно провести сезон';
+      }
       if (L.tier > 1) {
         if (e <= 2) return 'победа в Высшей лиге и выход в Суперлигу';
         if (e <= 4) return 'выход в 1/4 финала плей-офф';
@@ -884,6 +906,16 @@
       const down = tab[tab.length - 1].id;
       // вылетевший клуб попадает в конференцию, где стало на одну команду меньше
       moves.push([up, top], [down, this.teams[up].league]);
+      // Первая лига: победитель зоны меняется местами с последней командой конференции Высшей лиги той же стороны
+      for (const lid of this.thirdLeagues()) {
+        const L3 = s.leagues[lid];
+        const vl = low.find((id) => s.leagues[id].conf === L3.conf);
+        if (!vl || !this.leagueFinished(lid)) continue;
+        const winner = this.table(lid).find((r) => this.eligibleUp(r.id));
+        const vt = this.table(vl);
+        const last = vt.slice().reverse().find((r) => r.id !== up && !moves.some(([id]) => id === r.id));
+        if (winner && last) moves.push([winner.id, vl], [last.id, lid]);
+      }
       return moves;
     }
 
@@ -1035,14 +1067,23 @@
           }
         }
       }
-      // воспитанники
+      // воспитанники: сначала реальные игроки из академии клуба (ЮФЛ), старшие первыми; когда академия пуста — сгенерированные
       for (const tid in this.teams) {
         const t = this.teams[tid];
         const n = FM.ri(1, 3);
         const base = this.teamBaseOvr(t) - 12;
+        const pool = s.academy && s.academy[tid];
         for (let i = 0; i < n; i++) {
-          const p = this.genPlayer(FM.pick(FM.POS), base + FM.gauss(0, 4), FM.ri(16, 18), t);
-          p.pot = Math.min(92, p.ovr + FM.ri(10, 24));
+          let p;
+          if (pool && pool.length) {
+            pool.sort((a, b) => a.born - b.born || b.pot - a.pot);
+            const a = pool.shift();
+            // за каждый год в академии воспитанник прибавляет около 3 единиц рейтинга
+            p = this.createPlayer({ name: a.name, pos: a.pos, age: y + 1 - a.born, ovr: Math.min(a.pot, a.ovr + 3 * (y + 1 - a.year)), pot: a.pot, nat: 'RUS' }, t);
+          } else {
+            p = this.genPlayer(FM.pick(FM.POS), base + FM.gauss(0, 4), FM.ri(16, 18), t);
+            p.pot = Math.min(92, p.ovr + FM.ri(10, 24));
+          }
           p.contract = y + 1 + FM.ri(2, 3);
           this.revalue(p);
           if (tid === s.user) this.msg('Воспитанник академии', `В основную команду переведён ${p.name} (${p.age}, ${FM.POS_NAME[p.pos].toLowerCase()}), потенциал ${this.potLabel(p)}.`, 'squad');
@@ -1343,7 +1384,7 @@
       }
       if (m.comp === 'cup') {
         for (const id of [m.h, m.a]) {
-          const bonus = [0, 15, 6][this.tierOf(this.teams[id])] || 3;
+          const bonus = [0, 15, 6, 2][this.tierOf(this.teams[id])] || 2;
           this.teams[id].money += bonus;
         }
       }

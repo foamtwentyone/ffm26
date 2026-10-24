@@ -1,6 +1,6 @@
 # Эмблемы клубов: скачивает картинки из заявок РФС (st.joinsport.io, ссылки собирает scrape.py)
 # и упаковывает их в js/data/logos.js — WebP 96px в base64, чтобы страница грузилась одним файлом.
-# Запуск после scrape.py: python3 tools/logos.py
+# Запуск после scrape.py и build.py: python3 tools/logos.py
 import base64, io, json, os, re, subprocess, sys, time
 from PIL import Image
 
@@ -11,7 +11,7 @@ os.makedirs(CACHE + '/logos', exist_ok=True)
 
 # id клубов в игре — из файлов лиг: название → id
 ids = {}
-for f in ('sl', 'vlw', 'vle'):
+for f in ('sl', 'vlw', 'vle', 'plw', 'ple'):
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
         ids[m.group(2)] = m.group(1)
 
@@ -19,6 +19,7 @@ teams = json.load(open(CACHE + '/teams.json', encoding='utf8'))
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']), t.get('logo')
+    if t['league'] in ('u19', 'u17') or tid in img: continue  # молодёжные команды и повторы из заявок Кубка
     if not tid or not url:
         print('нет эмблемы:', t['name'], file=sys.stderr)
         continue
@@ -56,4 +57,4 @@ with open(OUT, 'w', encoding='utf8') as f:
     f.write('// Эмблемы клубов (WebP, 96px) — из заявок на сайтах РФС (st.joinsport.io). Собирается tools/logos.py.\n')
     f.write('FM.LOGO_IMG = ' + json.dumps(img, ensure_ascii=False, sort_keys=True) + ';\n')
     f.write('FM.LOGOS = new Set(Object.keys(FM.LOGO_IMG));\n')
-print('эмблем:', len(img), 'из', len(teams), file=sys.stderr)
+print('эмблем:', len(img), 'из', len(ids), file=sys.stderr)
