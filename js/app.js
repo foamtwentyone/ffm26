@@ -23,6 +23,50 @@
     const ratio = (Math.max(bg, fg) + 0.05) / (Math.min(bg, fg) + 0.05);
     return ratio >= 2.5 ? t.colors[1] : bg > 0.35 ? '#111111' : '#ffffff';
   };
+  const SVG = {
+    home: '<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    ball: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5l4 2.9-1.5 4.7h-5L8 10.4z"/><path d="M12 3v4.5M16 10.4l4.4-1.6M14.5 15.1l2.7 3.8M9.5 15.1l-2.7 3.8M8 10.4L3.6 8.8"/>',
+    shirt: '<path d="M8 3l4 2 4-2 5 4-3 4-2-1v11H8V10l-2 1-3-4z"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    trophy: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"/>',
+    cup: '<path d="M7 3h10v6a5 5 0 0 1-10 0zM12 14v4M8 21h8M9 18h6"/>',
+    chart: '<path d="M4 20V11M10 20V5M16 20v-6M2 20h20"/>',
+    swap: '<path d="M7 7h13l-4-4M17 17H4l4 4"/>',
+    in: '<path d="M14 5l-7 7 7 7M7 12h14"/>',
+    out: '<path d="M10 5l7 7-7 7M17 12H3"/>',
+    coin: '<circle cx="12" cy="12" r="9"/><path d="M15 8.5a4 4 0 1 0 0 7M7.5 10.5H14M7.5 13.5H14"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+    news: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+    star: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+    assist: '<path d="M5 19L19 5M10 5h9v9"/>',
+    medal: '<circle cx="12" cy="15" r="5"/><path d="M8 3l4 7 4-7"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
+  };
+  const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SVG[n] || ''}</svg>`;
+
+  // Цвет клуба, который читается на тёмном фоне: насыщенный из двух цветов клуба, при необходимости осветлённый.
+  const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const rgbHex = (c) => '#' + c.map((v) => Math.round(FM.clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+  const satOf = (h) => { const c = hexRgb(h); return (Math.max(...c) - Math.min(...c)) / 255; };
+  const mixHex = (h, to, k) => { const a = hexRgb(h), b = hexRgb(to); return rgbHex(a.map((v, i) => v + (b[i] - v) * k)); };
+  function glow(t) {
+    const cands = t.colors.filter((c) => /^#[0-9a-f]{6}$/i.test(c) && satOf(c) > 0.22).sort((a, b) => satOf(b) - satOf(a));
+    let c = cands[0];
+    if (!c) return '#8fa3d9';
+    for (let i = 0; i < 6 && lum(c) < 0.14; i++) c = mixHex(c, '#ffffff', 0.22);
+    return c;
+  }
+  function setAccent(t) {
+    const root = document.documentElement.style;
+    const a = t ? glow(t) : '#4da3ff';
+    root.setProperty('--accent', a);
+    root.setProperty('--accent2', mixHex(a, '#000000', 0.3));
+    root.setProperty('--accent-ink', lum(a) > 0.45 ? '#0a0f2c' : '#ffffff');
+  }
+
   function badge(t, cls = '') {
     if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
     if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="img/logos/${t.id}.png" alt="${esc(t.name)}"></span>`;
@@ -170,6 +214,7 @@
   const repOf = (t) => t.rep ?? FM.repFromValue((t.players || '').split('\n').reduce((a, l) => a + (+l.split('|')[3] || 0), 0));
 
   function startScreen() {
+    setAccent(null);
     const db = customDb() || FM.leagues;
     let lid = db[0].id;
     let metas = {};
@@ -193,7 +238,7 @@
         <h2>Выберите клуб</h2>
         <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
         <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
-          <button class="tp" data-pick="${t.id}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
+          <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
       </main>`;
       app.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; draw(); });
@@ -222,7 +267,7 @@
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
     ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['menu', 'Сохранения и база'],
   ];
-  const TAB_ICONS = { home: '⌂', squad: '⚽', fixtures: '▦', tables: '☰', stats: '★', transfers: '⇄', finance: '€', club: '♛', inbox: '✉', menu: '⚙' };
+  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', menu: 'gear' };
 
   function seasonLabel(s) {
     return `${s.season}/${String(s.season + 1).slice(2)}`;
@@ -246,6 +291,7 @@
   function render() {
     if (!UI.g) return startScreen();
     const G = g(), s = G.s, u = G.userTeam();
+    setAccent(u);
     const unread = s.inbox.filter((m) => !m.read).length;
     const injured = G.squad(u).filter((p) => p.inj).length;
     const title = (TABS.find((t) => t[0] === UI.tab) || ['', ''])[1];
@@ -257,7 +303,7 @@
         <button class="next-btn" id="go">Далее <span>▶</span></button>
       </div></header>
       <div class="strip"><div class="strip-in">
-        <button class="chip" data-tab="club" title="Клуб и руководство">♛</button>
+        <button class="chip" data-tab="club" title="Клуб и руководство">${icon('shield')}</button>
         <div class="when">Сезон ${seasonLabel(s)} · Неделя ${weekNo(s)}<span class="hide-m"> · ${FM.fmtDateWd(s.date)}</span></div>
         <div class="chips">
           <button class="chip" data-tab="squad" title="Травмированные игроки"><b class="cross">✚</b>${injured}</button>
@@ -269,7 +315,7 @@
       <main id="main"></main>
       <div class="drawer hidden" id="drawer"><nav>
         <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div></div>
-        ${TABS.map(([id, n]) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="di">${TAB_ICONS[id]}</span>${esc(n)}${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
+        ${TABS.map(([id, n]) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="di">${icon(TAB_ICONS[id])}</span>${esc(n)}${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
       </nav></div>`;
     const drawer = app.querySelector('#drawer');
     app.querySelector('#burger').onclick = () => drawer.classList.remove('hidden');
@@ -335,9 +381,14 @@
   const starsOf = (r) => FM.clamp(Math.round(((r.def + r.mid + r.att) / 3 - 47) / 6.5 * 2) / 2, 0.5, 5);
   const stars = (v) => `<span class="stars" style="--v:${v}" title="${v} из 5">★★★★★</span>`;
   const formDots = (f) => `<span class="fdots">${f.slice(-5).map((x) => `<i class="${x}">${{ W: 'В', D: 'Н', L: 'П' }[x]}</i>`).join('') || '<span class="muted small">нет матчей</span>'}</span>`;
-  const lines = (r) => `<div class="lines"><span>ЗАЩ: <b>${r.def}</b></span><span>ПЗЩ: <b>${r.mid}</b></span><span>НАП: <b>${r.att}</b></span></div>`;
-  const tile = (title, target, body, cls = '') => `<section class="tile ${cls}" data-go="${target}"><header><span class="tt">${title}</span><span class="chev">»</span></header><div class="tb">${body}</div></section>`;
+  const lines = (r) => `<div class="lines"><span>ЗАЩ<b>${r.def}</b></span><span>ПЗЩ<b>${r.mid}</b></span><span>НАП<b>${r.att}</b></span></div>`;
+  const tile = (title, target, body, cls = '', ic = '') => `<section class="tile ${cls}" data-go="${target}"><header>${ic ? `<span class="hic">${icon(ic)}</span>` : ''}<span class="tt">${title}</span><span class="chev">›</span></header><div class="tb">${body}</div></section>`;
   const shortDate = (d) => { const x = FM.parseDate(d); return `${x.getUTCDate()}.${String(x.getUTCMonth() + 1).padStart(2, '0')}`; };
+  const ring = (v, label, cls = '') => `<div class="ring ${cls}" style="--v:${v};--c:${v < 45 ? 'var(--bad)' : v < 75 ? 'var(--warn)' : 'var(--good)'}"><b>${label}</b></div>`;
+  const cmpRow = (label, a, b) => {
+    const w = (v) => FM.clamp((v - 40) * 2.2, 6, 100);
+    return `<div class="cmp-row"><b>${a}</b><div class="cmp-bar l"><i style="width:${w(a)}%"></i></div><span>${label}</span><div class="cmp-bar r"><i style="width:${w(b)}%"></i></div><b>${b}</b></div>`;
+  };
 
   function viewHome(main) {
     const G = g(), s = G.s, u = G.userTeam();
@@ -361,55 +412,55 @@
     const lastMsg = s.inbox[0];
     const unread = s.inbox.filter((m) => !m.read).length;
     const trophies = s.history.filter((x) => x.cup).length + s.history.filter((x) => x.pos === 1).length;
-    const recently = sq.filter((p) => p.age <= 23).sort((a, b) => (b.pot - b.ovr) - (a.pot - a.ovr)).slice(0, 2);
+    const young = sq.filter((p) => p.age <= 23).sort((a, b) => (b.pot - b.ovr) - (a.pot - a.ovr)).slice(0, 3);
 
-    let next = '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>';
+    let hero = tile('Следующий матч', 'fixtures', '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>', 'w2', 'ball');
     if (nm) {
-      const home = nm.h === u.id;
-      const opp = T(home ? nm.a : nm.h);
-      const r = lineRatings(opp);
-      next = `<div class="nm"><div class="nm-l">
-          <div class="muted">${esc(T(nm.h).stadium)} · ${FM.fmtDateWd(nm.date)}</div>
-          <div class="nm-opp"><span data-team="${opp.id}">${esc(opp.name)}</span> <span class="muted">(${home ? 'Д' : 'Г'})</span></div>
-          <div class="small muted">${esc(compName(nm.comp))}${nm.comp !== 'cup' && nm.comp !== 'po' ? `, ${nm.round}-й тур` : ''}</div>
-          ${lines(r)}
-          <div class="row">${stars(starsOf(r))}${formDots(opp.form)}</div></div>
-        <div class="nm-crest">${badge(opp, 'xl')}</div></div>`;
+      const h = T(nm.h), a = T(nm.a);
+      const rh = lineRatings(h), ra = lineRatings(a);
+      const side = (t) => `<div class="hm-team">${badge(t, 'xl')}<b data-team="${t.id}">${esc(t.name)}</b>
+        <span class="small">${esc(s.leagues[t.league].short)} · ${G.positionOf(t.id)}-е место</span>${formDots(t.form)}</div>`;
+      hero = `<section class="tile w2 hero-match" data-go="fixtures" style="--hcb:${glow(h)};--acb:${glow(a)}">
+        <header><span class="hic">${icon('ball')}</span><span class="tt">Следующий матч</span><span class="chev">›</span></header>
+        <div class="tb">
+          <div class="hm">${side(h)}
+            <div class="hm-mid"><span class="hm-date">${FM.fmtDateWd(nm.date)}</span><span class="hm-vs">VS</span>
+              <span class="hm-tag">${esc(compName(nm.comp))}${nm.comp !== 'cup' && nm.comp !== 'po' ? ` · ${nm.round}-й тур` : ''}</span>
+              <span class="hm-tag">${esc(h.stadium)}</span></div>
+            ${side(a)}</div>
+          <div class="cmp">${cmpRow('ЗАЩ', rh.def, ra.def)}${cmpRow('ПЗЩ', rh.mid, ra.mid)}${cmpRow('НАП', rh.att, ra.att)}</div>
+          <div class="hm-foot">${stars(starsOf(rh))}<span class="muted small">сила по стартовым составам</span>${stars(starsOf(ra))}</div>
+        </div></section>`;
     }
 
     main.innerHTML = `<div class="dash">
-      ${tile('Следующий матч', 'fixtures', next, 'w2')}
-      ${tile('Управление командой', 'squad', `
-        <div class="fitbar"><i style="width:${fit}%" class="${fit < 75 ? 'bad' : fit < 88 ? 'warn' : ''}"></i></div>
-        <div class="muted">${u.formation} · Готовность: ${fit}%</div>
-        ${lines(myR)}
-        <div class="row">${stars(starsOf(myR))}${formDots(u.form)}</div>`, 'w2')}
-      ${tile('Руководство', 'club', `
-        <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
-        <div class="kvl"><span>Доверие</span><b class="${conf < 25 ? 'bad' : conf < 45 ? 'warn' : 'good'}">${conf}%</b></div>
-        <div class="fitbar thin"><i style="width:${conf}%" class="${conf < 25 ? 'bad' : conf < 45 ? 'warn' : ''}"></i></div>`)}
+      ${hero}
+      ${tile('Управление командой', 'squad', `<div class="tm-row">${ring(fit, fit + '%')}
+        <div><div class="muted small">Схема ${u.formation} · готовность состава</div>${lines(myR)}<div class="row">${stars(starsOf(myR))}${formDots(u.form)}</div></div></div>`, 'w2', 'shirt')}
+      ${tile('Руководство', 'club', `<div class="tm-row">${ring(conf, conf + '%', 'sm')}
+        <div><span class="muted small">Задача на сезон</span><b>${esc(G.expectText())}</b></div></div>`, '', 'shield')}
       ${tile('Расписание', 'fixtures', upcoming.map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'д' : 'в'}</span><span class="muted ell comp">${m.comp === 'cup' ? 'Кубок' : m.comp === 'po' ? 'Стыки' : esc(s.leagues[m.comp].short)}</span></div>`;
-      }).join('') || '<div class="muted">Сезон завершён</div>', 'w2')}
-      ${tile(esc(L.short), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''))}
+        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${m.comp === 'cup' ? 'Кубок' : m.comp === 'po' ? 'Стыки' : esc(s.leagues[m.comp].short)}</span></div>`;
+      }).join('') || '<div class="muted">Сезон завершён</div>', 'w2', 'calendar')}
+      ${tile(esc(L.short), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       <div class="stack">
-        ${tile('Трансферы', 'transfers:search', `<div class="tr-in">Приходы <span class="arr in">⇦</span></div>${arrivals.map((x) => `<div class="small ell">${esc(x.name)}</div>`).join('')}`, 'short')}
-        ${tile('Трансферы', 'transfers:mine', `<div class="tr-out">Уходы <span class="arr out">⇨</span></div>${departures.map((x) => `<div class="small ell">${esc(x.name)}</div>`).join('')}`, 'short')}
+        ${tile('Приходы', 'transfers:search', `<div class="tr-in"><span class="arr in">${icon('in')}</span>${arrivals.length || 'Нет'}</div>${arrivals.map((x) => `<div class="small ell muted">${esc(x.name)}</div>`).join('')}`, 'short')}
+        ${tile('Уходы', 'transfers:mine', `<div class="tr-out"><span class="arr out">${icon('out')}</span>${departures.length || 'Нет'}</div>${departures.map((x) => `<div class="small ell muted">${esc(x.name)}</div>`).join('')}`, 'short')}
       </div>
-      ${tile('Свежие новости', 'inbox', s.news.slice(0, 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>')}
+      ${tile('Свежие новости', 'inbox', s.news.slice(0, 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>', '', 'news')}
       ${tile('Статистика игроков', 'stats', `
-        ${topSc ? `<div class="leader"><span class="li">⚽</span><div class="grow"><b data-player="${topSc.id}">${esc(topSc.name)}</b><div class="small muted">Лучший бомбардир</div></div><b class="big">${topSc.st.g}</b></div>` : ''}
-        ${topAs ? `<div class="leader"><span class="li">👟</span><div class="grow"><b data-player="${topAs.id}">${esc(topAs.name)}</b><div class="small muted">Лучший ассистент</div></div><b class="big">${topAs.st.a}</b></div>` : ''}
-        ${topRt ? `<div class="leader"><span class="li">🏅</span><div class="grow"><b data-player="${topRt.id}">${esc(topRt.name)}</b><div class="small muted">Высший средний рейтинг</div></div><b class="big">${(topRt.st.rsum / topRt.st.apps).toFixed(1)}</b></div>` : ''}
-        ${!topSc && !topAs && !topRt ? '<div class="muted">Сезон ещё не начался</div>' : ''}`)}
-      ${tile('Кубок России', 'tables:cup', !G.isRussian(u) ? '<div class="muted">Разыгрывается между российскими клубами</div>' : c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:6px">${inCup ? '<b class="good">Команда в борьбе</b>' : '<b class="bad">Команда выбыла</b>'}</div>`) : '')}
-      ${tile('Финансы', 'finance', `<div class="kvl"><span>Баланс</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
-        <div class="kvl"><span>Зарплаты в неделю</span><b>${FM.money(G.wageBill(u))}</b></div><div class="kvl"><span>Спонсоры в неделю</span><b>${FM.money(u.sponsor)}</b></div>`)}
-      ${tile('Молодёжь', 'squad', recently.map((p) => `<div class="kvl"><span data-player="${p.id}">${esc(p.name)} (${p.age})</span><b class="good">${p.ovr}</b></div>`).join('') || '<div class="muted">Молодых игроков нет</div>')}
-      ${tile('Почта', 'inbox', lastMsg ? `<div class="kvl"><span>Непрочитанных</span><b>${unread}</b></div><div class="news ell2">${esc(lastMsg.title)}</div>` : '<div class="muted">Писем нет</div>')}
-      ${tile('Лиги', 'tables', s.order.map((id) => `<div class="mini"><span class="grow">${esc(s.leagues[id].name)}</span><span class="muted small">лидер: ${esc(T(G.table(id)[0].id).name)}</span></div>`).join(''))}
-      ${tile('Статистика тренера', 'club', `<div class="kvl"><span>Сезонов</span><b>${s.history.length + 1}</b></div><div class="kvl"><span>Трофеев</span><b>${trophies}</b></div><div class="kvl"><span>Трансферное окно</span><b class="small">${G.windowText()}</b></div>`)}
+        ${topSc ? `<div class="leader"><span class="li">${icon('ball')}</span><div class="grow"><b data-player="${topSc.id}">${esc(topSc.name)}</b><div class="small muted">Лучший бомбардир</div></div><b class="big">${topSc.st.g}</b></div>` : ''}
+        ${topAs ? `<div class="leader"><span class="li">${icon('assist')}</span><div class="grow"><b data-player="${topAs.id}">${esc(topAs.name)}</b><div class="small muted">Лучший ассистент</div></div><b class="big">${topAs.st.a}</b></div>` : ''}
+        ${topRt ? `<div class="leader"><span class="li">${icon('medal')}</span><div class="grow"><b data-player="${topRt.id}">${esc(topRt.name)}</b><div class="small muted">Высший средний рейтинг</div></div><b class="big">${(topRt.st.rsum / topRt.st.apps).toFixed(1)}</b></div>` : ''}
+        ${!topSc && !topAs && !topRt ? '<div class="muted">Сезон ещё не начался</div>' : ''}`, '', 'chart')}
+      ${tile('Кубок России', 'tables:cup', !G.isRussian(u) ? '<div class="muted">Разыгрывается между российскими клубами</div>' : c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:8px">${inCup ? '<span class="tag" style="color:var(--good)">Команда в борьбе</span>' : '<span class="tag" style="color:var(--bad)">Команда выбыла</span>'}</div>`) : '', '', 'cup')}
+      ${tile('Финансы', 'finance', `<div class="kvl"><span>Баланс</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>
+        <div class="kvl"><span>Зарплаты / нед</span><b>${FM.money(G.wageBill(u))}</b></div><div class="kvl"><span>Спонсоры / нед</span><b>${FM.money(u.sponsor)}</b></div>`, '', 'coin')}
+      ${tile('Молодёжь', 'squad', young.map((p) => `<div class="kvl"><span data-player="${p.id}">${esc(p.name)} <span class="muted">${p.age}</span></span>${ovr(p.ovr)}</div>`).join('') || '<div class="muted">Молодых игроков нет</div>', '', 'star')}
+      ${tile('Почта', 'inbox', lastMsg ? `<div class="kvl"><span>Непрочитанных</span><b>${unread}</b></div><div class="news ell2">${esc(lastMsg.title)}</div>` : '<div class="muted">Писем нет</div>', '', 'mail')}
+      ${tile('Лиги', 'tables', s.order.map((id) => { const lead = T(G.table(id)[0].id); return `<div class="mini"><span class="grow ell">${esc(s.leagues[id].short)}</span>${badge(lead, 'sm')}<span class="muted small ell">${esc(lead.name)}</span></div>`; }).join(''), '', 'globe')}
+      ${tile('Тренер', 'club', `<div class="kvl"><span>Сезонов</span><b>${s.history.length + 1}</b></div><div class="kvl"><span>Трофеев</span><b>${trophies}</b></div><div class="kvl"><span>Трансферное окно</span><b class="small">${G.windowText()}</b></div>`, '', 'user')}
     </div>`;
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));
   }
@@ -859,6 +910,8 @@
     const sim = G.createMatch(m, true);
     const root = document.createElement('div');
     root.className = 'match';
+    root.style.setProperty('--hcb', glow(m.h ? T(m.h) : sim.home.team));
+    root.style.setProperty('--acb', glow(m.a ? T(m.a) : sim.away.team));
     document.body.appendChild(root);
     let speed = 1, timer = null, tab = 'feed', subSel = null;
     const delays = { 1: 650, 2: 280, 4: 90 };
@@ -879,6 +932,7 @@
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
       $('#mn').textContent = sim.done ? (sim.pens ? `пен. ${sim.pens.h}:${sim.pens.a}` : 'Конец') : `${sim.minuteLabel()}'`;
+      $('#mn').classList.toggle('live', !sim.done);
       const total = sim.phase === 'et' ? 120 : 90;
       const cur = sim.phase === 'first' ? Math.min(sim.minute, 45) : Math.min(sim.minute, total);
       $('#pg').style.width = `${sim.done ? 100 : (cur / total) * 100}%`;
