@@ -125,14 +125,21 @@
     setTimeout(() => el.remove(), ms);
   }
 
+  // Если окно уже открыто (переговоры, карточка игрока), меняется только содержимое — без закрытия,
+  // повторной анимации и сброса прокрутки.
   function modal(html, cls = '') {
-    closeModal();
-    const bg = document.createElement('div');
-    bg.className = 'modal-bg';
-    bg.id = 'modal';
-    bg.innerHTML = `<div class="modal ${cls}"><button class="x" data-close>×</button>${html}</div>`;
-    bg.addEventListener('click', (e) => { if (e.target === bg || e.target.hasAttribute('data-close')) closeModal(); });
-    document.body.appendChild(bg);
+    let bg = document.getElementById('modal');
+    const reuse = !!bg;
+    if (!bg) {
+      bg = document.createElement('div');
+      bg.className = 'modal-bg';
+      bg.id = 'modal';
+      bg.addEventListener('click', (e) => { if (e.target === bg || e.target.hasAttribute('data-close')) closeModal(); });
+      document.body.appendChild(bg);
+    }
+    const top = bg.scrollTop;
+    bg.innerHTML = `<div class="modal ${cls} ${reuse ? 'still' : ''}"><button class="x" data-close>×</button>${html}</div>`;
+    if (reuse) bg.scrollTop = top;
     bindCommon(bg);
     return bg.querySelector('.modal');
   }
@@ -339,6 +346,11 @@
     const unread = s.inbox.filter((m) => !m.read).length;
     const injured = G.squad(u).filter((p) => p.inj).length;
     const title = (TABS.find((t) => t[0] === UI.tab) || ['', ''])[1];
+    // тот же раздел — перерисовываем без анимации появления и с прежней прокруткой
+    const same = UI.lastTab === UI.tab;
+    UI.lastTab = UI.tab;
+    const scrollY = window.scrollY;
+    app.classList.toggle('calm', same);
     app.innerHTML = `
       <header class="hdr"><div class="hdr-in">
         <button class="burger" id="burger" aria-label="Разделы"><i></i><i></i><i></i></button>
@@ -370,6 +382,7 @@
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
     ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, menu: viewMenu })[UI.tab](main);
+    if (same) window.scrollTo(0, scrollY);
     bindCommon(main);
     bindCommon(app.querySelector('.hdr'));
   }
