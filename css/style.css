@@ -649,3 +649,5 @@ table.ts td.hl { font-weight: 800; color: #fff; background: color-mix(in srgb, v
   .rv-main h2 { font-size: 22px; } .rv-pos { font-size: 38px; }
 }
 .rv-stats em { display: block; font-style: normal; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.red-line { color: #ff9aa5; margin-top: 2px; }
+.rc-card { display: inline-block; width: 9px; height: 12px; border-radius: 2px; background: var(--bad); margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 6px rgba(255,92,108,.6); }

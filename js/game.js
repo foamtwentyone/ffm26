@@ -1034,6 +1034,7 @@
       m.ag = sim.away.goals;
       if (sim.pens) m.pens = [sim.pens.h, sim.pens.a];
       m.goals = sim.goalsList;
+      m.reds = sim.events.filter((e) => e.type === 'red').map((e) => ({ pid: e.pid, side: e.side, min: e.min }));
       m.stats = ['shots', 'sot', 'corners', 'yc', 'rc', 'poss'].reduce((o, k) => { o[k] = [sim.home.stats[k], sim.away.stats[k]]; return o; }, {});
       m.stats.xg = [Math.round(sim.home.stats.xg * 100) / 100, Math.round(sim.away.stats.xg * 100) / 100];
       const isLeague = !!s.leagues[m.comp];

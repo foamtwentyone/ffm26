@@ -295,14 +295,15 @@
         s.stats.yc++;
         s.rating[p.id] -= 0.3;
         if (s.yellows[p.id] === 2) {
-          this.log('red', `Вторая жёлтая — ${p.name} удалён с поля!`, s, { pid: p.id, second: true });
+          s.stats.rc++;
+          this.log('red', `Вторая жёлтая — ${p.name} («${s.team.name}») удалён с поля!`, s, { pid: p.id, second: true });
           this.sendOff(s, p);
         } else {
           this.log('yellow', `Жёлтая карточка: ${p.name} (${s.team.name}).`, s, { pid: p.id });
         }
       } else {
         s.stats.rc++;
-        this.log('red', `Прямая красная! ${p.name} оставляет команду в меньшинстве.`, s, { pid: p.id });
+        this.log('red', `Прямая красная! ${p.name} («${s.team.name}») удалён — команда в меньшинстве.`, s, { pid: p.id });
         this.sendOff(s, p);
       }
     }

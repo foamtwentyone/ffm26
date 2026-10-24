@@ -96,6 +96,8 @@
     return `<label>${label}, ${unit} €<input id="${id}" data-unit="${unit}" type="number" min="0" step="${m ? 0.05 : 5}" value="${v}" ${attrs}></label>`;
   };
   const readMoney = (el) => Math.round((+el.value || 0) * (el.dataset.unit === 'млн' ? 1000 : 1));
+  // удаления под голами своей команды: «🟥 Иванов 67'»
+  const redLines = (reds, side) => (reds || []).filter((r) => r.side === side).map((r) => `<div class="red-line"><i class="rc-card"></i>${g().players[r.pid] ? esc(g().players[r.pid].name) : '?'} ${r.min}'</div>`).join('');
   // голы одного игрока — в одну строку: «Круговой 28', 90+2'»
   const scorerLines = (list, nameOf) => {
     const by = new Map();
@@ -1176,7 +1178,7 @@
     const m = s.matches[mid];
     if (!m || !m.played) return;
     const h = T(m.h), a = T(m.a);
-    const goals = (side) => scorerLines((m.goals || []).filter((x) => x.side === side), (id) => (G.players[id] ? esc(G.players[id].name) : '?')).join('<br>');
+    const goals = (side) => scorerLines((m.goals || []).filter((x) => x.side === side), (id) => (G.players[id] ? esc(G.players[id].name) : '?')).join('<br>') + redLines(m.reds, side);
     const st = m.stats || {};
     const srow = (n, k) => st[k] ? statRow(n, st[k][0], st[k][1]) : '';
     const ratAll = Object.entries(m.ratings || {}).map(([pid, r]) => [G.players[pid], r]).filter(([p]) => p);
@@ -1186,7 +1188,7 @@
       <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers">${goals('a')}</div></div></div>
       <div style="margin-top:12px">${srow('Владение, %', 'poss')}${srow('Удары', 'shots')}${srow('В створ', 'sot')}${srow('xG', 'xg')}${srow('Угловые', 'corners')}${srow('Жёлтые', 'yc')}${srow('Красные', 'rc')}</div>
       ${m.mvp && G.players[m.mvp] ? `<div class="note">Лучший игрок матча: <b>${pname(G.players[m.mvp])}</b> ${rt(m.ratings[m.mvp])}</div>` : ''}
-      ${ratAll.length ? `<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${[h, a].map((t) => `<div><h3>${esc(t.name)}</h3>${ratAll.filter(([p]) => p.club === t.id).sort((x, y) => y[1] - x[1]).map(([p, r]) => `<div class="row small">${pos(p.pos)} <span class="grow">${pname(p)}</span>${rt(r)}</div>`).join('')}</div>`).join('')}</div>` : ''}`);
+      ${ratAll.length ? `<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${[h, a].map((t) => `<div><h3>${esc(t.name)}</h3>${ratAll.filter(([p]) => p.club === t.id).sort((x, y) => y[1] - x[1]).map(([p, r]) => `<div class="row small">${pos(p.pos)} <span class="grow">${pname(p)}${(m.reds || []).some((x) => x.pid === p.id) ? ' <i class="rc-card" title="Удалён"></i>' : ''}</span>${rt(r)}</div>`).join('')}</div>`).join('')}</div>` : ''}`);
   }
 
   function statRow(n, a, b) {
@@ -1266,7 +1268,7 @@
       const total = sim.phase === 'et' ? 120 : 90;
       const cur = sim.phase === 'first' ? Math.min(sim.minute, 45) : Math.min(sim.minute, total);
       $('#pg').style.width = `${sim.done ? 100 : (cur / total) * 100}%`;
-      const gl = (sd) => scorerLines(sim.goalsList.filter((x) => x.side === sd), (id) => esc(G.players[id].name)).join('<br>');
+      const gl = (sd) => scorerLines(sim.goalsList.filter((x) => x.side === sd), (id) => esc(G.players[id].name)).join('<br>') + redLines(sim.events.filter((e) => e.type === 'red'), sd);
       $('#sh').innerHTML = gl('h');
       $('#sa').innerHTML = gl('a');
       const body = $('#body');
