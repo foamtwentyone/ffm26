@@ -115,12 +115,7 @@ FM.addLeague({
     { id: 'progress_kprf', name: 'Прогресс-КПРФ', city: '—', stadium: '—', cap: 300, colors: ['#d71920', '#ffffff'], rep: 36, money: 15, players: `
 Илья Собин|GK|28|0|RUS|46
 Даниил Шубин|GK|22|0|RUS|46
-Матвей Белов|DF|23|0|RUS|44
-Иван Вахрушев|UN|23|0|RUS|45
-Андрей Вилесов|UN|31|0|RUS|44
-Константин Ильин|UN|23|0|RUS|44
-Амир Хузятов|FW|23|0|RUS|42
-Всеволод Рудаков|FW|18|0|RUS|42` },
+Андрей Вилесов|UN|31|0|RUS|44` },
 
     { id: 'sber', name: 'СБЕР', city: '—', stadium: '—', cap: 300, colors: ['#21a038', '#ffffff'], rep: 37, money: 15, players: `
 Олег Герингер|GK|44|0|RUS|39

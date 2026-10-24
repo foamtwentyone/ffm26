@@ -141,8 +141,10 @@ for t in teams:
         g = num(p['stats'][0] if p['stats'] else '')
         main = t['league'] == 'sl' or t['name'] in ('Ухта',)
         cur = seen.get(key)
-        if cur is None or g > cur[0] or (g == cur[0] and main and not cur[2]):
-            seen[key] = (g, t['team_id'], main)
+        # заявки текущего сезона важнее прошлогодних (Кубок 2025/26)
+        old = t['league'] == 'cup25'
+        if cur is None or (cur[3] and not old) or (cur[3] == old and (g > cur[0] or (g == cur[0] and main and not cur[2]))):
+            seen[key] = (g, t['team_id'], main, old)
 
 leagues = {'sl': [], 'vlw': [], 'vle': [], **{z: [] for z in PL_ZONES}}
 for t in teams:
