@@ -1182,9 +1182,18 @@
     const row = G.table(t.league).find((r) => r.id === tid);
     modal(`<div class="row">${badge(t, 'lg')}<div class="grow"><h2 style="margin:0">${esc(t.name)}</h2><div class="muted">${esc(t.city)} · ${esc(t.stadium)} (${t.cap.toLocaleString('ru-RU')})</div>
       <div class="small">${esc(s.leagues[t.league].name)}: ${row.pos}-е место, ${row.pts} очк. ${form(row.form)}</div></div></div>
+      ${(() => { if (tid === s.user || t.reserveOf) return ''; const m = G.coachMarket().find((x) => x.id === tid); const [lt, lc] = LEVEL[m ? m.level : 0];
+        return `<div class="note job-note"><div class="row"><span class="grow">Интерес к вам как к тренеру: <span class="lvl ${lc}">${m && m.refused ? 'отказал в этом сезоне' : lt}</span>${m && m.vacancy ? ' · <span class="warn">ищут тренера</span>' : ''}</span>${m && m.level >= 1 && !m.refused ? `<button class="btn sm ${m.level >= 2 ? 'primary' : ''}" data-apply="${tid}">${m.level >= 2 ? 'Возглавить команду' : 'Подать заявку'}</button>` : ''}</div></div>`; })()}
       <div class="kv"><div><span>Стоимость состава</span><b>${FM.money(G.squadValue(t))}</b></div><div><span>Репутация</span><b>${t.rep}</b></div><div><span>Схема</span><b>${t.formation}</b></div><div><span>Игроков</span><b>${t.players.length}</b></div></div>
       <div class="tbl-wrap"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">И</th><th class="num">Г</th><th class="num">Цена</th></tr>
       ${sq.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}</table></div>`, 'wide');
+    const el = document.getElementById('modal');
+    el.querySelectorAll('[data-apply]').forEach((b) => b.onclick = () => {
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Точно уйти из клуба? Нажмите ещё раз'; b.classList.add('danger'); return; }
+      const r = G.applyJob(tid);
+      save();
+      if (r.ok) { closeModal(); UI.tab = 'home'; UI.tablesLid = G.userTeam().league; render(); toast(esc(r.text), 4000); } else { toast(esc(r.text), 4500); teamModal(tid); }
+    });
   }
 
   // ================== отчёт о матче ==================
@@ -1482,7 +1491,7 @@
     const titles = s.history.filter((h) => h.pos === 1 && s.leagues[h.league] && s.leagues[h.league].tier === 1).length;
     const cups = s.history.filter((h) => h.cup).length;
     const euros = s.history.reduce((a, h) => a + (h.euro ? h.euro.length : 0), 0);
-    main.innerHTML = `<div class="card coach-total"><h3>Всего за карьеру · ${esc(s.manager)}</h3><div class="coach-cols"><div>
+    main.innerHTML = `${coachMarketCard()}<div class="card coach-total"><h3>Всего за карьеру · ${esc(s.manager)}</h3><div class="coach-cols"><div>
         <div class="kvl"><span>Клубы</span><b>${clubs.map(esc).join(', ')}</b></div>
         <div class="kvl"><span>Сезонов</span><b>${seasons.length}</b></div>
         <div class="kvl"><span>Трофеи</span><b>${titles + cups + euros ? [titles ? `чемпионств: ${titles}` : '', cups ? `кубков: ${cups}` : '', euros ? `еврокубков: ${euros}` : ''].filter(Boolean).join(' · ') : 'пока нет'}</b></div></div><div>
@@ -1491,6 +1500,42 @@
         <div class="kvl"><span>Крупнейшее поражение</span><b>${res(bl)}</b></div>
         <div class="kvl"><span>Все матчи</span>${recLine(all)}</div></div></div></div>
       ${seasons.map(card).join('')}`;
+    bindCoachMarket(main);
+  }
+
+  // Рынок тренеров (как в FC): репутация, клубы и их интерес, переход по кнопке
+  const LEVEL = [['не рассматривает', 'lv0'], ['низкий интерес', 'lv1'], ['заинтересован', 'lv2'], ['очень заинтересован', 'lv3']];
+  function coachMarketCard() {
+    const G = g(), s = G.s, u = G.userTeam();
+    const cr = G.coachRep();
+    const all = G.coachMarket();
+    const countries = [...new Set(all.map((x) => G.countryOf(x.league)))];
+    const cc = UI.cmCountry && (UI.cmCountry === 'all' || countries.includes(UI.cmCountry)) ? UI.cmCountry : (countries.includes(G.countryOf(u.league)) ? G.countryOf(u.league) : 'all');
+    let list = cc === 'all' ? all : all.filter((x) => G.countryOf(x.league) === cc);
+    if (UI.cmOnlyOpen) list = list.filter((x) => x.level >= 2);
+    // сначала те, кто готов взять, затем по силе клуба
+    list = list.slice().sort((a, b) => (b.level >= 2) - (a.level >= 2) || b.rep - a.rep).slice(0, 60);
+    return `<div class="card coach-market"><h3>Рынок тренеров</h3>
+      <div class="row cm-head"><div class="cm-rep"><span>Репутация тренера</span><b>${cr}</b></div>
+        <div class="small muted grow">Клубы смотрят на вашу репутацию: она растёт от трофеев и выполненных задач. Клубы, которые сильно отстают от ожиданий, ищут тренера и соглашаются охотнее. Сейчас вы тренируете «${esc(u.name)}» (репутация клуба ${u.rep}).</div></div>
+      <div class="row" style="margin:10px 0"><select id="cm-country"><option value="all">Все страны</option>${countries.map((c) => `<option value="${c}" ${c === cc ? 'selected' : ''}>${esc(FM.NAT[c] || c)}</option>`).join('')}</select>
+        <label class="check small"><input type="checkbox" id="cm-open" ${UI.cmOnlyOpen ? 'checked' : ''}> только заинтересованные</label></div>
+      <div class="cm-list">${list.map((x) => { const t = T(x.id); const [lt, lc] = LEVEL[x.level]; return `<div class="cm-row">${badge(t, 'sm')}<div class="grow"><b data-team="${t.id}">${esc(t.name)}</b><div class="small muted">${esc(s.leagues[x.league].name)} · ${x.played ? `${x.pos}-е место` : 'сезон не начался'}${x.vacancy ? ' · <span class="warn">ищут тренера</span>' : ''}</div></div>
+        <span class="lvl ${lc}">${x.refused ? 'отказал в этом сезоне' : lt}</span>${x.level >= 1 && !x.refused ? `<button class="btn sm ${x.level >= 2 ? 'primary' : ''}" data-apply="${t.id}">${x.level >= 2 ? 'Перейти' : 'Подать заявку'}</button>` : ''}</div>`; }).join('') || '<div class="muted small">Подходящих клубов нет</div>'}</div></div>`;
+  }
+  function bindCoachMarket(main) {
+    const G = g();
+    const sel = main.querySelector('#cm-country');
+    if (sel) sel.onchange = () => { UI.cmCountry = sel.value; render(); };
+    const op = main.querySelector('#cm-open');
+    if (op) op.onchange = () => { UI.cmOnlyOpen = op.checked; render(); };
+    main.querySelectorAll('[data-apply]').forEach((b) => b.onclick = () => {
+      // переход — серьёзное решение: подтверждение повторным нажатием
+      if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Точно? Нажмите ещё раз'; b.classList.add('danger'); return; }
+      const r = G.applyJob(b.dataset.apply);
+      save();
+      if (r.ok) { UI.tab = 'home'; UI.tablesLid = G.userTeam().league; render(); toast(esc(r.text), 4000); } else { render(); toast(esc(r.text), 4500); }
+    });
   }
 
   function viewInbox(main) {

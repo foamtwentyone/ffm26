@@ -660,3 +660,20 @@ table.ts td.hl { font-weight: 800; color: #fff; background: color-mix(in srgb, v
 .lp-c button:hover { color: var(--text); background: var(--glass2); }
 .lp-c button.on { color: var(--accent-ink); background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; }
 .lpick .seg { justify-self: start; }
+
+/* рынок тренеров */
+.coach-market { margin-bottom: 14px; }
+.cm-head { align-items: center; gap: 16px; }
+.cm-rep { display: flex; flex-direction: column; align-items: flex-start; padding: 10px 16px; border-radius: 14px; background: rgba(0,0,0,.25); border: 1px solid var(--line); }
+.cm-rep span { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.cm-rep b { font-family: var(--f-display); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.cm-list { max-height: 520px; overflow-y: auto; }
+.cm-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-top: 1px solid var(--line); }
+.cm-row b[data-team] { cursor: pointer; }
+.lvl { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.lvl.lv0 { color: var(--muted); background: var(--glass); }
+.lvl.lv1 { color: #ffd18a; background: color-mix(in srgb, var(--warn) 15%, transparent); }
+.lvl.lv2 { color: #9be36b; background: color-mix(in srgb, var(--good) 14%, transparent); }
+.lvl.lv3 { color: #7df0b5; background: color-mix(in srgb, var(--good) 26%, transparent); }
+span.warn { color: var(--warn); font-weight: 700; }
+@media (max-width: 620px) { .cm-row { flex-wrap: wrap; } .cm-row .lvl { margin-left: 34px; } }

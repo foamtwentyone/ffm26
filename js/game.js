@@ -847,6 +847,7 @@
       else if (moved && !moved.up) { s.board.conf -= 35; verdict = 'Вылет — тяжёлый удар для клуба.'; }
       else if (pos <= exp) { s.board.conf = Math.min(100, s.board.conf + 10 + (exp - pos) * 4); verdict = 'Задача на сезон выполнена.'; }
       else { s.board.conf -= (pos - exp) * 5; verdict = `Команда финишировала ниже ожиданий (${exp}-е место).`; }
+      this.coachSeasonRep(pos, exp, moved, (s.cup && s.cup.winner === u.id ? 1 : 0) + Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id).length * 1.5);
       if (pos < exp - 1) u.rep = Math.min(99, u.rep + 1);
       if (pos > exp + 3) u.rep = Math.max(35, u.rep - 1);
       const ce = this.coachSeason(y);
@@ -968,6 +969,7 @@
     sack(text) {
       const s = this.s;
       s.sacked = true;
+      s.coachRep = FM.clamp(this.coachRep() - 6, 30, 99);
       this.msg('Вы уволены', text, 'board');
     }
 
@@ -1014,6 +1016,70 @@
       }
       const label = m.label || (m.comp === 'cup' && s.cup && s.cup.rounds[m.round - 1] ? s.cup.rounds[m.round - 1].name : '');
       e.comps[m.comp] = { label: label.replace(/, (1-й|ответный) матч$/, ''), md: !!m.md, ko: !!m.winner, won: m.winner === uid, final: /^финал$/i.test(label) };
+    }
+
+    // ================== рынок тренеров ==================
+    // Репутация тренера растёт от трофеев и выполненных задач, падает от провалов и увольнений.
+    coachRep() {
+      const s = this.s;
+      if (s.coachRep == null) s.coachRep = this.userTeam().rep;
+      return Math.round(s.coachRep);
+    }
+
+    // Клубы, которые могут взять тренера: интерес зависит от разницы репутаций,
+    // клуб, который сильно отстаёт от ожиданий, «ищет тренера» и охотнее соглашается.
+    coachMarket() {
+      const s = this.s, cr = this.coachRep();
+      const out = [];
+      for (const t of Object.values(this.teams)) {
+        if (t.id === s.user || t.reserveOf || t.rep > cr + 12 || t.rep < cr - 28) continue;
+        const L = s.leagues[t.league];
+        const row = this.table(t.league).find((r) => r.id === t.id);
+        const expect = L.teams.slice().sort((a, b) => this.teams[b].rep - this.teams[a].rep).indexOf(t.id) + 1;
+        const vacancy = row.p >= 6 && row.pos >= expect + 4;
+        const fit = cr - t.rep + (vacancy ? 4 : 0);
+        const lvl = fit >= 3 ? 3 : fit >= -3 ? 2 : fit >= -8 ? 1 : 0;
+        const refused = s.jobRefused && s.jobRefused[t.id] === s.season;
+        out.push({ id: t.id, rep: t.rep, league: t.league, pos: row.pos, played: row.p, expect, vacancy, level: refused ? 0 : lvl, refused });
+      }
+      return out.sort((a, b) => b.rep - a.rep);
+    }
+
+    applyJob(teamId) {
+      const s = this.s, t = this.teams[teamId];
+      const m = this.coachMarket().find((x) => x.id === teamId);
+      if (!m) return { ok: false, text: `«${t.name}» не рассматривает вашу кандидатуру.` };
+      if (m.refused) return { ok: false, text: `«${t.name}» уже отказал вам в этом сезоне.` };
+      if (m.level < 2) {
+        s.jobRefused = s.jobRefused || {};
+        s.jobRefused[teamId] = s.season;
+        return { ok: false, text: `«${t.name}» благодарит за интерес, но выбирает другого кандидата. Поднимите репутацию — выигрывайте трофеи и выполняйте задачи.` };
+      }
+      const from = this.userTeam();
+      this.news(`${s.manager} покидает «${from.name}» и возглавляет «${t.name}».`);
+      this.takeJob(teamId);
+      return { ok: true, text: `Вы — главный тренер «${t.name}»!` };
+    }
+
+    // по ходу сезона клубы, недовольные своим тренером, иногда сами зовут пользователя
+    jobOfferWeek() {
+      const s = this.s, u = this.userTeam();
+      if (s.sacked || s.seasonOver || !FM.chance(0.04)) return;
+      if (s.inbox.some((m) => m.type === 'job' && m.data && !m.data.closed)) return;
+      const c = this.coachMarket().filter((x) => x.vacancy && x.level >= 2 && x.rep >= u.rep - 2);
+      if (!c.length) return;
+      const t = this.teams[FM.pick(c.slice(0, 5)).id];
+      this.msg(`Предложение от «${t.name}»`, `«${t.name}» (${s.leagues[t.league].name}) недоволен результатами и предлагает вам возглавить команду. Решение за вами — можно остаться.`, 'job', { team: t.id });
+    }
+
+    // репутация по итогам сезона
+    coachSeasonRep(pos, exp, moved, trophies) {
+      const s = this.s, L = s.leagues[this.userTeam().league];
+      let d = pos <= exp ? 2 + (exp - pos) * 0.6 : -Math.min(6, (pos - exp) * 0.8);
+      if (pos === 1 && L.tier === 1) d += 5;
+      if (moved) d += moved.up ? 4 : -4;
+      d += trophies * 4;
+      s.coachRep = FM.clamp(this.coachRep() + d, 30, 99);
     }
 
     takeJob(teamId) {
@@ -1379,6 +1445,7 @@
 
     weekly() {
       this.trainWeek();
+      this.jobOfferWeek();
       const s = this.s;
       for (const id in this.teams) {
         const t = this.teams[id];
