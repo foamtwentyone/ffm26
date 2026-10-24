@@ -18,6 +18,11 @@ for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5'):
 teams = json.load(open(CACHE + '/teams.json', encoding='utf8'))
 # московская зона Первой лиги — эмблемы с mosff.ru (hb.bizmrg.com)
 if os.path.exists(CACHE + '/mosff.json'): teams += json.load(open(CACHE + '/mosff.json', encoding='utf8'))
+# клубы с «Наградиона» — эмблемы из сохранённых страниц (.cache/saved/shields)
+if os.path.exists(CACHE + '/nagradion.json'):
+    for t in json.load(open(CACHE + '/nagradion.json', encoding='utf8')):
+        if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
+        if t.get('logo') and os.path.exists(f"{CACHE}/saved/{t['logo']}"): teams.append(dict(t, logo='file:' + t['logo']))
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']), t.get('logo')
@@ -25,7 +30,7 @@ for t in teams:
     if not tid or not url:
         print('нет эмблемы:', t['name'], file=sys.stderr)
         continue
-    raw = f'{CACHE}/logos/{tid}{os.path.splitext(url)[1]}'
+    raw = f"{CACHE}/saved/{url[5:]}" if url.startswith('file:') else f'{CACHE}/logos/{tid}{os.path.splitext(url)[1]}'
     if not os.path.exists(raw) or not os.path.getsize(raw):
         for i in range(5):
             r = subprocess.run(['curl', '-sS', '-m', '40', '-A', 'Mozilla/5.0', url, '-o', raw], capture_output=True)

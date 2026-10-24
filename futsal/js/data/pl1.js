@@ -155,7 +155,7 @@ FM.addLeague({
 Роман Палагин|FW|25|0|RUS|42
 Евгений Матыцин|FW|32|0|RUS|36` },
 
-    { id: 'meridian', name: 'Меридиан-Север', city: 'Талдом', stadium: '—', cap: 300, colors: ['#1d2a5b', '#ffffff'], rep: 36, money: 15, players: `
+    { id: 'meridian', name: 'Меридиан-Север', city: 'Талдом', stadium: '—', cap: 300, colors: ['#3a9a3a', '#1d1d1b'], rep: 36, money: 15, players: `
 Кирилл Антошкин|UN|21|0|RUS|42
 Евгений Балабанов|UN|28|0|RUS|42
 Никита Борисов|UN|24|0|RUS|42
@@ -180,7 +180,7 @@ FM.addLeague({
 Владислав Прощенский|UN|35|0|RUS|41
 Ваге Агаджанян|UN|35|0|RUS|41` },
 
-    { id: 'element', name: 'Элемент', city: 'Дубна', stadium: '—', cap: 300, colors: ['#0057b8', '#ffffff'], rep: 37, money: 15, players: `
+    { id: 'element', name: 'Элемент', city: 'Дубна', stadium: '—', cap: 300, colors: ['#1d3f94', '#d71920'], rep: 37, money: 15, players: `
 Егор Богданов|UN|31|0|RUS|44
 Антон Василенко|UN|31|0|RUS|44
 Матвей Елизаров|UN|21|0|RUS|44
@@ -201,7 +201,7 @@ FM.addLeague({
 Алексей Горшков|UN|16|0|RUS|39
 Кирилл Балагуров|UN|15|0|RUS|38` },
 
-    { id: 'rostagro', name: 'РостАгроЭкспорт', city: 'Пушкино', stadium: '—', cap: 300, colors: ['#00843d', '#ffffff'], rep: 41, money: 15, players: `
+    { id: 'rostagro', name: 'РостАгроЭкспорт', city: 'Пушкино', stadium: '—', cap: 300, colors: ['#f5c400', '#1d1d1b'], rep: 41, money: 15, players: `
 Михаил Есиков|UN|27|0|RUS|48
 Илья Зыков|UN|26|0|RUS|48
 Дмитрий Ковалев|UN|27|0|RUS|48
@@ -223,7 +223,7 @@ FM.addLeague({
 Роман Главатских|UN|42|0|RUS|40
 Звиад Купатадзе|UN|46|0|RUS|37` },
 
-    { id: 'meteor', name: 'СШОР Метеор', city: 'Балашиха', stadium: '—', cap: 300, colors: ['#c8102e', '#ffffff'], rep: 32, money: 15, players: `
+    { id: 'meteor', name: 'СШОР Метеор', city: 'Балашиха', stadium: '—', cap: 300, colors: ['#c8102e', '#2e8b3a'], rep: 32, money: 15, players: `
 Иван Карабанов|UN|21|0|RUS|38
 Дмитрий Никитинский|UN|33|0|RUS|38
 Михаил Филиппов|UN|33|0|RUS|38

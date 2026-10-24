@@ -242,7 +242,7 @@ FM.addLeague({
 Владимир Новоселов|FW|22|0|RUS|48
 Артем Качер|FW|33|0|RUS|41` },
 
-    { id: 'sturm', name: 'Штурм', city: 'Сургут', stadium: '—', cap: 300, colors: ['#1d2a5b', '#ffffff'], rep: 38, money: 15, players: `
+    { id: 'sturm', name: 'Штурм', city: 'Сургут', stadium: '—', cap: 300, colors: ['#f5d000', '#1d1d1b'], rep: 38, money: 15, players: `
 Фарит Абдиев|UN|28|0|RUS|44
 Джони Джгереная|UN|28|0|RUS|44
 Мехродж Каримов|UN|22|0|RUS|44
@@ -258,7 +258,7 @@ FM.addLeague({
 Никита Шальнев|UN|23|0|RUS|44
 Жалолиддин Рахманов|UN|17|0|RUS|41` },
 
-    { id: 'chelgu', name: 'ЧелГУ', city: 'Челябинск', stadium: '—', cap: 300, colors: ['#0057b8', '#ffffff'], rep: 36, money: 15, players: `
+    { id: 'chelgu', name: 'ЧелГУ', city: 'Челябинск', stadium: '—', cap: 300, colors: ['#d71920', '#ffffff'], rep: 36, money: 15, players: `
 Владислав Гаврилин|UN|24|0|RUS|42
 Руслан Давыдкин|UN|26|0|RUS|42
 Владислав Кисленко|UN|26|0|RUS|42

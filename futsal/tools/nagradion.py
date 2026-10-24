@@ -33,7 +33,10 @@ for f in sorted(glob.glob(CACHE + '/saved/*.html')):
         players.append({'pid': f'n{pid.group(1)}', 'name': f'{txt(last.group(1))} {txt(rest.group(1))}', 'amp': 'Ун..',
                         'birth': f'—, {age.group(1)} лет' if age else '', 'num': num and num.group(1), 'stats': ['0', '0']})
     clean = re.sub(r'^(МБУ ДО\s+)?(МФК|ФК|МФС)?\s*', '', txt(name.group(1)).strip('«»" ')) if name else team
+    # эмблема: img.nagradion.ru тоже недоступен, поэтому берётся из папки «…_files», сохранённой вместе со страницей,
+    # — файл кладётся в .cache/saved/shields под своим именем
+    shield = re.search(r'img\.nagradion\.ru/images/bf300x500/shields/([A-Za-z0-9]+\.png)', t)
     teams.append({'league': 'nagr', 'host': host, 'team_id': f'n{team}', 'tournament': tour, 'name': clean,
-                  'region': city and txt(city.group(1)), 'logo': None, 'players': players})
+                  'region': city and txt(city.group(1)), 'logo': shield and 'shields/' + shield.group(1), 'players': players})
     print(host, tour, clean, city and txt(city.group(1)), len(players), file=sys.stderr)
 json.dump(teams, open(CACHE + '/nagradion.json', 'w'), ensure_ascii=False, indent=1)
