@@ -651,3 +651,12 @@ table.ts td.hl { font-weight: 800; color: #fff; background: color-mix(in srgb, v
 .rv-stats em { display: block; font-style: normal; font-weight: 700; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 .red-line { color: #ff9aa5; margin-top: 2px; }
 .rc-card { display: inline-block; width: 9px; height: 12px; border-radius: 2px; background: var(--bad); margin-right: 6px; vertical-align: -1px; box-shadow: 0 0 6px rgba(255,92,108,.6); }
+
+/* выбор лиги: страны флагами, затем лиги страны */
+.lpick { margin-bottom: 12px; display: grid; gap: 8px; }
+.lp-c { display: flex; gap: 6px; flex-wrap: wrap; }
+.lp-c button { display: inline-flex; align-items: center; gap: 2px; padding: 5px 10px 5px 6px; border-radius: 999px; border: 1px solid var(--stroke); background: var(--glass); color: var(--muted); font-weight: 700; font-size: 13px; }
+.lp-c button .flag { margin-right: 4px; }
+.lp-c button:hover { color: var(--text); background: var(--glass2); }
+.lp-c button.on { color: var(--accent-ink); background: linear-gradient(135deg, var(--accent), var(--accent2)); border-color: transparent; }
+.lpick .seg { justify-self: start; }

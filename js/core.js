@@ -139,6 +139,7 @@ FM.NAT = {
   MNE: 'Черногория', HON: 'Гондурас', UZB: 'Узбекистан', AUT: 'Австрия', CHI: 'Чили', ALB: 'Албания', ITA: 'Италия',
   KVX: 'Косово', GEO: 'Грузия', SEN: 'Сенегал', IRN: 'Иран', BFA: 'Буркина-Фасо', TJK: 'Таджикистан', SVK: 'Словакия',
   CRO: 'Хорватия', ROU: 'Румыния', ESP: 'Испания', SVN: 'Словения', PER: 'Перу', SWE: 'Швеция', KGZ: 'Киргизия',
+  SKN: 'Сент-Китс и Невис', BAN: 'Бангладеш', STL: 'Сент-Люсия', LCA: 'Сент-Люсия', BRB: 'Барбадос', FIJ: 'Фиджи', NAM: 'Намибия', AND: 'Андорра', FRO: 'Фарерские острова', MWI: 'Малави', ATG: 'Антигуа и Барбуда', GRN: 'Гренада', GUY: 'Гайана', LIE: 'Лихтенштейн', NCL: 'Новая Каледония', YEM: 'Йемен', FGU: 'Французская Гвиана', VIN: 'Сент-Винсент и Гренадины', MAS: 'Малайзия',
   DOM: 'Доминикана', PHI: 'Филиппины', GLP: 'Гваделупа', MTQ: 'Мартиника', PUR: 'Пуэрто-Рико', UAE: 'ОАЭ', STP: 'Сан-Томе и Принсипи', ERI: 'Эритрея', AZE: 'Азербайджан', GER: 'Германия', NED: 'Нидерланды', CIV: 'Кот-д’Ивуар', MLI: 'Мали',
   UKR: 'Украина', MDA: 'Молдова', TKM: 'Туркменистан', VEN: 'Венесуэла', MKD: 'Северная Македония', BUL: 'Болгария',
   POL: 'Польша', CZE: 'Чехия', HUN: 'Венгрия', GRE: 'Греция', TUR: 'Турция', ISR: 'Израиль', EGY: 'Египет', TUN:
@@ -194,9 +195,24 @@ const NAMES = {
     ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk', 'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Kılıç', 'Aslan', 'Koç']],
   POL: [['Jakub', 'Kacper', 'Filip', 'Szymon', 'Bartosz', 'Mateusz', 'Michał', 'Kamil', 'Piotr', 'Patryk', 'Dawid', 'Krzysztof', 'Tomasz', 'Adrian', 'Łukasz'],
     ['Nowak', 'Kowalski', 'Wiśniewski', 'Wójcik', 'Kowalczyk', 'Kamiński', 'Lewandowski', 'Zieliński', 'Szymański', 'Woźniak', 'Dąbrowski', 'Kozłowski', 'Mazur', 'Krawczyk', 'Piątek']],
+  CZE: [['Jan', 'Tomáš', 'Jakub', 'Lukáš', 'Martin', 'David', 'Ondřej', 'Petr', 'Matěj', 'Adam', 'Filip', 'Vojtěch', 'Michal', 'Daniel', 'Josef'],
+    ['Novák', 'Svoboda', 'Novotný', 'Dvořák', 'Černý', 'Procházka', 'Kučera', 'Veselý', 'Horák', 'Němec', 'Pokorný', 'Marek', 'Pospíšil', 'Hájek', 'Jelínek']],
+  GRE: [['Giorgos', 'Dimitris', 'Konstantinos', 'Nikos', 'Panagiotis', 'Christos', 'Vasilis', 'Thanasis', 'Kostas', 'Stelios', 'Andreas', 'Michalis', 'Petros', 'Ilias', 'Lefteris'],
+    ['Papadopoulos', 'Pappas', 'Georgiou', 'Oikonomou', 'Karagiannis', 'Vlachos', 'Nikolaidis', 'Makris', 'Dimitriou', 'Antoniou', 'Ioannidis', 'Christodoulou', 'Alexiou', 'Konstantinou', 'Mavros']],
+  DEN: [['Mads', 'Mikkel', 'Jonas', 'Frederik', 'Mathias', 'Rasmus', 'Oliver', 'Emil', 'Magnus', 'Lucas', 'Kasper', 'Christian', 'Andreas', 'Nikolaj', 'Victor'],
+    ['Jensen', 'Nielsen', 'Hansen', 'Pedersen', 'Andersen', 'Christensen', 'Larsen', 'Sørensen', 'Rasmussen', 'Jørgensen', 'Petersen', 'Madsen', 'Kristensen', 'Olsen', 'Thomsen']],
+  BRA: [['Gabriel', 'Lucas', 'Matheus', 'Pedro', 'Guilherme', 'Rafael', 'Felipe', 'Gustavo', 'Vinícius', 'Bruno', 'Thiago', 'Igor', 'Caio', 'Diego', 'Rodrigo'],
+    ['Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Araújo']],
+  ARG: [['Santiago', 'Mateo', 'Facundo', 'Nicolás', 'Lautaro', 'Tomás', 'Franco', 'Agustín', 'Joaquín', 'Lucas', 'Matías', 'Gonzalo', 'Ezequiel', 'Valentín', 'Thiago'],
+    ['González', 'Rodríguez', 'Gómez', 'Fernández', 'López', 'Díaz', 'Martínez', 'Pérez', 'Romero', 'Sosa', 'Álvarez', 'Torres', 'Ruiz', 'Benítez', 'Acosta']],
+  USA: [['Tyler', 'Jordan', 'Brandon', 'Kyle', 'Chris', 'Josh', 'Justin', 'Matt', 'Ryan', 'Caleb', 'Mason', 'Ethan', 'Logan', 'Cole', 'Owen'],
+    ['Johnson', 'Williams', 'Miller', 'Davis', 'Anderson', 'Moore', 'Jackson', 'Martin', 'Lee', 'Harris', 'Clark', 'Lewis', 'Walker', 'Young', 'Allen']],
+  KSA: [['Mohammed', 'Abdullah', 'Fahad', 'Saud', 'Faisal', 'Turki', 'Nawaf', 'Sultan', 'Khalid', 'Abdulrahman', 'Salem', 'Ali', 'Hassan', 'Yasser', 'Majed'],
+    ['Al-Dawsari', 'Al-Shahrani', 'Al-Ghamdi', 'Al-Qahtani', 'Al-Harbi', 'Al-Otaibi', 'Al-Malki', 'Al-Zahrani', 'Al-Shehri', 'Al-Mutairi', 'Al-Anazi', 'Al-Yami', 'Al-Buraikan', 'Al-Faraj', 'Al-Amri']],
 };
 FM.genName = (country) => {
-  const n = NAMES[country];
+  // страны без своего набора имён берут соседний
+  const n = NAMES[country] || NAMES[{ SCO: 'ENG', WAL: 'ENG', IRL: 'ENG', NIR: 'ENG', AUT: 'GER', SUI: 'GER', CAN: 'USA', URU: 'ARG', CHI: 'ARG' }[country]];
   return n ? `${FM.pick(n[0])} ${FM.pick(n[1])}` : `${FM.pick(FIRST)} ${FM.pick(LAST)}`;
 };
 
@@ -236,9 +252,9 @@ FM.potFor = (ovr, age) => {
 FM.EURO = [
   { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 4, ESP: 4, ITA: 3, GER: 3, FRA: 3, POR: 2, NED: 1, BEL: 1, TUR: 1, POL: 1, RUS: 1 },
     fee: 18600, win: 2100, draw: 700, ko: [11000, 15000, 18500, 6500] },
-  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 3, ESP: 3, ITA: 3, GER: 2, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 1 },
+  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 2, ESP: 2, ITA: 2, GER: 2, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 1, RUS: 1, CZE: 1, SCO: 1, GRE: 1, DEN: 1 },
     fee: 4300, win: 450, draw: 150, ko: [1750, 2600, 4000, 4000] },
-  { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 2, ESP: 2, ITA: 3, GER: 3, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 2 },
+  { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 2, ESP: 2, ITA: 2, GER: 2, FRA: 1, POR: 1, NED: 1, BEL: 1, TUR: 1, POL: 1, RUS: 2, CZE: 1, SCO: 1, GRE: 1, DEN: 1, AUT: 1, SUI: 1, KAZ: 1, AZE: 1 },
     fee: 3200, win: 400, draw: 130, ko: [800, 1300, 2000, 2000] },
 ];
 

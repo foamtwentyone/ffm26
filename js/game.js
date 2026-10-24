@@ -15,12 +15,45 @@
   // туры общего этапа еврокубков (ближайший нужный день недели не раньше этой даты)
   const EURO_MD = ['09-15', '09-29', '10-20', '11-03', '11-24', '12-08', '01-19', '01-26'];
 
+  const PLAYER_DEFAULTS = { fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0, gen: false, listed: false };
+
   class Game {
     constructor(state) {
       this.s = state;
+      // сохранение хранит игроков без значений по умолчанию (см. packState) — восстанавливаем их
+      for (const id in state.players) Game.unpackPlayer(state.players[id]);
       this.players = state.players;
       this.teams = state.teams;
       this._tables = {};
+    }
+
+    static unpackPlayer(p) {
+      for (const k in PLAYER_DEFAULTS) if (p[k] === undefined) p[k] = PLAYER_DEFAULTS[k];
+      if (p.club === undefined) p.club = null;
+      p.st = Object.assign({ apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }, p.st);
+      p.cst = Object.assign({ apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }, p.cst);
+      p.car = Object.assign({ apps: 0, g: 0, a: 0 }, p.car);
+      return p;
+    }
+
+    // Компактная копия состояния для сохранения: у ~18 тыс. игроков опускаются нули и значения по умолчанию.
+    packState() {
+      const s = this.s;
+      const players = {};
+      for (const id in s.players) {
+        const p = s.players[id], q = {};
+        for (const k in p) {
+          const v = p[k];
+          if (v === null || v === undefined || (k in PLAYER_DEFAULTS && v === PLAYER_DEFAULTS[k])) continue;
+          if (k === 'st' || k === 'cst' || k === 'car') {
+            const x = {};
+            for (const j in v) if (v[j]) x[j] = v[j];
+            if (Object.keys(x).length) q[k] = x;
+          } else q[k] = k === 'vmul' ? Math.round(v * 1000) / 1000 : v;
+        }
+        players[id] = q;
+      }
+      return Object.assign({}, s, { players });
     }
 
     // ================== создание мира ==================
@@ -46,7 +79,7 @@
         s.order.push(L.id);
         s.leagues[L.id] = {
           id: L.id, name: L.name, short: L.short, tier: L.tier, weekday: L.weekday, country: L.country || 'RUS',
-          autumn: L.autumn, spring: L.spring, ticket: L.ticket, prize: L.prize, teams: [],
+          autumn: L.autumn, spring: L.spring, ticket: L.ticket, prize: L.prize, single: !!L.single, teams: [],
         };
         for (const T of L.teams) {
           const team = {
@@ -302,7 +335,8 @@
         half.push(round);
         arr.splice(1, 0, arr.pop());
       }
-      const all = half.concat(half.map((r) => r.map(([h, a]) => [a, h])));
+      // однокруговой турнир (MLS, Аргентина): каждый играет с каждым один раз
+      const all = L.single ? half : half.concat(half.map((r) => r.map(([h, a]) => [a, h])));
       const dates = [];
       let d = FM.nextWeekday(`${year}-${L.autumn.from}`, L.weekday);
       for (let i = 0; i < L.autumn.rounds; i++) { dates.push(d); d = FM.addDays(d, 7); }
@@ -357,12 +391,14 @@
       const hasUpper = !!this.leagueAt(c, L.tier - 1);
       const z = {};
       if (L.tier === 1) { z[1] = 'champ'; }
+      // стыки есть только в России (13–14 места РПЛ против 3–4 мест ФНЛ); в других странах — прямой обмен 2 на 2
+      const ru = c === 'RUS';
       if (hasUpper) {
         z[1] = 'up'; z[2] = 'up';
-        if (L.tier === 2) { z[3] = 'po'; z[4] = 'po'; } else z[3] = 'up';
+        if (L.tier === 2) { if (ru) { z[3] = 'po'; z[4] = 'po'; } } else z[3] = 'up';
       }
       if (hasLower) {
-        if (L.tier === 1) { z[n - 3] = 'po_down'; z[n - 2] = 'po_down'; z[n - 1] = 'down'; z[n] = 'down'; }
+        if (L.tier === 1) { if (ru) { z[n - 3] = 'po_down'; z[n - 2] = 'po_down'; } z[n - 1] = 'down'; z[n] = 'down'; }
         else { z[n - 2] = 'down'; z[n - 1] = 'down'; z[n] = 'down'; }
       }
       return z;

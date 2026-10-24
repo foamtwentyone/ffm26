@@ -166,7 +166,7 @@
   function save(key = SAVE_AUTO) {
     const s = g().s;
     s.savedAt = Date.now();
-    const str = JSON.stringify(s);
+    const str = JSON.stringify(g().packState());
     const info = infoOf(s);
     const ts = s.savedAt;
     FM.Store.localSave(key, str).then((ok) => {
@@ -256,7 +256,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: РПЛ, ФНЛ, Вторая лига и топ-10 лиг Европы</div></div>
+        <div class="muted">Сезон 2026/27: 33 лиги — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
@@ -270,7 +270,7 @@
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
-        <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${flag(x.country || 'RUS')}${esc(x.name)}</button>`).join('')}</div>
+        ${leaguePick(db, lid, 'data-l')}
         <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
@@ -773,14 +773,15 @@
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px"><span class="zone up"></span>${L.tier === 1 ? 'чемпион' : 'повышение'} &nbsp; ${L.tier === 2 ? '<span class="zone po"></span>стыки за выход &nbsp;' : ''}${L.tier === 1 ? '<span class="zone po_down"></span>стыки &nbsp;' : ''}<span class="zone down"></span>вылет${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['champ', 'чемпион'], ['up', 'повышение'], ['po', 'стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
-    main.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg">${s.order.map((id) => `<button data-lid="${id}" class="${view === 'table' && id === lid ? 'on' : ''}">${esc(s.leagues[id].short)}</button>`).join('')}
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Стыки</button>` : ''}
-      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>${body}`;
+    main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Стыки</button>` : ''}
+      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
+      ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
@@ -870,13 +871,27 @@
     const lid = UI.tablesLid || G.userTeam().league;
     const key = UI.statsKey;
     const rows = G.leaders(lid, key, 30);
-    main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}<div class="seg">${s.order.map((id) => `<button data-lid="${id}" class="${id === lid ? 'on' : ''}">${esc(s.leagues[id].short)}</button>`).join('')}</div>
+    main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}</div>${leaguePick(s.order.map((id) => s.leagues[id]), lid)}<div class="row" style="margin-bottom:12px">
       <div class="seg">${[['g', 'Голы'], ['a', 'Передачи'], ['rating', 'Оценки'], ['cs', 'Сухие'], ['yc', 'Жёлтые']].map(([k, n]) => `<button data-k="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <div class="card tight"><table><tr><th>#</th><th>Игрок</th><th>Клуб</th><th class="num">И</th><th class="num">${{ g: 'Голы', a: 'Пас', rating: 'Оценка', yc: 'ЖК', cs: 'Сухие' }[key]}</th></tr>
       ${rows.map(([p, v], i) => `<tr class="${p.club === s.user ? 'me' : ''}"><td class="num">${i + 1}</td><td>${pos(p.pos)} ${pname(p)}</td><td>${tname(T(p.club))}</td><td class="num">${p.st.apps}</td><td class="num"><b>${key === 'rating' ? v.toFixed(2) : v}</b></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Пока нет данных</td></tr>'}</table></div>`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; render(); });
     main.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { UI.statsKey = b.dataset.k; render(); });
     main.querySelectorAll('[data-sv]').forEach((b) => b.onclick = () => { UI.statsView = b.dataset.sv; render(); });
+  }
+
+  // Выбор лиги: сначала страна (флаг), затем лига этой страны — при 30+ лигах длинный ряд кнопок неудобен.
+  // list — массив { id, name, short, country }, attr — атрибут кнопки с id лиги.
+  function leaguePick(list, cur, attr = 'data-lid', on = true) {
+    const cOf = (l) => l.country || 'RUS';
+    const curL = list.find((l) => l.id === cur) || list[0];
+    const cc = cOf(curL);
+    const countries = [...new Set(list.map(cOf))];
+    const inC = list.filter((l) => cOf(l) === cc);
+    return `<div class="lpick"><div class="lp-c">${countries.map((c) => {
+      const first = c === cc ? curL : list.find((l) => cOf(l) === c);
+      return `<button ${attr}="${first.id}" class="${on && c === cc ? 'on' : ''}" title="${esc(FM.NAT[c] || c)}">${flag(c)}<span>${esc(FM.NAT[c] || c)}</span></button>`;
+    }).join('')}</div>${inC.length > 1 ? `<div class="seg">${inC.map((l) => `<button ${attr}="${l.id}" class="${on && l.id === curL.id ? 'on' : ''}">${esc(l.name)}</button>`).join('')}</div>` : ''}</div>`;
   }
 
   // ================== трансферы ==================
@@ -909,7 +924,7 @@
       body = `<div class="card" style="margin-bottom:12px"><div class="row">
         <input id="f-name" placeholder="Имя" value="${esc(f.name || '')}" style="width:150px">
         <select id="f-pos"><option value="">Все позиции</option>${FM.POS.map((p) => `<option value="${p}" ${f.pos === p ? 'selected' : ''}>${FM.POS_NAME[p]}</option>`).join('')}</select>
-        <select id="f-league"><option value="">Все лиги</option>${s.order.map((id) => `<option value="${id}" ${f.league === id ? 'selected' : ''}>${esc(s.leagues[id].name)}</option>`).join('')}<option value="free" ${f.league === 'free' ? 'selected' : ''}>Свободные агенты</option></select>
+        <select id="f-league"><option value="">Все лиги</option>${[...new Set(s.order.map((id) => G.countryOf(id)))].map((c) => `<optgroup label="${esc(FM.NAT[c] || c)}">${s.order.filter((id) => G.countryOf(id) === c).map((id) => `<option value="${id}" ${f.league === id ? 'selected' : ''}>${esc(s.leagues[id].name)}</option>`).join('')}</optgroup>`).join('')}<option value="free" ${f.league === 'free' ? 'selected' : ''}>Свободные агенты</option></select>
         <input id="f-price" type="number" placeholder="Цена до, млн €" value="${f.maxPrice || ''}" style="width:130px" step="0.1">
         <input id="f-ovr" type="number" placeholder="Рейтинг от" value="${f.minOvr || ''}" style="width:100px">
         <input id="f-age" type="number" placeholder="Возраст до" value="${f.maxAge || ''}" style="width:100px">
@@ -1524,7 +1539,7 @@
     slotMetas().then((m) => {
       [1, 2, 3].forEach((i) => { const el = main.querySelector('#slot' + i); if (el && m[SAVE_SLOT + i]) el.textContent = m[SAVE_SLOT + i].info; });
     });
-    main.querySelector('#exp').onclick = () => download(`ffm26_${G.userTeam().id}_${G.s.date}.json`, JSON.stringify(G.s));
+    main.querySelector('#exp').onclick = () => download(`ffm26_${G.userTeam().id}_${G.s.date}.json`, JSON.stringify(G.packState()));
     main.querySelector('#imp').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     main.querySelector('#editor').onclick = () => editor();
     main.querySelector('#set-ru-euro').onchange = (e) => { G.s.settings.ruEuro = e.target.checked; save(); };
