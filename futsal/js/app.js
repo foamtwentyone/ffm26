@@ -830,8 +830,12 @@
   function playoffView() {
     const G = g(), s = G.s;
     const game = (id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
-    const bracket = (B) => `<h2>${esc(B.name)}${B.winner ? ` · 🏆 ${esc(T(B.winner).name)}` : ''}</h2><div class="grid">${B.rounds.map((R) => `<div class="card"><h3>${esc(R.name)} · ${R.best === 1 ? 'один матч' : `до ${(R.best + 1) / 2} побед`}</h3>
-      ${R.ties.map((t) => `<div style="margin-bottom:10px"><div class="row small"><b class="grow">${esc(T(t.hi).name)} — ${esc(T(t.lo).name)}</b>${R.best > 1 ? `<b>${t.wins[t.hi]}:${t.wins[t.lo]}</b>` : ''}</div>${t.games.map(game).join('')}${t.winner ? `<div class="small muted">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}</div>`).join('')}</div>`).join('')}</div>`;
+    const u = G.userTeam();
+    const groups = (B) => (B.groups || []).map((g) => `<div class="card tight"><h3>Группа ${g.name}</h3><table><tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">ВП</th><th class="num">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
+      ${G.groupTable(g).map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'up' : ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table>
+      <div style="padding:8px 12px">${g.mids.map(game).join('')}</div></div>`).join('');
+    const bracket = (B) => `<h2>${esc(B.name)}${B.winner ? ` · 🏆 ${esc(T(B.winner).name)}` : ''}</h2>${B.groups ? `<div class="grid" style="margin-bottom:16px">${groups(B)}</div>` : ''}<div class="grid">${B.rounds.map((R) => `<div class="card"><h3>${esc(R.name)} · ${R.best === 1 ? 'один матч' : `до ${(R.best + 1) / 2} побед`}</h3>
+      ${R.ties.map((t, ti) => `<div style="margin-bottom:10px">${R.name === 'Финал' && ti === 1 ? '<div class="small muted">Матч за 3-е место</div>' : ''}<div class="row small"><b class="grow">${esc(T(t.hi).name)} — ${esc(T(t.lo).name)}</b>${R.best > 1 ? `<b>${t.wins[t.hi]}:${t.wins[t.lo]}</b>` : ''}</div>${t.games.map(game).join('')}${t.winner ? `<div class="small muted">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}</div>`).join('')}</div>`).join('')}</div>`;
     return ['sl', 'vl', 'pl'].map((k) => s.playoff[k]).filter(Boolean).map(bracket).join('');
   }
 
