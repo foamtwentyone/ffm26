@@ -141,7 +141,7 @@ FM.addLeague({
 Степан Разоренов|FW|17|0|RUS|35` },
 
     { id: 'kapkan', name: 'Капкан', city: 'Балаково', stadium: '—', cap: 300, colors: ['#1d1d1b', '#ffffff'], rep: 36, money: 15, players: `
-Тагир Карагулов|GK|23|0|RUS|46
+Денис Конкин|GK|23|0|RUS|46
 Глеб Епифанов|GK|18|0|RUS|43
 Максим Могутов|DF|35|0|RUS|44
 Максим Пышный|DF|19|0|RUS|42

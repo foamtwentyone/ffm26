@@ -143,6 +143,11 @@ YOUTH = {'Водник': 'vodnik', 'Газпром-Югра': 'gazprom', 'ИрА
          'Новая генерация': 'newgen', 'Норильск': 'norilsk', 'Синара': 'sinara', 'Торпедо': 'torpedo', 'Тюмень': 'tyumen',
          'Ухта': 'ukhta', 'ЮКИОР': 'surgut'}
 
+# Ручные правки составов: клуб → {игрок в заявке: замена}. Замена — новое имя или словарь с полями name/pos/age/nat.
+EDITS = {
+    'kapkan': {'Тагир Карагулов': {'name': 'Денис Конкин'}},
+}
+
 RESERVE = {'kristall_m': 'kristall', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
            'surgut2': 'surgut', 'newgen2': 'newgen', 'norilsk2': 'norilsk'}
 WEST = {'Водник', 'Волга Ульяновск', 'Газпром-Югра-2', 'Заря Луганск', 'КПРФ-2', 'Металлург', 'Саратов-Волга', 'ТЗМС-2', 'Ухта', 'Факел ЯМАЛ'}
@@ -217,6 +222,10 @@ for t in teams:
         else:
             last, first = p['name'].split(' ', 1)
             name, nat = f'{first} {last}', NAT_BY_NAME.get(p['name'], 'RUS')
+        e = EDITS.get(tid, {}).get(name)
+        if e:
+            e = {'name': e} if isinstance(e, str) else e
+            name, pos, age, nat = e.get('name', name), e.get('pos', pos), e.get('age', age), e.get('nat', nat)
         rows.append((pos, -ovr, f'{name}|{pos}|{age}|0|{nat}|{ovr}'))
     rows.sort(key=lambda r: (['GK', 'DF', 'UN', 'FW'].index(r[0]), r[1]))
     if t['name'] in PL: lg = PL[t['name']][1]
