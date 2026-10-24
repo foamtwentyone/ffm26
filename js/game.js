@@ -791,6 +791,13 @@
             if (tid === s.user) this.msg('Завершение карьеры', `${p.name} (${p.age}) завершает карьеру игрока.`, 'squad');
             continue;
           }
+          if (p.contract <= y && p.pre && this.teams[p.pre.team]) {
+            const to = this.teams[p.pre.team];
+            const pre = p.pre;
+            this.transfer(p, to, 0, pre.wage, pre.years, { role: pre.role, release: pre.release });
+            if (to.id === s.user) this.msg('Пополнение', `${p.name} перешёл в клуб по предварительному контракту.`, 'transfer');
+            continue;
+          }
           if (p.contract <= y) {
             if (tid === s.user) {
               this.removeFromTeam(p);
@@ -1056,6 +1063,14 @@
         p.fit = Math.min(100, p.fit + (p.inj ? 4 : 13));
       }
       if (monday) this.weekly();
+      if (s.payments && s.payments.length) {
+        for (const pay of s.payments.filter((x) => x.date <= s.date)) {
+          const from = this.teams[pay.from], to = this.teams[pay.to];
+          if (from) { from.money -= pay.amount; if (from.id === s.user) this.finLog(from, `Рассрочка: ${pay.what}`, -pay.amount); }
+          if (to) { to.money += pay.amount; if (to.id === s.user) this.finLog(to, `Рассрочка: ${pay.what}`, pay.amount); }
+        }
+        s.payments = s.payments.filter((x) => x.date > s.date);
+      }
       if (this.inWindow()) this.transferDay();
       this.expireOffers();
       if (s.date.endsWith('-03-01')) this.contractReminder();
@@ -1100,6 +1115,18 @@
       const u = this.userTeam();
       const tab = this.table(u.league);
       const row = tab.find((r) => r.id === u.id);
+      // обещанная при подписании роль: если игрок почти не играет, он недоволен
+      if (row.p >= 6) {
+        for (const p of this.squad(u)) {
+          const need = { key: 0.6, starter: 0.4 }[p.role];
+          if (!need || p.st.apps >= row.p * need) continue;
+          p.morale = Math.max(10, p.morale - 4);
+          if (!p.roleWarned) {
+            p.roleWarned = true;
+            this.msg(`${p.name} недоволен`, `${p.name} напоминает, что ему обещали роль ${p.role === 'key' ? 'ключевого игрока' : 'игрока основы'}, но он редко выходит на поле.`, 'squad');
+          }
+        }
+      }
       if (row.p >= 5) {
         const diff = s.board.expect - row.pos;
         s.board.conf = FM.clamp(s.board.conf + FM.clamp(diff * 0.25, -1.5, 1.5), 0, 100);
@@ -1158,50 +1185,257 @@
       return Math.round(w * 10) / 10;
     }
 
-    willJoin(p, team) {
-      const cur = p.club ? this.teams[p.club] : null;
-      if (!cur) return { ok: true };
-      const gap = cur.rep - team.rep;
-      if (gap > 22) return { ok: false, why: `${p.name} не рассматривает переход в клуб такого уровня.` };
-      return { ok: true };
+    // ---------- переговоры о покупке ----------
+    // Цена, которую клуб-продавец считает справедливой, и причины, которые он называет.
+    clubAsk(p, buyer) {
+      const s = this.s, seller = this.teams[p.club];
+      if (p.release) return { ask: p.release, notes: ['в контракте прописаны отступные — клуб обязан отпустить игрока за эту сумму'], untouchable: false, release: true };
+      const rank = this.squadRank(p);
+      let k = 1.1;
+      const notes = [];
+      if (rank <= 3) { k += 0.45; notes.push('один из лидеров команды'); } else if (rank <= 11) { k += 0.2; notes.push('игрок основы'); } else notes.push('не основной игрок');
+      const left = p.contract - s.season;
+      if (left <= 0) { k -= 0.4; notes.push('контракт истекает летом'); } else if (left === 1) { k -= 0.15; notes.push('контракт заканчивается через год'); } else if (left >= 3) k += 0.1;
+      if (p.age <= 22 && p.pot - p.ovr >= 8) { k += 0.15; notes.push('высокий потенциал'); }
+      if (seller.money < 0) { k -= 0.15; notes.push('клубу нужны деньги'); } else if (seller.money > p.value * 4) k += 0.08;
+      if (seller.league === buyer.league) { k += 0.1; notes.push('не хочет усиливать соперника'); }
+      if (p.listed) { k -= 0.25; notes.push('выставлен на трансфер'); }
+      const end = s.date <= s.window.to ? s.window.to : s.window.to2;
+      if (this.inWindow() && FM.addDays(s.date, 7) >= end && rank > 3) { k -= 0.08; notes.push('окно скоро закроется'); }
+      const sameGroup = this.squad(seller).filter((x) => FM.GROUP[x.pos] === FM.GROUP[p.pos]).length;
+      if (sameGroup <= (p.pos === 'GK' ? 2 : 5)) { k += 0.15; notes.push('замены на позиции нет'); }
+      const untouchable = rank <= 2 && seller.rep >= buyer.rep && !p.listed;
+      if (untouchable) { k += 0.35; notes.unshift('не продаётся'); }
+      return { ask: FM.roundValue(p.value * Math.max(0.4, k)), notes, untouchable };
     }
 
-    // предложение пользователя: возвращает {status: 'done'|'counter'|'reject', text, fee}
-    offer(pid, fee, wage, years) {
+    canPrecontract(p) {
       const s = this.s;
-      const p = this.players[pid];
-      const u = this.userTeam();
-      if (p.club === u.id) return { status: 'reject', text: 'Это ваш игрок.' };
-      if (p.club && !this.inWindow()) return { status: 'reject', text: 'Трансферное окно закрыто. Свободных агентов можно подписывать в любое время.' };
-      if (u.players.length >= MAX_SQUAD) return { status: 'reject', text: `В заявке уже ${MAX_SQUAD} игроков. Сначала кого-нибудь продайте или отпустите.` };
-      if (fee > u.money) return { status: 'reject', text: 'Не хватает денег на трансфер.' };
-      const join = this.willJoin(p, u);
-      if (!join.ok) return { status: 'reject', text: join.why };
-      const demand = this.wageDemand(p, u);
-      if (wage < demand * 0.95) return { status: 'reject', text: `${p.name} хочет зарплату не меньше ${FM.money(demand)} в неделю.`, wage: demand };
-      if (p.club) {
-        const seller = this.teams[p.club];
-        if (seller.players.length <= 18) return { status: 'reject', text: `«${seller.name}» не готов ослаблять и без того короткий состав.` };
-        const ask = this.askingPrice(p);
-        if (fee < ask * 0.85) return { status: 'reject', text: `«${seller.name}» отклоняет предложение. Клуб ориентируется на сумму около ${FM.money(ask)}.` };
-        if (fee < ask) return { status: 'counter', text: `«${seller.name}» готов отпустить игрока за ${FM.money(ask)}.`, fee: ask };
-      }
-      this.transfer(p, u, fee, wage, years);
-      return { status: 'done', text: p.club ? '' : '' };
+      return !!p.club && p.club !== s.user && p.contract <= s.season && s.date >= `${s.season + 1}-01-01` && !p.pre;
     }
 
-    transfer(p, to, fee, wage, years) {
+    // Состояние переговоров по игроку: начинаются с клуба, потом — с игроком и его агентом.
+    nego(pid) {
+      const s = this.s;
+      s.nego = s.nego || {};
+      const p = this.players[pid];
+      let n = s.nego[pid];
+      if (n && (n.club !== p.club || n.season !== s.season)) n = null;
+      if (!n) {
+        const pre = this.canPrecontract(p);
+        n = { pid, club: p.club, season: s.season, stage: !p.club || pre ? 'player' : 'club', precontract: pre, log: [], patience: p.listed ? 6 : 5, pPatience: 4, deal: null, terms: null, until: null };
+        if (n.stage === 'club') Object.assign(n, this.clubAsk(p, this.userTeam()));
+        s.nego[pid] = n;
+      }
+      return n;
+    }
+
+    negoSay(n, who, text) {
+      n.log.push({ who, text, date: this.s.date });
+      if (n.log.length > 30) n.log.shift();
+    }
+
+    negoBlocked(n) {
+      return n.until && this.s.date < n.until ? `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(n.until)}.` : null;
+    }
+
+    // Чем выгоднее для продавца условия оплаты, тем меньше сумма: рассрочка дешевле для покупателя,
+    // процент с будущей продажи — бонус для продавца.
+    dealFactor(inst, sellOn) {
+      return (inst ? 0.9 : 1) * (1 + (sellOn || 0) / 100 * 0.5);
+    }
+
+    bidClub(pid, fee, inst, sellOn) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      const n = this.nego(pid);
+      const seller = this.teams[p.club];
+      const blocked = this.negoBlocked(n);
+      if (blocked) return { status: 'blocked', text: blocked };
+      if (n.stage !== 'club') return { status: 'blocked', text: 'С клубом уже есть договорённость.' };
+      if (!this.inWindow()) return { status: 'blocked', text: 'Трансферное окно закрыто. Покупать игроков можно летом (до 7 сентября) и зимой (20 января — 25 февраля).' };
+      if (u.players.length >= MAX_SQUAD) return { status: 'blocked', text: `В заявке уже ${MAX_SQUAD} игроков. Сначала кого-нибудь продайте или отпустите.` };
+      if ((inst ? fee * 0.4 : fee) > u.money) return { status: 'blocked', text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
+      if (seller.players.length <= 18) return { status: 'blocked', text: `«${seller.name}» не готов ослаблять и без того короткий состав.` };
+      this.negoSay(n, 'you', `Предлагаем ${FM.money(fee)}${inst ? ', рассрочка: 40% сразу и по 30% в следующие два лета' : ''}${sellOn ? `, ${sellOn}% от будущей продажи` : ''}.`);
+      const k = this.dealFactor(inst, sellOn);
+      const eff = fee * k;
+      const res = (status, text, extra = {}) => { this.negoSay(n, 'club', text); return Object.assign({ status, text }, extra); };
+      if (eff >= n.ask) {
+        n.stage = 'player';
+        n.deal = { fee, inst: !!inst, sellOn: sellOn || 0 };
+        return res('accept', n.release ? `Отступные выплачены — «${seller.name}» не может отказать. Можно договариваться с игроком.` : `«${seller.name}» принимает предложение. Теперь нужно договориться с игроком.`);
+      }
+      const r = eff / n.ask;
+      let out;
+      if (n.untouchable && r < 0.9) {
+        n.patience--;
+        out = res('reject', `${p.name} не продаётся. Обсуждать можно только сумму около ${FM.money(FM.roundValue(n.ask / k))}.`);
+      } else if (r >= 0.8) {
+        n.ask = FM.roundValue(n.ask - (n.ask - eff) * 0.3);
+        // встречное предложение не обрывает переговоры: клуб сам назвал цену
+        n.patience = Math.max(1, n.patience - 1);
+        out = res('counter', `«${seller.name}» готов уступить: ${FM.money(FM.roundValue(n.ask / k))} на тех же условиях оплаты.`, { fee: FM.roundValue(n.ask / k) });
+      } else if (r >= 0.6) {
+        n.patience--;
+        out = res('reject', `Слишком мало. «${seller.name}» рассчитывает на сумму около ${FM.money(FM.roundValue(n.ask / k))}.`);
+      } else {
+        n.patience -= 2;
+        out = res('reject', 'Такое предложение клуб считает несерьёзным.');
+      }
+      if (n.patience <= 0) {
+        n.until = FM.addDays(s.date, 14);
+        n.patience = 4;
+        this.negoSay(n, 'club', 'Клуб прекращает переговоры на две недели.');
+        return { status: 'broken', text: out.text + ' Клуб прекращает переговоры на две недели.' };
+      }
+      return out;
+    }
+
+    playerInterest(p, team) {
+      const s = this.s;
+      const cur = p.club ? this.teams[p.club] : null;
+      let sc = 55;
+      const why = [];
+      if (cur) {
+        const gap = cur.rep - team.rep;
+        sc -= gap * 2.2;
+        if (gap >= 8) why.push('шаг вниз по уровню клуба');
+        else if (gap <= -8) why.push('шаг вперёд в карьере');
+      } else {
+        sc += 12;
+        why.push('ищет клуб');
+      }
+      const euro = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(team.id));
+      if (euro) { sc += euro.id === 'ucl' ? 12 : 6; why.push(euro.name); }
+      const better = this.squad(team).filter((x) => x.id !== p.id && FM.GROUP[x.pos] === FM.GROUP[p.pos] && x.ovr > p.ovr).length;
+      const starter = better < { G: 1, D: 4, M: 3, F: 3 }[FM.GROUP[p.pos]];
+      if (starter) { sc += 8; why.push('будет игроком основы'); } else { sc -= 8; why.push('придётся бороться за место'); }
+      if (cur && p.morale < 45) { sc += 10; why.push('недоволен в нынешнем клубе'); }
+      if (p.age >= 31) sc += 5;
+      if (p.nat === this.countryOf(team.league)) { sc += 5; why.push('родная страна'); }
+      sc = Math.round(FM.clamp(sc, 0, 100));
+      const label = sc >= 70 ? 'Очень заинтересован' : sc >= 50 ? 'Заинтересован' : sc >= 30 ? 'Сомневается' : sc >= 15 ? 'Почти не заинтересован' : 'Не хочет переходить';
+      return { score: sc, label, why, starter };
+    }
+
+    playerDemand(p, team, role) {
+      const it = this.playerInterest(p, team);
+      let w = Math.max(FM.wageFor(p.value, this.tierOf(team)), p.wage * (p.club ? 1.15 : 0.9));
+      w *= 1 + Math.max(0, 55 - it.score) * 0.015;
+      w *= { key: 0.92, starter: 1, rotation: 1.1, backup: 1.25 }[role] || 1;
+      if (role === 'key' && !it.starter) w *= 1.08;
+      const prefYears = p.age < 24 ? [4, 5] : p.age < 30 ? [3, 4] : p.age < 33 ? [2, 3] : [1, 2];
+      return { wage: Math.round(w * 10) / 10, prefYears, interest: it, bonus: FM.roundValue(w * 8) };
+    }
+
+    agentFee(p, fee, wage) {
+      return FM.roundValue(Math.max(fee * 0.05, wage * 4));
+    }
+
+    offerPlayer(pid, t) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      const n = this.nego(pid);
+      const blocked = this.negoBlocked(n);
+      if (blocked) return { status: 'blocked', text: blocked };
+      if (n.stage !== 'player') return { status: 'blocked', text: n.stage === 'club' ? 'Сначала договоритесь с клубом.' : 'Условия уже согласованы.' };
+      const ROLE = { key: 'ключевой игрок', starter: 'игрок основы', rotation: 'ротация', backup: 'запасной' };
+      this.negoSay(n, 'you', `Контракт на ${t.years} г.: ${FM.money(t.wage)}/нед, подъёмные ${FM.money(t.bonus || 0)}, роль — ${ROLE[t.role]}${t.release ? `, отступные ${FM.money(t.release)}` : ''}.`);
+      const d = this.playerDemand(p, u, t.role);
+      const res = (status, text, extra = {}) => { this.negoSay(n, 'player', text); return Object.assign({ status, text }, extra); };
+      if (d.interest.score < 15) {
+        n.until = FM.addDays(s.date, 30);
+        return res('broken', `Агент: «${p.name} не рассматривает переход в ваш клуб». Переговоры закрыты на месяц.`);
+      }
+      let need = d.wage;
+      if (!d.prefYears.includes(t.years)) need *= 1.05;
+      if (t.release) need *= t.release < p.value * 1.5 ? 0.93 : 0.97;
+      const got = t.wage + (t.bonus || 0) / (t.years * 52);
+      if (got >= need) {
+        n.stage = 'done';
+        n.terms = Object.assign({}, t);
+        return res('accept', `Агент: «Условия устраивают, ${p.name} готов подписать контракт».`);
+      }
+      let out;
+      const ask = Math.ceil(Math.max(need - (t.bonus || 0) / (t.years * 52), need * 0.9) * 10) / 10;
+      if (got >= need * 0.85) {
+        n.pPatience = Math.max(1, n.pPatience - 1);
+        out = res('counter', `Агент: «Нужна зарплата хотя бы ${FM.money(ask)}/нед${d.prefYears.includes(t.years) ? '' : `, а срок лучше ${d.prefYears.join(' или ')} г.`}».`, { wage: ask });
+      } else {
+        n.pPatience -= 2;
+        out = res('reject', `Агент: «Это намного ниже ожиданий. Ориентир — ${FM.money(ask)}/нед».`, { wage: ask });
+      }
+      if (n.pPatience <= 0) {
+        n.until = FM.addDays(s.date, 14);
+        n.pPatience = 4;
+        return { status: 'broken', text: out.text + ' Игрок прерывает переговоры на две недели.' };
+      }
+      return out;
+    }
+
+    // Итоговая стоимость сделки сейчас: первый платёж, агент, подъёмные.
+    dealCost(n) {
+      const p = this.players[n.pid];
+      const fee = n.deal ? n.deal.fee : 0;
+      const first = n.deal ? (n.deal.inst ? Math.round(fee * 0.4) : fee) : 0;
+      const agent = this.agentFee(p, fee, n.terms.wage);
+      return { fee, first, agent, bonus: n.terms.bonus || 0, now: first + agent + (n.terms.bonus || 0) };
+    }
+
+    completeDeal(pid) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      const n = this.nego(pid);
+      if (n.stage !== 'done') return { ok: false, text: 'Условия ещё не согласованы.' };
+      const c = this.dealCost(n);
+      if (c.now > u.money) return { ok: false, text: `Не хватает денег: нужно ${FM.money(c.now)}, на счёте ${FM.money(u.money)}.` };
+      if (n.precontract) {
+        p.pre = Object.assign({ team: u.id }, n.terms);
+        u.money -= c.agent + c.bonus;
+        this.finLog(u, `Агент и подъёмные: ${p.name}`, -(c.agent + c.bonus));
+        delete s.nego[pid];
+        this.msg('Предварительный контракт', `${p.name} подписал предварительный контракт и перейдёт в клуб летом бесплатно.`, 'transfer');
+        return { ok: true, text: `${p.name} перейдёт в «${u.name}» летом.` };
+      }
+      if (p.club && !this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто.' };
+      this.transfer(p, u, c.fee, n.terms.wage, n.terms.years, { inst: n.deal && n.deal.inst, sellOn: n.deal && n.deal.sellOn, role: n.terms.role, release: n.terms.release, agent: c.agent, bonus: c.bonus });
+      delete s.nego[pid];
+      return { ok: true, text: `${p.name} — ваш игрок!` };
+    }
+
+    // opts: inst (рассрочка 40/30/30), sellOn (% продавцу с будущей продажи), role, release, agent, bonus
+    transfer(p, to, fee, wage, years, opts = {}) {
       const s = this.s;
       const from = p.club ? this.teams[p.club] : null;
+      const now = opts.inst ? Math.round(fee * 0.4) : fee;
       if (from) {
-        from.money += fee;
+        from.money += now;
         this.removeFromTeam(p);
-        if (from.id === s.user) this.finLog(from, `Продажа: ${p.name}`, fee);
+        if (from.id === s.user) this.finLog(from, `Продажа: ${p.name}`, now);
+        // процент с перепродажи, обещанный прежнему клубу
+        if (fee && p.sellOn && p.sellOn.club !== to.id && this.teams[p.sellOn.club]) {
+          const cut = Math.round(fee * p.sellOn.pct / 100);
+          from.money -= cut;
+          this.teams[p.sellOn.club].money += cut;
+          if (from.id === s.user) this.finLog(from, `${p.sellOn.pct}% с перепродажи: ${p.name}`, -cut);
+          if (p.sellOn.club === s.user) this.finLog(this.teams[s.user], `${p.sellOn.pct}% с перепродажи: ${p.name}`, cut);
+        }
       } else {
         s.freeAgents = s.freeAgents.filter((x) => x !== p.id);
       }
-      to.money -= fee;
-      if (to.id === s.user && fee) this.finLog(to, `Покупка: ${p.name}`, -fee);
+      to.money -= now;
+      if (to.id === s.user && fee) this.finLog(to, `Покупка: ${p.name}${opts.inst ? ' (первый платёж)' : ''}`, -now);
+      if (opts.inst && from) {
+        s.payments = s.payments || [];
+        for (const y of [1, 2]) s.payments.push({ from: to.id, to: from.id, amount: Math.round(fee * 0.3), date: `${s.season + y}-07-01`, what: p.name });
+      }
+      const extra = (opts.agent || 0) + (opts.bonus || 0);
+      if (extra) {
+        to.money -= extra;
+        if (to.id === s.user) this.finLog(to, `Агент и подъёмные: ${p.name}`, -extra);
+      }
+      p.sellOn = opts.sellOn && from ? { club: from.id, pct: opts.sellOn } : null;
+      p.role = opts.role || null;
+      p.release = opts.release || 0;
+      p.pre = null;
       p.club = to.id;
       to.players.push(p.id);
       p.wage = wage || this.wageDemand(p, to);
@@ -1266,6 +1500,15 @@
         if (fee > b.money) continue;
         this.msg(`Предложение за ${p.name}`, `«${b.name}» предлагает ${FM.money(fee)} за ${p.name}. Ответить нужно в течение 5 дней.`, 'offer', { pid, from: b.id, fee, until: FM.addDays(s.date, 5) });
       }
+      // отступные в контрактах игроков пользователя
+      for (const pid of u.players.slice()) {
+        const p = this.players[pid];
+        if (!p.release || p.release > p.value * 1.6 || !FM.chance(0.004)) continue;
+        const b = Object.values(this.teams).find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5);
+        if (!b) continue;
+        this.msg('Отступные активированы', `«${b.name}» выплатил отступные ${FM.money(p.release)} — ${p.name} уходит из клуба.`, 'transfer');
+        this.transfer(p, b, p.release, null, FM.ri(3, 5));
+      }
       // трансферы между клубами ИИ
       const ai = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf);
       for (let k = 0; k < 3; k++) {
@@ -1308,7 +1551,7 @@
         if (t.rep > buyer.rep + 3) continue;
         for (const pid of t.players) {
           const p = this.players[pid];
-          if (p.pos !== pos || p.ovr < wv + 2 || p.inj) continue;
+          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre) continue;
           const fee = this.askingPrice(p);
           if (fee > budget) continue;
           cands.push([p, fee]);
@@ -1322,6 +1565,30 @@
       cands.sort((a, b) => b[0].ovr - a[0].ovr);
       const [p, fee] = FM.pick(cands.slice(0, 4));
       this.transfer(p, buyer, fee, null, FM.ri(2, 4));
+    }
+
+    // Торг за своего игрока: у клуба-покупателя есть скрытый потолок, выше которого он не пойдёт.
+    counterOffer(msgId, ask) {
+      const s = this.s;
+      const m = s.inbox.find((x) => x.id === msgId);
+      if (!m || !m.data || m.data.closed) return 'Предложение уже неактуально.';
+      const d = m.data;
+      const p = this.players[d.pid], b = this.teams[d.from];
+      if (!p || p.club !== s.user) { d.closed = true; d.result = 'Неактуально'; return 'Игрок уже не в клубе.'; }
+      d.max = d.max || FM.roundValue(d.fee * (1.08 + Math.random() * 0.27));
+      d.rounds = (d.rounds || 0) + 1;
+      if (ask <= d.max && ask <= b.money) {
+        d.fee = ask;
+        return this.answerOffer(msgId, true);
+      }
+      if (d.rounds <= 2 && ask <= d.max * 1.25) {
+        d.fee = Math.min(FM.roundValue((d.fee + d.max) / 2 + (d.max - d.fee) * 0.25), d.max, b.money);
+        m.text = `«${b.name}» повышает предложение за ${p.name}: ${FM.money(d.fee)}. Ответить нужно до ${FM.fmtDate(d.until)}.`;
+        return `«${b.name}» поднимает сумму до ${FM.money(d.fee)}, но ${FM.money(ask)} для них слишком много.`;
+      }
+      d.closed = true;
+      d.result = 'Клуб отказался от сделки';
+      return `«${b.name}» считает запрос завышенным и выходит из переговоров.`;
     }
 
     answerOffer(msgId, accept) {

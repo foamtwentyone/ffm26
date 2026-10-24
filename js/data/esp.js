@@ -43,7 +43,7 @@ Eduardo Camavinga|CM|23|50000|FRA
 Thiago Pitarch|CM|19|20000|ESP
 Jorge Cestero|CM|20|7500|ESP
 Jude Bellingham|AM|23|160000|ENG
-Arda Güler|AM|21|100000|TÜR
+Arda Güler|AM|21|100000|TUR
 Bernardo Silva|AM|32|22000|POR
 Yan Diomande|RW|19|120000|CIV
 Brahim Díaz|RW|27|35000|MAR
@@ -122,7 +122,7 @@ Aitor Ruibal|RW|30|4000|ESP
 Troy Parrott|ST|24|20000|IRL` },
     { id: 'celta', name: 'Сельта', city: 'Виго', stadium: 'Abanca-Balaídos', cap: 24870, colors: ['#8ac3ee', '#ffffff'], players: `
 Ionuț Radu|GK|29|10000|ROU
-Altay Bayındır|GK|28|3800|TÜR
+Altay Bayındır|GK|28|3800|TUR
 Iván Villar|GK|29|900|ESP
 Javi Rodríguez|CB|23|18000|ESP
 Yoel Lago|CB|22|7500|ESP
@@ -161,7 +161,7 @@ Ramón Terrats|CM|26|3000|ESP
 Francho Serrano|CM|25|3000|ESP
 Alberto Risco|AM|21|800|ESP
 Martín Satriano|ST|25|10000|URU
-Enes Ünal|ST|29|7000|TÜR
+Enes Ünal|ST|29|7000|TUR
 Borja Mayoral|ST|29|4500|ESP` },
     { id: 'rayo', name: 'Райо Вальекано', city: 'Мадрид', stadium: 'Estadio de Vallecas', cap: 15500, colors: ['#ffffff', '#e53027'], players: `
 Emil Audero|GK|29|2800|IDN
@@ -197,7 +197,7 @@ Iker Córdoba|CB|20|1000|ESP
 Jesús Vázquez|LB|23|4000|ESP
 Arnau Martínez|RB|23|10000|ESP
 Pablo Maffeo|RB|29|2500|ARG
-Dimitri Foulquier|RB|33|500|GUA
+Dimitri Foulquier|RB|33|500|GLP
 Pepelu|DM|28|8000|ESP
 Guido Rodríguez|DM|32|3500|ARG
 Aliou Dieng|DM|29|3000|MLI

@@ -100,7 +100,7 @@ Luka Vuskovic|CB|19|65000|CRO
 Pascal Struijk|CB|27|22000|NED
 Olivier Boscagli|CB|28|20000|FRA
 Michael Svoboda|CB|28|5000|AUT
-Ferdi Kadıoğlu|LB|27|40000|TÜR
+Ferdi Kadıoğlu|LB|27|40000|TUR
 Maxim De Cuyper|LB|25|30000|BEL
 Jaouen Hadjam|LB|23|10000|ALG
 Mats Wieffer|RB|26|25000|NED
@@ -113,7 +113,7 @@ Malick Yalcouyé|CM|20|22000|CIV
 Matt O'Riley|CM|25|18000|DEN
 Pascal Groß|CM|35|2500|GER
 Ibrahim Osman|LW|21|12000|GHA
-Yankuba Minteh|RW|22|55000|THE
+Yankuba Minteh|RW|22|55000|GAM
 Charalampos Kostoulas|ST|19|40000|GRE
 Georginio Rutter|ST|24|30000|FRA
 Promise David|ST|25|20000|CAN` },
@@ -262,7 +262,7 @@ Sorba Thomas|LW|27|14000|WAL
 Elliot Stroud|LW|24|8000|SWE
 Mohamed Belloumi|RW|24|18000|ALG
 Mohamed-Ali Cho|RW|22|15000|FRA
-Abdülkadir Ömür|RW|27|1500|TÜR
+Abdülkadir Ömür|RW|27|1500|TUR
 Robinio Vaz|ST|19|18000|FRA
 Ilyas Ansah|ST|21|15000|GER
 Joe Gelhardt|ST|24|14000|ENG

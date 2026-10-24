@@ -51,7 +51,7 @@ Franjo Ivanović|ST|23|15000|CRO
 Odsonne Édouard|ST|28|12000|FRA
 Florian Sotoca|ST|35|1200|FRA` },
     { id: 'lille', name: 'Лилль', city: 'Лилль', stadium: 'Decathlon Arena - Stade Pierre-Mauroy', cap: 50083, colors: ['#e01e13', '#1a2b4c'], players: `
-Berke Özer|GK|26|12000|TÜR
+Berke Özer|GK|26|12000|TUR
 Orlando Gill|GK|26|7500|PAR
 Nathan Ngoy|CB|23|25000|BEL
 Alexsandro|CB|27|15000|BRA
@@ -65,7 +65,7 @@ Ngal'ayel Mukau|DM|21|15000|COD
 Nabil Bentaleb|DM|31|4500|ALG
 Maurits Kjærgaard|CM|23|8000|DEN
 Hákon Arnar Haraldsson|AM|23|30000|ISL
-Başar Önal|LW|22|10000|TÜR
+Başar Önal|LW|22|10000|TUR
 Osame Sahraoui|LW|25|7000|MAR
 Soriba Diaoune|LW|19|4000|FRA
 Tiago Morais|LW|23|1200|POR
@@ -214,7 +214,7 @@ Srdjan Kuzmic|LB|22|3000|SVN
 Alec Georgen|RB|28|1500|FRA
 Dembo Sylla|RB|23|1500|GUI
 Arthur Avom|CM|21|20000|CMR
-Noah Cadiou|CM|27|7000|GUA
+Noah Cadiou|CM|27|7000|GLP
 Théo Le Bris|RW|24|5000|FRA
 Panos Katseris|RW|25|3000|GRE
 Jean-Victor Makengo|AM|28|6000|FRA

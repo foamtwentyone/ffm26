@@ -87,7 +87,7 @@ Ameen Al-Dakhil|CB|24|3000|BEL
 Maximilian Mittelstädt|LB|29|18000|GER
 Lorenz Assignon|RB|26|9000|FRA
 Angelo Stiller|DM|25|45000|GER
-Atakan Karazor|DM|30|5000|TÜR
+Atakan Karazor|DM|30|5000|TUR
 Yanik Spalt|CM|19|4000|AUT
 Grischa Prömel|CM|31|3500|GER
 Bilal El Khannouss|AM|22|35000|MAR
@@ -100,7 +100,7 @@ Ermedin Demirovic|ST|28|22000|BIH` },
     { id: 'hoffenheim', name: 'Хоффенхайм', city: 'Зинсхайм', stadium: 'SNP Arena', cap: 30164, colors: ['#1c63b7', '#ffffff'], players: `
 Luca Philipp|GK|25|750|GER
 Lúkas Petersson|GK|22|600|ISL
-Ozan Kabak|CB|26|15000|TÜR
+Ozan Kabak|CB|26|15000|TUR
 Robin Hranac|CB|26|10000|CZE
 Koki Machida|CB|29|6000|JPN
 Sean Dulic|CB|21|1200|GER
@@ -179,7 +179,7 @@ Timothy Chandler|RB|36|350|USA
 Raphael Onyedika|DM|25|17000|NGA
 Noël Aséko|DM|20|12000|GER
 Oscar Højlund|CM|21|15000|DEN
-Can Uzun|AM|20|45000|TÜR
+Can Uzun|AM|20|45000|TUR
 Farès Chaïbi|AM|23|15000|ALG
 Love Arrhov|AM|18|5000|SWE
 Mario Götze|AM|34|3000|GER
@@ -252,7 +252,7 @@ Janik Haberer|CM|32|2000|GER
 Kastriot Imeri|LW|26|2000|SUI
 Robert Skov|LW|30|1500|DEN
 Woo-yeong Jeong|AM|27|3500|KOR
-Livan Burcu|LW|22|4000|TÜR
+Livan Burcu|LW|22|4000|TUR
 Linus Güther|LW|16|1000|GER
 Julien Friedrich|LW|19|125|GER
 Emmanuel Latte Lath|ST|27|10000|CIV
@@ -298,7 +298,7 @@ Zakaria El Ouahdi|RB|24|12000|MAR
 Kofi Amoako|DM|21|4000|GER
 Albert Sambi Lokonga|CM|27|12000|BEL
 Bilal Nadir|CM|22|8000|MAR
-Bakery Jatta|RW|28|1000|THE
+Bakery Jatta|RW|28|1000|GAM
 Fábio Vieira|AM|26|15000|POR
 Martin Adeline|AM|22|8000|FRA
 Albert Grønbaek|AM|25|7000|DEN
@@ -347,9 +347,9 @@ Youri Regeer|DM|23|5000|NED
 Dariusz Stalmach|DM|20|2500|POL
 Ludovit Reis|CM|26|3000|NED
 Chuki|AM|22|10000|ESP
-Darwin Soylu|AM|19|500|TÜR
+Darwin Soylu|AM|19|500|TUR
 Marco Grüll|LW|28|5000|AUT
-Eren Dinkçi|RW|24|6000|TÜR
+Eren Dinkçi|RW|24|6000|TUR
 Paul Erevbenagie|RW|19|1500|GER
 Niclas Füllkrug|ST|33|3500|GER
 Kenny Quetant|ST|20|3000|HAI
@@ -357,8 +357,8 @@ Cedric Itten|ST|29|1800|SUI` },
     { id: 'schalke', name: 'Шальке 04', city: 'Гельзенкирхен', stadium: 'VELTINS-Arena', cap: 62278, colors: ['#004d9d', '#ffffff'], players: `
 Loris Karius|GK|33|1200|GER
 Kevin Müller|GK|35|300|GER
-Mertcan Ayhan|CB|20|8000|TÜR
-Hasan Kuruçay|CB|29|2500|TÜR
+Mertcan Ayhan|CB|20|8000|TUR
+Hasan Kuruçay|CB|29|2500|TUR
 Nikola Katic|CB|30|2000|BIH
 Timo Becker|CB|29|1500|GER
 Robin Gosens|LB|32|4000|GER

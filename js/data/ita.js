@@ -17,7 +17,7 @@ Federico Dimarco|LB|28|50000|ITA
 Carlos Augusto|LB|27|23000|BRA
 Djed Spence|RB|26|35000|ENG
 Aleksandar Stanković|DM|21|32000|SRB
-Hakan Çalhanoğlu|DM|32|16000|TÜR
+Hakan Çalhanoğlu|DM|32|16000|TUR
 Nicolò Barella|CM|29|50000|ITA
 Petar Sučić|CM|22|45000|CRO
 Andy Diouf|CM|23|30000|FRA
@@ -333,7 +333,7 @@ Demi Akarakiri|CM|19|450|ENG
 Ivan Sulev|CM|20|200|BUL
 Daniel Maldini|AM|25|9000|ITA
 Yanis Massolin|AM|24|4500|FRA
-Alieu Fadera|LW|24|4500|THE
+Alieu Fadera|LW|24|4500|GAM
 Riccardo Ciervo|LW|24|2000|ITA
 Paul Mendy|ST|19|12000|SEN
 Kevin Carlos|ST|25|3500|ESP

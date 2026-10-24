@@ -88,6 +88,9 @@
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
+  const flag = (c, cls = '') => (FM.FLAGS && FM.FLAGS.has(c)
+    ? `<img class="flag ${cls}" src="img/flags/${c}.png" alt="${esc(FM.NAT[c] || c)}" title="${esc(FM.NAT[c] || c)}">`
+    : `<span class="flag-code" title="${esc(FM.NAT[c] || c)}">${esc(c)}</span>`);
   // цвет метки команды в ленте матча: тёмный основной цвет на тёмном фоне не виден
   const markColor = (t) => (parseInt(t.colors[0].slice(1, 3), 16) + parseInt(t.colors[0].slice(3, 5), 16) + parseInt(t.colors[0].slice(5, 7), 16) < 120 ? t.colors[1] : t.colors[0]);
 
@@ -826,10 +829,9 @@
     const club = p.club ? T(p.club) : null;
     const mine = p.club === u.id;
     const avg = p.st.apps ? (p.st.rsum / p.st.apps).toFixed(2) : '—';
-    const ask = club ? G.askingPrice(p) : 0;
-    const wage = G.wageDemand(p, u);
-    const el = modal(`<div class="row">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${esc(p.name)}${p.gen ? ' <span class="gen" title="Сгенерированный игрок">*</span>' : ''}</h2>
-      <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет · ${esc(FM.NAT[p.nat] || p.nat)}</div>
+    const it = mine ? null : G.playerInterest(p, u);
+    const el = modal(`<div class="row">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}${p.gen ? ' <span class="gen" title="Сгенерированный игрок">*</span>' : ''}</h2>
+      <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет</div>
       <div>${club ? tname(club) : '<span class="muted">Свободный агент</span>'}</div></div><div class="center">${ovr(p.ovr)}<div class="small muted">рейтинг</div></div></div>
       <div class="kv">
         <div><span>Стоимость</span><b>${FM.money(p.value)}</b></div>
@@ -847,15 +849,14 @@
       <div id="act" style="margin-top:14px">${mine ? `
         <div class="row"><button class="btn" data-renew>Продлить контракт</button>
         <button class="btn ${p.listed ? 'on' : ''}" data-tl>${p.listed ? 'Снять с трансфера' : 'Выставить на трансфер'}</button>
-        <button class="btn danger" data-release>Расторгнуть контракт</button></div><div id="res"></div>` : `
-        <h3>Предложение</h3>
-        <div class="row">${club ? `<label>Сумма, тыс. €<br><input id="fee" type="number" value="${ask}" step="25" style="width:130px"></label>` : ''}
-          <label>Зарплата/нед, тыс. €<br><input id="wage" type="number" value="${wage}" step="0.5" style="width:120px"></label>
-          <label>Лет<br><select id="years">${[1, 2, 3, 4, 5].map((y) => `<option ${y === 3 ? 'selected' : ''}>${y}</option>`).join('')}</select></label>
-          <button class="btn primary" data-offer>${club ? 'Сделать предложение' : 'Подписать'}</button></div>
-        <div class="small muted" style="margin-top:6px">${club ? `Ориентир клуба: ~${FM.money(ask)}. ` : ''}Запрос игрока по зарплате: ~${FM.money(wage)}/нед. Бюджет: ${FM.money(u.money)}.</div><div id="res"></div>`}</div>`);
+        <button class="btn danger" data-release>Расторгнуть контракт</button></div>
+        ${p.role || p.release || p.sellOn ? `<div class="small muted" style="margin-top:8px">${[p.role ? `Обещанная роль: ${ROLE_NAME[p.role]}` : '', p.release ? `отступные ${FM.money(p.release)}` : '', p.sellOn && T(p.sellOn.club) ? `${p.sellOn.pct}% с продажи — «${esc(T(p.sellOn.club).name)}»` : ''].filter(Boolean).join(' · ')}</div>` : ''}
+        <div id="res"></div>` : p.pre ? `<div class="note">Подписан предварительный контракт: летом ${esc(p.name)} переходит в «${esc(T(p.pre.team).name)}».</div>` : `
+        <div class="interest"><div class="row"><span class="muted">Интерес к вашему клубу</span><b style="color:${interestColor(it.score)}">${it.label}</b></div>
+          <div class="bar"><i style="width:${it.score}%;background:${interestColor(it.score)}"></i></div><div class="small muted">${it.why.map(esc).join(' · ')}</div></div>
+        <div class="row" style="margin-top:12px"><button class="btn primary" data-nego>${s.nego && s.nego[pid] && s.nego[pid].log.length ? 'Продолжить переговоры' : G.canPrecontract(p) ? 'Предварительный контракт' : club ? 'Начать переговоры' : 'Предложить контракт'}</button>
+          <span class="small muted">${club ? `Окно: ${G.windowText()}` : 'Свободного агента можно подписать в любое время'}</span></div>`}</div>`);
     const res = el.querySelector('#res');
-    const say = (t, cls = '') => { res.innerHTML = `<div class="note ${cls}">${t}</div>`; };
     if (mine) {
       el.querySelector('[data-tl]').onclick = () => { p.listed = !p.listed; save(); playerModal(pid); render(); };
       el.querySelector('[data-renew]').onclick = () => {
@@ -871,21 +872,96 @@
         res.querySelector('[data-yes]').onclick = () => { G.release(pid); save(); closeModal(); render(); toast(`${esc(p.name)} покинул клуб`); };
       };
     } else {
-      el.querySelector('[data-offer]').onclick = () => {
-        const fee = club ? +el.querySelector('#fee').value || 0 : 0;
-        const w = +el.querySelector('#wage').value || 0;
-        const yrs = +el.querySelector('#years').value;
-        const r = G.offer(pid, fee, w, yrs);
-        if (r.status === 'done') { save(); closeModal(); render(); toast(`${esc(p.name)} — ваш игрок!`); return; }
-        if (r.status === 'counter') {
-          say(`${esc(r.text)} <button class="btn sm primary" data-acc>Согласиться</button>`, 'warn');
-          res.querySelector('[data-acc]').onclick = () => { el.querySelector('#fee').value = r.fee; el.querySelector('[data-offer]').click(); };
-          return;
-        }
-        if (r.wage) el.querySelector('#wage').value = r.wage;
-        say(esc(r.text), 'bad');
-      };
+      const nb = el.querySelector('[data-nego]');
+      if (nb) nb.onclick = () => negoModal(pid);
     }
+  }
+
+  const ROLE_NAME = { key: 'ключевой игрок', starter: 'игрок основы', rotation: 'ротация', backup: 'запасной' };
+  const interestColor = (v) => (v >= 70 ? 'var(--good)' : v >= 50 ? '#9be36b' : v >= 30 ? 'var(--warn)' : 'var(--bad)');
+
+  // ================== переговоры ==================
+  function negoModal(pid) {
+    const G = g(), s = G.s, u = G.userTeam();
+    const p = P(pid);
+    const club = p.club ? T(p.club) : null;
+    const n = G.nego(pid);
+    const it = G.playerInterest(p, u);
+    const blocked = G.negoBlocked(n);
+    const stage = { club: 0, player: 1, done: 2 }[n.stage];
+    const dots = (k, max) => `<span class="pat">${'●'.repeat(Math.max(0, k))}${'○'.repeat(Math.max(0, max - k))}</span>`;
+    let form = '';
+    if (blocked) form = `<div class="note bad">${esc(blocked)}</div>`;
+    else if (n.stage === 'club') {
+      // ориентир с погрешностью: точную цену клуб называет только в ответ на предложения
+      const hint = n.release ? n.ask : FM.roundValue(n.ask * (0.92 + ((p.id * 37) % 17) / 100));
+      form = `<div class="tags">${(n.notes || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+        <div class="row nego-form">
+          <label>Сумма, тыс. €<input id="n-fee" type="number" step="50" min="0" value="${n.lastFee || FM.roundValue(hint * 0.85)}"></label>
+          <label>Оплата<select id="n-inst"><option value="0">Сразу</option><option value="1">Рассрочка 40/30/30</option></select></label>
+          <label>% с перепродажи<select id="n-sell"><option value="0">нет</option><option value="10">10%</option><option value="20">20%</option></select></label>
+          <button class="btn primary" id="n-bid">Отправить</button></div>
+        <div class="small muted" style="margin-top:8px">Ориентир: около ${FM.money(hint)} · терпение клуба ${dots(n.patience, p.listed ? 6 : 5)} · бюджет ${FM.money(u.money)}</div>`;
+    } else if (n.stage === 'player') {
+      const role = it.starter ? 'starter' : 'rotation';
+      const d = G.playerDemand(p, u, role);
+      form = `<div class="row nego-form">
+          <label>Зарплата/нед, тыс. €<input id="n-wage" type="number" step="0.5" min="0" value="${n.lastWage || Math.round(d.wage * 0.9 * 2) / 2}"></label>
+          <label>Срок<select id="n-years">${[1, 2, 3, 4, 5].map((y) => `<option value="${y}" ${y === d.prefYears[0] ? 'selected' : ''}>${y} г.</option>`).join('')}</select></label>
+          <label>Подъёмные, тыс. €<input id="n-bonus" type="number" step="25" min="0" value="${d.bonus}"></label>
+          <label>Роль<select id="n-role">${Object.entries(ROLE_NAME).map(([k, v]) => `<option value="${k}" ${k === role ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+          <label>Отступные, тыс. €<input id="n-release" type="number" step="500" min="0" value="0" placeholder="0 — без отступных"></label>
+          <button class="btn primary" id="n-offer">Предложить</button></div>
+        <div class="small muted" style="margin-top:8px">Агент ориентируется примерно на ${FM.money(d.wage)}/нед для роли «${ROLE_NAME[role]}», удобный срок — ${d.prefYears.join(' или ')} г. Роль «ключевой игрок» снижает запрос, «запасной» — повышает. Отступные немного снижают запрос. Терпение игрока ${dots(n.pPatience, 4)}</div>`;
+    } else {
+      const c = G.dealCost(n);
+      const t = n.terms;
+      form = `<div class="kv">
+          ${n.deal ? `<div><span>Трансфер</span><b>${FM.money(c.fee)}</b><span>${n.deal.inst ? `сейчас ${FM.money(c.first)}, остальное — два платежа летом` : 'выплата сразу'}${n.deal.sellOn ? ` · ${n.deal.sellOn}% с перепродажи` : ''}</span></div>` : ''}
+          <div><span>Агенту</span><b>${FM.money(c.agent)}</b></div><div><span>Подъёмные</span><b>${FM.money(c.bonus)}</b></div>
+          <div><span>Зарплата</span><b>${FM.money(t.wage)}/нед</b><span>${t.years} г. · ${ROLE_NAME[t.role]}${t.release ? ` · отступные ${FM.money(t.release)}` : ''}</span></div>
+          <div><span>Платим сейчас</span><b class="${c.now > u.money ? 'bad' : ''}">${FM.money(c.now)}</b><span>на счёте ${FM.money(u.money)}</span></div></div>
+        <div class="row"><button class="btn primary" id="n-sign">${n.precontract ? 'Подписать предварительный контракт' : 'Подписать контракт'}</button></div>`;
+    }
+    const el = modal(`<div class="row">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}</h2>
+        <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет · ${club ? esc(club.name) : 'свободный агент'} · стоимость ${FM.money(p.value)}</div></div>${ovr(p.ovr)}</div>
+      <div class="interest"><div class="row"><span class="muted">Интерес игрока</span><b style="color:${interestColor(it.score)}">${it.label}</b></div>
+        <div class="bar"><i style="width:${it.score}%;background:${interestColor(it.score)}"></i></div><div class="small muted">${it.why.map(esc).join(' · ')}</div></div>
+      <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? '✓ ' : ''}${l}</span>` : '')).join('')}</div>
+      ${n.precontract ? '<div class="note">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
+      <div class="chat" id="chat">${n.log.map((m) => `<div class="msg ${m.who}"><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
+      ${form}`, 'wide nego');
+    const chat = el.querySelector('#chat');
+    chat.scrollTop = chat.scrollHeight;
+    const after = (r) => { save(); negoModal(pid); if (r && r.status === 'broken') toast(esc(r.text)); };
+    const bid = el.querySelector('#n-bid');
+    if (bid) bid.onclick = () => {
+      const fee = +el.querySelector('#n-fee').value || 0;
+      const r = G.bidClub(pid, fee, el.querySelector('#n-inst').value === '1', +el.querySelector('#n-sell').value);
+      if (r.status === 'blocked') return toast(esc(r.text));
+      n.lastFee = r.fee || fee;
+      after(r);
+    };
+    const off = el.querySelector('#n-offer');
+    if (off) off.onclick = () => {
+      const wage = +el.querySelector('#n-wage').value || 0;
+      const r = G.offerPlayer(pid, {
+        wage, years: +el.querySelector('#n-years').value, bonus: +el.querySelector('#n-bonus').value || 0,
+        role: el.querySelector('#n-role').value, release: +el.querySelector('#n-release').value || 0,
+      });
+      if (r.status === 'blocked') return toast(esc(r.text));
+      n.lastWage = r.wage || wage;
+      after(r);
+    };
+    const sign = el.querySelector('#n-sign');
+    if (sign) sign.onclick = () => {
+      const r = G.completeDeal(pid);
+      if (!r.ok) return toast(esc(r.text));
+      save();
+      closeModal();
+      render();
+      toast(esc(r.text));
+    };
   }
 
   // ================== карточка клуба ==================
@@ -1135,11 +1211,16 @@
     main.innerHTML = `<div class="card tight">${s.inbox.map((m) => `<div class="inbox-item ${m.read ? '' : 'unread'}" data-msg="${m.id}">
       <div class="row"><span class="t grow">${esc(m.title)}</span><span class="small muted">${FM.fmtDate(m.date)}</span></div>
       <div class="small">${esc(m.text)}</div>
-      ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
+      ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
+        <input class="sm" type="number" step="50" min="0" data-ask="${m.id}" value="${FM.roundValue(m.data.fee * 1.2)}" title="Ваша цена, тыс. €"><button class="btn sm" data-haggle="${m.id}">Торговаться</button><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
       ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button></div>` : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
     s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
+    main.querySelectorAll('[data-haggle]').forEach((b) => b.onclick = () => {
+      const v = +main.querySelector(`[data-ask="${b.dataset.haggle}"]`).value || 0;
+      toast(esc(G.counterOffer(+b.dataset.haggle, v)), 4000); save(); render();
+    });
     main.querySelectorAll('[data-dec]').forEach((b) => b.onclick = () => { G.answerOffer(+b.dataset.dec, false); save(); render(); });
     main.querySelectorAll('[data-job]').forEach((b) => b.onclick = () => {
       const m = s.inbox.find((x) => x.id === +b.dataset.job);
