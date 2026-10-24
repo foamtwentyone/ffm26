@@ -543,3 +543,23 @@ th { font-weight: 700; letter-spacing: .04em; }
 input, select { font-weight: 600; }
 @media (max-width: 860px) { .mainnav button { font-size: 11px; padding: 6px 2px; } .mainnav .ni, .mainnav .ni svg { width: 22px; height: 22px; } }
 .trlist .arr { width: 20px; height: 20px; border-radius: 6px; } .trlist .arr svg { width: 13px; height: 13px; }
+
+/* линии состава: вратарь, защита, полузащита, атака — свой цвет везде (поле, скамейка, таблицы, сила состава) */
+:root { --ln-G: #f4b400; --ln-D: #2f80ff; --ln-M: #19b86a; --ln-F: #ec3b52; }
+.slot .shirt.ln-G { background: var(--ln-G); color: #1a1300; }
+.slot .shirt.ln-D { background: var(--ln-D); color: #fff; }
+.slot .shirt.ln-M { background: var(--ln-M); color: #fff; }
+.slot .shirt.ln-F { background: var(--ln-F); color: #fff; }
+.pos.G { background: var(--ln-G); color: #1a1300; }
+.pos.D { background: var(--ln-D); color: #fff; }
+.pos.M { background: var(--ln-M); color: #fff; }
+.pos.F { background: var(--ln-F); color: #fff; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.legend .ln-G::before { background: var(--ln-G); } .legend .ln-D::before { background: var(--ln-D); }
+.legend .ln-M::before { background: var(--ln-M); } .legend .ln-F::before { background: var(--ln-F); }
+.str { grid-template-columns: 96px 1fr 30px; }
+.str.ln-F .bar > i { background: var(--ln-F); } .str.ln-M .bar > i { background: var(--ln-M); } .str.ln-D .bar > i { background: var(--ln-D); }
+.str.ln-F > span { color: #ff8a98; } .str.ln-M > span { color: #6ee3a5; } .str.ln-D > span { color: #8ab8ff; }
+.bench-btn { display: inline-flex; align-items: center; gap: 6px; }
+.bench-btn .pos { min-width: 28px; font-size: 11px; padding: 1px 4px; }

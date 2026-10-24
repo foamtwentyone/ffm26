@@ -45,7 +45,7 @@
 
     recalc() {
       const g = { G: [], D: [], M: [], F: [] };
-      for (const o of this.onPitch) g[FM.GROUP[o.slot]].push(this.eff(o));
+      for (const o of this.onPitch) g[FM.lineOf(o.slot, this.team.formation)].push(this.eff(o));
       const avg = (a, d) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : d);
       const gk = g.G.length ? g.G[0] : 30;
       const d = avg(g.D, 35), m = avg(g.M, 35), f = avg(g.F, m * 0.9);
@@ -267,7 +267,7 @@
       const o = this.other(s);
       const gk = o.gkPlayer();
       o.rating[gk.id] -= 0.35;
-      for (const x of o.onPitch) if (FM.GROUP[x.slot] === 'D') o.rating[x.p.id] -= 0.12;
+      for (const x of o.onPitch) if (FM.lineOf(x.slot, o.team.formation) === 'D') o.rating[x.p.id] -= 0.12;
       this.goalsList.push({ side: s === this.home ? 'h' : 'a', min: this.minuteLabel(), scorer: scorer.id, assist: assist ? assist.id : null, pen: how === 'с пенальти' });
       const score = `${this.home.goals}:${this.away.goals}`;
       let text = FM.pick([`ГОЛ! ${scorer.name} забивает`, `ГОООЛ! ${scorer.name} отправляет мяч в сетку`, `ГОЛ! ${scorer.name} не оставляет шансов вратарю`]);

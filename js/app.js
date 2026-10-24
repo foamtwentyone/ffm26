@@ -521,10 +521,11 @@
     const grp = { G: [], D: [], M: [], F: [] };
     lineup.forEach((pid, i) => {
       const p = P(pid);
-      if (p) grp[FM.GROUP[slots[i][0]]].push(p.ovr * FM.fit(p.pos, slots[i][0]));
+      if (p) grp[FM.lineOf(slots[i][0], t.formation)].push(p.ovr * FM.fit(p.pos, slots[i][0]));
     });
     const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
-    return { att: avg(grp.F) * 0.6 + avg(grp.M) * 0.4, mid: avg(grp.M), def: avg(grp.D) * 0.75 + avg(grp.G) * 0.25 };
+    // каждая линия — только свои игроки: в схеме с одним нападающим атака — это он
+    return { att: avg(grp.F), mid: avg(grp.M), def: avg(grp.D) };
   }
 
   function viewSquad(main) {
@@ -549,16 +550,17 @@
               const bad = p && (!G.isAvailable(p) || p.club !== u.id);
               const sel = UI.sel && UI.sel.type === 'xi' && UI.sel.i === i;
               return `<div class="slot ${p ? '' : 'empty'} ${bad ? 'bad' : ''} ${sel ? 'sel' : ''}" data-slot="${i}" style="left:${x}%;top:${y}%">
-                <div class="shirt" style="background:${u.colors[0]};color:${badgeText(u)}">${p ? p.ovr : '+'}</div>
+                <div class="shirt ln-${FM.lineOf(sp, u.formation)}">${p ? p.ovr : '+'}</div>
                 <div class="nm">${p ? esc(p.name.split(' ').slice(-1)[0]) : FM.POS_RU[sp]}</div>
                 ${p && p.pos !== sp ? `<div class="sp">${FM.POS_RU[sp]} (${Math.round(FM.fit(p.pos, sp) * 100)}%)</div>` : ''}</div>`;
             }).join('')}
           </div>
+          <div class="legend"><span class="ln-G">Вратарь</span><span class="ln-D">Защита</span><span class="ln-M">Полузащита</span><span class="ln-F">Атака</span></div>
           <h3 style="margin-top:12px">Запасные</h3>
           <div class="row">${Array.from({ length: 9 }, (_, i) => {
             const p = P(u.bench[i]);
             const sel = UI.sel && UI.sel.type === 'bench' && UI.sel.i === i;
-            return `<button class="btn sm ${sel ? 'on' : ''}" data-bench="${i}" title="${p ? esc(p.name) : 'Пусто'}">${p ? `${FM.POS_RU[p.pos]} ${esc(p.name.split(' ').slice(-1)[0])}` : '—'}</button>`;
+            return `<button class="btn sm bench-btn ${sel ? 'on' : ''}" data-bench="${i}" title="${p ? esc(p.name) : 'Пусто'}">${p ? `${pos(p.pos)} ${esc(p.name.split(' ').slice(-1)[0])}` : '—'}</button>`;
           }).join('')}</div>
           ${problems.length ? `<div class="note bad small">${problems.map(esc).join('<br>')}<br>Перед матчем такие места заполнятся автоматически.</div>` : ''}
         </div>
@@ -569,7 +571,7 @@
           <div class="small muted" style="margin-top:8px">Темп</div>${segBtns('tempo', [[0, 'Низкий'], [1, 'Средний'], [2, 'Высокий']])}
           <label class="row small" style="margin-top:10px"><input type="checkbox" id="autosubs" ${G.s.settings.autoSubs ? 'checked' : ''}> Автоматические замены в живом матче</label>
           <h3 style="margin-top:12px">Сила состава</h3>
-          ${[['Атака', str.att], ['Центр', str.mid], ['Оборона', str.def]].map(([n, v]) => `<div class="str"><span>${n}</span><div class="bar"><i style="width:${FM.clamp((v - 40) * 2, 0, 100)}%"></i></div><b>${Math.round(v)}</b></div>`).join('')}
+          ${[['Атака', str.att, 'F'], ['Полузащита', str.mid, 'M'], ['Защита', str.def, 'D']].map(([n, v, l]) => `<div class="str ln-${l}"><span>${n}</span><div class="bar"><i style="width:${FM.clamp((v - 40) * 2, 0, 100)}%"></i></div><b>${Math.round(v)}</b></div>`).join('')}
           <div class="small muted" style="margin-top:6px">Высокий прессинг и темп сильнее утомляют игроков.</div>
         </div>
       </div>
