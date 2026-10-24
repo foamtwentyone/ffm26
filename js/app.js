@@ -461,6 +461,16 @@
         </div></section>`;
     }
 
+    const sq = G.squad(u);
+    const lead = (key, val, fmt) => { const p = sq.filter(key).sort((a, b) => val(b) - val(a))[0]; return p ? { p, v: fmt(val(p)) } : null; };
+    const leaders = [
+      ['ball', 'Бомбардир', lead((p) => p.st.g, (p) => p.st.g, (v) => v)],
+      ['assist', 'Ассистент', lead((p) => p.st.a, (p) => p.st.a, (v) => v)],
+      ['medal', 'Лучшая оценка', lead((p) => p.st.apps >= 3, (p) => p.st.rsum / p.st.apps, (v) => v.toFixed(1))],
+    ].filter((x) => x[2]);
+    const ins = s.seasonLog.filter((x) => x.to === u.id).slice(0, 4);
+    const outs = s.seasonLog.filter((x) => x.from === u.id).slice(0, 4);
+    const trItem = (x) => `<div class="ti"><span ${G.players[x.pid] ? `data-player="${x.pid}"` : ''}>${esc(x.name)}</span><span class="muted">${x.fee ? FM.money(x.fee) : 'бесплатно'}</span></div>`;
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
@@ -485,6 +495,9 @@
         <div class="kvl"><span>Доверие руководства</span><b class="${conf < 45 ? 'bad' : conf < 75 ? 'warn' : 'good'}">${conf}%</b></div>
         <div class="kvl"><span>Трансферное окно</span><b>${G.inWindow() ? 'открыто' : 'закрыто'}</b></div>`, '', 'shield')}
       ${tile(unread ? `Почта · ${unread} новых` : 'Новости', 'inbox', (unread && lastMsg ? `<div class="news"><b>${esc(lastMsg.title)}</b></div>` : '') + (s.news.slice(0, unread ? 2 : 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>'), '', 'mail')}
+      ${tile('Статистика игроков', 'stats', leaders.map(([ic, label, { p, v }]) => `<div class="leader"><span class="li">${icon(ic)}</span><div class="grow"><b data-player="${p.id}">${esc(p.name)}</b><div class="small muted">${label}</div></div><b class="big">${v}</b></div>`).join('') || '<div class="muted">Сезон ещё не начался</div>', '', 'chart')}
+      ${tile('Трансферы клуба', 'transfers:log', `<div class="trlist"><div><h4><span class="arr in">${icon('in')}</span>Пришли · ${ins.length}</h4>${ins.map(trItem).join('') || '<div class="small muted">никого</div>'}</div>
+        <div><h4><span class="arr out">${icon('out')}</span>Ушли · ${outs.length}</h4>${outs.map(trItem).join('') || '<div class="small muted">никого</div>'}</div></div>`, '', 'swap')}
       ${cupRows.length ? tile('Кубки', euroMine ? 'tables:' + euroMine.id : 'tables:cup', cupRows.join(''), '', 'cup') : ''}
     </div>`;
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));

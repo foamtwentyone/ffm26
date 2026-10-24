@@ -470,25 +470,34 @@ th { color: #b4bde6; }
 .haggle { display: inline-flex; align-items: center; gap: 6px; }
 .modal h3 { margin-top: 18px; }
 
-/* ===== крупнее и проще: меньше мелких элементов ===== */
-body { font-size: 16px; }
-.small { font-size: 14px; }
-.tag { font-size: 13px; padding: 3px 10px; }
-th { font-size: 13px; }
-.kv span:first-child { font-size: 12px; }
-.hm-tag { font-size: 14px; }
-.crumb-hint { font-size: 14px; }
-.chip { font-size: 15px; padding: 6px 14px; }
-.cmp-row { grid-template-columns: 40px 1fr 110px 1fr 40px; }
-.cmp-row span { font-size: 13px; letter-spacing: .04em; text-transform: none; font-family: var(--f-body); }
-.cmp-row b { font-size: 17px; }
-.cmp-bar { height: 8px; }
-.sched, .mini { font-size: 16px; padding: 8px; }
-.kvl { padding: 9px 0; font-size: 16px; }
-.news { font-size: 15px; line-height: 1.45; padding: 4px 0; }
-.news + .news { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
-.dash-simple { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
-.tile .chev { width: 30px; height: 30px; font-size: 16px; }
+/* ===== компактно, но читаемо ===== */
+body { font-size: 15px; }
+.small { font-size: 13px; }
+.tag { font-size: 12px; padding: 2px 9px; }
+th { font-size: 12px; }
+.kv span:first-child { font-size: 11px; }
+.hm-tag { font-size: 13px; }
+.crumb-hint { font-size: 13px; }
+.chip { font-size: 14px; padding: 4px 12px; }
+.cmp-row { grid-template-columns: 36px 1fr 96px 1fr 36px; }
+.cmp-row span { font-size: 12px; letter-spacing: .03em; text-transform: none; font-family: var(--f-body); }
+.cmp-row b { font-size: 15px; }
+.cmp-bar { height: 7px; }
+.sched, .mini { font-size: 14px; padding: 5px 8px; }
+.kvl { padding: 6px 0; font-size: 14px; }
+.news { font-size: 14px; line-height: 1.4; padding: 3px 0; }
+.news + .news { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 3px; }
+.dash-simple { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.tile .chev { width: 26px; height: 26px; font-size: 14px; }
+.tile .tb { padding: 10px 16px 14px; }
+.tile > header { padding-top: 12px; }
+.hm-team b { font-size: 16px; }
+.leader { padding: 5px 0; }
+.leader .big { font-size: 18px; }
+.trlist { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.trlist h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.trlist .ti { font-size: 13px; padding: 3px 0; display: flex; justify-content: space-between; gap: 6px; }
+.trlist .ti span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* панель разделов */
 .mainnav { max-width: 1280px; margin: 14px auto 0; padding-left: var(--gl); padding-right: var(--gr); display: flex; gap: 8px; flex-wrap: wrap; }
@@ -520,14 +529,17 @@ th { font-size: 13px; }
 /* плотные шрифты: Montserrat в заголовках, Manrope в тексте */
 body { font-weight: 500; }
 b, strong { font-weight: 700; }
-.tile > header, .card > h3:first-child { font-weight: 800; letter-spacing: .04em; font-size: 15px; }
+.tile > header, .card > h3:first-child { font-weight: 800; letter-spacing: .04em; font-size: 13px; }
 h1, h2, h3 { font-weight: 800; }
 h3 { letter-spacing: .04em; }
 .crumb h1 { font-family: var(--f-head); font-weight: 800; letter-spacing: .01em; }
 th { font-weight: 700; letter-spacing: .04em; }
 .muted, .small { font-weight: 500; }
 .btn, .seg button, .mainnav button, .chip, .next-btn { font-weight: 700; }
-.mainnav button { font-size: 15px; }
+.mainnav button { font-size: 13px; padding: 7px 12px; border-radius: 12px; }
+.mainnav .ni, .mainnav .ni svg { width: 17px; height: 17px; }
 @media (max-width: 860px) { .mainnav button { font-size: 11px; letter-spacing: 0; } }
 .kv span:first-child { font-weight: 700; }
 input, select { font-weight: 600; }
+@media (max-width: 860px) { .mainnav button { font-size: 11px; padding: 6px 2px; } .mainnav .ni, .mainnav .ni svg { width: 22px; height: 22px; } }
+.trlist .arr { width: 20px; height: 20px; border-radius: 6px; } .trlist .arr svg { width: 13px; height: 13px; }
