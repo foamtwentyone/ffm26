@@ -6,7 +6,7 @@ FM.addLeague({
   autumn: { from: '07-24', rounds: 18 }, spring: { from: '02-27', rounds: 12 },
   ticket: 9, prize: [9000, 6500, 5000, 3800, 3000, 2500, 2200, 2000, 1800, 1600, 1500, 1400, 1300, 1200, 1000, 900],
   teams: [
-    { id: 'zenit', name: 'Зенит', city: 'Санкт-Петербург', stadium: 'Газпром Арена', cap: 67800, colors: ['#0b74c4', '#ffffff'], rep: 90, money: 45000, players: `
+    { id: 'zenit', name: 'Зенит', city: 'Санкт-Петербург', stadium: 'Газпром Арена', cap: 67800, colors: ['#0b74c4', '#ffffff'], rep: 80, money: 45000, players: `
 Денис Адамов|GK|28|3500|RUS
 Богдан Москвичёв|GK|22|600|RUS
 Даниил Одоевский|GK|23|600|RUS
@@ -30,7 +30,7 @@ FM.addLeague({
 Фелипе Аугусто|ST|22|15000|BRA
 Александр Соболев|ST|29|7500|RUS` },
 
-    { id: 'krasnodar', name: 'Краснодар', city: 'Краснодар', stadium: 'Ozon Арена', cap: 34300, colors: ['#111111', '#2ea44f'], rep: 87, money: 35000, players: `
+    { id: 'krasnodar', name: 'Краснодар', city: 'Краснодар', stadium: 'Ozon Арена', cap: 34300, colors: ['#111111', '#2ea44f'], rep: 76, money: 35000, players: `
 Станислав Агкацев|GK|24|12000|RUS
 Александр Корякин|GK|24|750|RUS
 Витор Тормена|CB|30|8000|BRA
@@ -54,7 +54,7 @@ FM.addLeague({
 Джон Кордоба|ST|33|9000|COL
 Дмитрий Воробьёв|ST|28|7000|RUS` },
 
-    { id: 'spartak', name: 'Спартак', city: 'Москва', stadium: 'Лукойл Арена', cap: 45000, colors: ['#c8102e', '#ffffff'], rep: 86, money: 30000, players: `
+    { id: 'spartak', name: 'Спартак', city: 'Москва', stadium: 'Лукойл Арена', cap: 45000, colors: ['#c8102e', '#ffffff'], rep: 77, money: 30000, players: `
 Александр Максименко|GK|28|4000|RUS
 Илья Помазун|GK|30|1000|RUS
 Александр Довбня|GK|39|50|RUS
@@ -78,7 +78,7 @@ FM.addLeague({
 Манфред Угальде|ST|24|12000|CRC
 Мирлинд Даку|ST|28|10000|ALB` },
 
-    { id: 'cska', name: 'ЦСКА', city: 'Москва', stadium: 'ВЭБ Арена', cap: 30000, colors: ['#1d3a8a', '#e11d2b'], rep: 85, money: 28000, players: `
+    { id: 'cska', name: 'ЦСКА', city: 'Москва', stadium: 'ВЭБ Арена', cap: 30000, colors: ['#1d3a8a', '#e11d2b'], rep: 76, money: 28000, players: `
 Максим Борисько|GK|26|2000|RUS
 Владислав Тороп|GK|22|2000|RUS
 Егор Бесаев|GK|20|150|RUS
@@ -104,7 +104,7 @@ FM.addLeague({
 Тамерлан Мусаев|ST|25|2000|RUS
 Максим Воронов|ST|19|2000|RUS` },
 
-    { id: 'lokomotiv', name: 'Локомотив', city: 'Москва', stadium: 'РЖД Арена', cap: 27000, colors: ['#00843d', '#e2231a'], rep: 83, money: 25000, players: `
+    { id: 'lokomotiv', name: 'Локомотив', city: 'Москва', stadium: 'РЖД Арена', cap: 27000, colors: ['#00843d', '#e2231a'], rep: 73, money: 25000, players: `
 Илья Лантратов|GK|30|1500|RUS
 Даниил Веселов|GK|21|200|RUS
 Сесар Монтес|CB|29|7500|MEX
@@ -133,7 +133,7 @@ FM.addLeague({
 Николай Комличенко|ST|31|3000|RUS
 Владислав Голубев|ST|18|500|RUS` },
 
-    { id: 'dinamo', name: 'Динамо', city: 'Москва', stadium: 'ВТБ Арена', cap: 26000, colors: ['#003b8e', '#ffffff'], rep: 83, money: 28000, players: `
+    { id: 'dinamo', name: 'Динамо', city: 'Москва', stadium: 'ВТБ Арена', cap: 26000, colors: ['#003b8e', '#ffffff'], rep: 76, money: 28000, players: `
 Курбан Расулов|GK|20|2000|RUS
 Андрей Лунёв|GK|34|800|RUS
 Игорь Лещук|GK|30|600|RUS
@@ -160,7 +160,7 @@ FM.addLeague({
 Константин Тюкавин|ST|24|17000|RUS
 Иван Сергеев|ST|31|2500|RUS` },
 
-    { id: 'baltika', name: 'Балтика', city: 'Калининград', stadium: 'Ростех Арена', cap: 35000, colors: ['#0a3d91', '#ffffff'], rep: 74, money: 12000, players: `
+    { id: 'baltika', name: 'Балтика', city: 'Калининград', stadium: 'Ростех Арена', cap: 35000, colors: ['#0a3d91', '#ffffff'], rep: 66, money: 12000, players: `
 Евгений Латышонок|GK|28|1800|RUS
 Егор Любаков|GK|27|400|RUS
 Иван Кукушкин|GK|24|300|RUS
@@ -185,7 +185,7 @@ FM.addLeague({
 Егор Голенков|ST|27|1500|RUS
 Илья Рожков|ST|25|250|RUS` },
 
-    { id: 'rubin', name: 'Рубин', city: 'Казань', stadium: 'Ак Барс Арена', cap: 45000, colors: ['#7a0019', '#00563f'], rep: 75, money: 10000, players: `
+    { id: 'rubin', name: 'Рубин', city: 'Казань', stadium: 'Ак Барс Арена', cap: 45000, colors: ['#7a0019', '#00563f'], rep: 67, money: 10000, players: `
 Евгений Ставер|GK|28|2500|RUS
 Артур Нигматуллин|GK|35|300|RUS
 Никита Корец|GK|21|200|RUS
@@ -212,7 +212,7 @@ FM.addLeague({
 Эдди Сальседо|ST|25|1500|ITA
 Даниил Моторин|ST|22|600|RUS` },
 
-    { id: 'akhmat', name: 'Ахмат', city: 'Грозный', stadium: 'Ахмат-Арена', cap: 30000, colors: ['#00843d', '#ffffff'], rep: 73, money: 15000, players: `
+    { id: 'akhmat', name: 'Ахмат', city: 'Грозный', stadium: 'Ахмат-Арена', cap: 30000, colors: ['#00843d', '#ffffff'], rep: 65, money: 15000, players: `
 Вадим Ульянов|GK|25|900|RUS
 Расул Мицаев|GK|24|350|RUS
 Гиорги Шелия|GK|37|150|RUS
@@ -238,7 +238,7 @@ FM.addLeague({
 Мохамед Конате|ST|28|1000|BFA
 Алексей Касаджиков|ST|19|100|RUS` },
 
-    { id: 'rostov', name: 'Ростов', city: 'Ростов-на-Дону', stadium: 'Ростов Арена', cap: 45000, colors: ['#ffd200', '#003c8f'], rep: 74, money: 9000, players: `
+    { id: 'rostov', name: 'Ростов', city: 'Ростов-на-Дону', stadium: 'Ростов Арена', cap: 45000, colors: ['#ffd200', '#003c8f'], rep: 66, money: 9000, players: `
 Рустам Ятимов|GK|28|2000|TJK
 Артём Петров|GK|18|500|RUS
 Даниил Голиков|GK|22|250|RUS
@@ -265,7 +265,7 @@ FM.addLeague({
 Тимур Сулейманов|ST|26|1800|RUS
 Антон Шамонин|ST|21|350|RUS` },
 
-    { id: 'krylia', name: 'Крылья Советов', city: 'Самара', stadium: 'Солидарность Самара Арена', cap: 44900, colors: ['#0057a8', '#ffffff'], rep: 71, money: 8000, players: `
+    { id: 'krylia', name: 'Крылья Советов', city: 'Самара', stadium: 'Солидарность Самара Арена', cap: 44900, colors: ['#0057a8', '#ffffff'], rep: 63, money: 8000, players: `
 Никита Кокарев|GK|23|800|RUS
 Евгений Фролов|GK|38|50|RUS
 Никита Чернов|CB|30|1500|RUS
@@ -291,7 +291,7 @@ FM.addLeague({
 Казбек Мукаилов|ST|19|600|RUS
 Владислав Шитов|ST|23|600|RUS` },
 
-    { id: 'orenburg', name: 'Оренбург', city: 'Оренбург', stadium: 'Газовик', cap: 10000, colors: ['#1c5fae', '#ffffff'], rep: 66, money: 5000, players: `
+    { id: 'orenburg', name: 'Оренбург', city: 'Оренбург', stadium: 'Газовик', cap: 10000, colors: ['#1c5fae', '#ffffff'], rep: 61, money: 5000, players: `
 Александр Дегтев|GK|21|1500|RUS
 Богдан Овсянников|GK|27|1000|RUS
 Жоао Силва|CB|27|1500|POR
@@ -322,7 +322,7 @@ FM.addLeague({
 Алешандре Хесус|ST|25|700|BRA
 Гедеон Гузина|ST|32|350|BIH` },
 
-    { id: 'akron', name: 'Акрон', city: 'Тольятти', stadium: 'Солидарность Самара Арена', cap: 44900, colors: ['#151515', '#ff5a1f'], rep: 66, money: 5000, players: `
+    { id: 'akron', name: 'Акрон', city: 'Тольятти', stadium: 'Солидарность Самара Арена', cap: 44900, colors: ['#151515', '#ff5a1f'], rep: 62, money: 5000, players: `
 Виталий Гудиев|GK|31|800|RUS
 Игнат Тереховский|GK|20|400|RUS
 Ионуц Неделчару|CB|30|1500|ROU
@@ -351,7 +351,7 @@ FM.addLeague({
 Слободан Тедич|ST|26|1800|SRB
 Артём Шуманский|ST|21|700|BLR` },
 
-    { id: 'dinamo_mx', name: 'Динамо Мх', city: 'Махачкала', stadium: 'Анжи-Арена', cap: 26500, colors: ['#0057b8', '#ffffff'], rep: 66, money: 6000, players: `
+    { id: 'dinamo_mx', name: 'Динамо Мх', city: 'Махачкала', stadium: 'Анжи-Арена', cap: 26500, colors: ['#0057b8', '#ffffff'], rep: 61, money: 6000, players: `
 Давид Волк|GK|25|800|RUS
 Тимур Магомедов|GK|24|800|RUS
 Никита Карабашев|GK|24|300|RUS
@@ -377,7 +377,7 @@ FM.addLeague({
 Миро|ST|23|1000|ANG
 Сердер Сердеров|ST|32|250|RUS` },
 
-    { id: 'rodina', name: 'Родина', city: 'Москва', stadium: 'Арена Химки', cap: 18600, colors: ['#0033a0', '#e4002b'], rep: 65, money: 9000, players: `
+    { id: 'rodina', name: 'Родина', city: 'Москва', stadium: 'Арена Химки', cap: 18600, colors: ['#0033a0', '#e4002b'], rep: 62, money: 9000, players: `
 Сергей Волков|GK|31|1200|RUS
 Илья Свинов|GK|26|150|RUS
 Сергей Айдаров|GK|28|100|RUS
@@ -407,7 +407,7 @@ FM.addLeague({
 Магомедхабиб Абдусаламов|ST|23|500|RUS
 Керфала Сиссоко|ST|27|300|GUI` },
 
-    { id: 'fakel', name: 'Факел', city: 'Воронеж', stadium: 'Центральный профсоюзный стадион', cap: 15000, colors: ['#0b4ea2', '#ffffff'], rep: 64, money: 4000, players: `
+    { id: 'fakel', name: 'Факел', city: 'Воронеж', stadium: 'Центральный профсоюзный стадион', cap: 15000, colors: ['#0b4ea2', '#ffffff'], rep: 58, money: 4000, players: `
 Даниил Фролкин|GK|25|700|RUS
 Игорь Обухов|GK|30|600|RUS
 Вячеслав Доровских|GK|23|175|RUS

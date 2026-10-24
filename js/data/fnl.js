@@ -6,7 +6,7 @@ FM.addLeague({
   autumn: { from: '07-10', rounds: 22 }, spring: { from: '03-06', rounds: 12 },
   ticket: 3, prize: [1500, 1200, 1000, 800, 600, 500, 450, 400, 380, 360, 340, 320, 300, 280, 260, 240, 220, 200],
   teams: [
-    { id: 'pari_nn', name: 'Пари НН', city: 'Нижний Новгород', stadium: 'Нижний Новгород', cap: 44900, colors: ['#1b2f6b', '#ffffff'], rep: 62, money: 3000, players: `
+    { id: 'pari_nn', name: 'Пари НН', city: 'Нижний Новгород', stadium: 'Нижний Новгород', cap: 44900, colors: ['#1b2f6b', '#ffffff'], rep: 58, money: 3000, players: `
 Ислам Имамов|GK|25|450|RUS
 Никита Генералов|GK|18|50|RUS
 Свен Карич|CB|28|1200|SVN
@@ -32,7 +32,7 @@ FM.addLeague({
 Владимир Игнатенко|ST|20|750|RUS
 Станислав Лапинский|ST|21|150|RUS` },
 
-    { id: 'sochi', name: 'Сочи', city: 'Сочи', stadium: 'Фишт', cap: 44300, colors: ['#0047ab', '#ffd200'], rep: 62, money: 3000, players: `
+    { id: 'sochi', name: 'Сочи', city: 'Сочи', stadium: 'Фишт', cap: 44300, colors: ['#0047ab', '#ffd200'], rep: 56, money: 3000, players: `
 Тимофей Митров|GK|21|450|RUS
 Даниил Силев|GK|20|50|RUS
 Александр Солдатенков|CB|29|2000|RUS
@@ -55,7 +55,7 @@ FM.addLeague({
 Павел Мелешин|ST|22|600|RUS
 Рамиль Шейдаев|ST|30|500|AZE` },
 
-    { id: 'rotor', name: 'Ротор', city: 'Волгоград', stadium: 'Волгоград Арена', cap: 45500, colors: ['#0072ce', '#ffffff'], rep: 57, money: 1500, players: `
+    { id: 'rotor', name: 'Ротор', city: 'Волгоград', stadium: 'Волгоград Арена', cap: 45500, colors: ['#0072ce', '#ffffff'], rep: 53, money: 1500, players: `
 Никита Чагров|GK|31|700|RUS
 Владимир Сугробов|GK|30|125|RUS
 Иван Литвенок|GK|24|25|RUS
@@ -81,7 +81,7 @@ FM.addLeague({
 Александр Хубулов|ST|20|400|RUS
 Александр Хохлачев|ST|29|225|RUS` },
 
-    { id: 'ural', name: 'Урал', city: 'Екатеринбург', stadium: 'Екатеринбург Арена', cap: 35000, colors: ['#ff8c00', '#111111'], rep: 60, money: 2500, players: `
+    { id: 'ural', name: 'Урал', city: 'Екатеринбург', stadium: 'Екатеринбург Арена', cap: 35000, colors: ['#ff8c00', '#111111'], rep: 55, money: 2500, players: `
 Александр Мелихов|GK|32|700|RUS
 Иван Кузнецов|GK|20|250|RUS
 Итало|CB|24|900|BRA
@@ -101,7 +101,7 @@ FM.addLeague({
 Бертранд Фурриер|ST|29|800|FRA
 Денис Боков|ST|21|500|RUS` },
 
-    { id: 'torpedo', name: 'Торпедо', city: 'Москва', stadium: 'Стадион им. Стрельцова', cap: 13450, colors: ['#111111', '#ffffff'], rep: 60, money: 2500, players: `
+    { id: 'torpedo', name: 'Торпедо', city: 'Москва', stadium: 'Стадион им. Стрельцова', cap: 13450, colors: ['#111111', '#ffffff'], rep: 55, money: 2500, players: `
 Ростислав Солдатенко|GK|29|700|RUS
 Данил Ладоха|GK|20|350|RUS
 Сергей Мокроусов|GK|20|50|RUS
@@ -128,7 +128,7 @@ FM.addLeague({
 Алексей Каштанов|ST|30|600|RUS
 Дмитрий Цыпченко|ST|27|500|RUS` },
 
-    { id: 'arsenal_tula', name: 'Арсенал', city: 'Тула', stadium: 'Арсенал', cap: 19200, colors: ['#c8102e', '#ffd200'], rep: 58, money: 2000, players: `
+    { id: 'arsenal_tula', name: 'Арсенал', city: 'Тула', stadium: 'Арсенал', cap: 19200, colors: ['#c8102e', '#ffd200'], rep: 52, money: 2000, players: `
 Михаил Цулая|GK|21|500|RUS
 Александр Мелихов|GK|28|150|RUS
 Михаил Левашов|GK|35|50|RUS
@@ -155,7 +155,7 @@ FM.addLeague({
 Тимур Мелекесцев|ST|25|400|RUS
 Тимур Жамалетдинов|ST|29|200|RUS` },
 
-    { id: 'veles', name: 'Велес', city: 'Москва', stadium: 'Велес', cap: 3000, colors: ['#0d1b2a', '#d4af37'], rep: 54, money: 1200, players: `
+    { id: 'veles', name: 'Велес', city: 'Москва', stadium: 'Велес', cap: 3000, colors: ['#0d1b2a', '#d4af37'], rep: 50, money: 1200, players: `
 Илья Купцов|GK|24|300|RUS
 Сергей Самок|GK|25|200|RUS
 Богдан Марков|GK|19|50|RUS
@@ -183,7 +183,7 @@ FM.addLeague({
 Захар Тарасенко|ST|29|350|RUS
 Карим Гираев|ST|29|150|RUS` },
 
-    { id: 'volga_ul', name: 'Волга', city: 'Ульяновск', stadium: 'Труд', cap: 15000, colors: ['#0050a0', '#ffffff'], rep: 53, money: 1000, players: `
+    { id: 'volga_ul', name: 'Волга', city: 'Ульяновск', stadium: 'Труд', cap: 15000, colors: ['#0050a0', '#ffffff'], rep: 50, money: 1000, players: `
 Егор Бабурин|GK|33|275|RUS
 Ринат Шакеров|GK|24|200|RUS
 Андрей Ходанович|GK|22|100|RUS
@@ -211,7 +211,7 @@ FM.addLeague({
 Астемир Хашкулов|ST|21|275|RUS
 Владислав Яковлев|ST|24|275|RUS` },
 
-    { id: 'enisey', name: 'Енисей', city: 'Красноярск', stadium: 'Центральный стадион', cap: 15000, colors: ['#d71920', '#0b3d91'], rep: 56, money: 1500, players: `
+    { id: 'enisey', name: 'Енисей', city: 'Красноярск', stadium: 'Центральный стадион', cap: 15000, colors: ['#d71920', '#0b3d91'], rep: 50, money: 1500, players: `
 Станислав Антипин|GK|31|175|RUS
 Михаил Опарин|GK|33|125|RUS
 Андрей Сорокин|GK|25|50|RUS
@@ -237,7 +237,7 @@ FM.addLeague({
 Андрей Окладников|ST|27|700|RUS
 Лука Раткович|ST|29|250|SRB` },
 
-    { id: 'kamaz', name: 'КАМАЗ', city: 'Набережные Челны', stadium: 'КАМАЗ', cap: 6000, colors: ['#1a7f3c', '#ffffff'], rep: 55, money: 1200, players: `
+    { id: 'kamaz', name: 'КАМАЗ', city: 'Набережные Челны', stadium: 'КАМАЗ', cap: 6000, colors: ['#1a7f3c', '#ffffff'], rep: 49, money: 1200, players: `
 Евгений Замерец|GK|25|350|RUS
 Артур Анисимов|GK|33|150|RUS
 Назар Рыбалченко|GK|19|50|RUS
@@ -263,7 +263,7 @@ FM.addLeague({
 Максим Богданец|ST|20|100|RUS
 Иван Гулко|ST|23|100|RUS` },
 
-    { id: 'leningradec', name: 'Ленинградец', city: 'Ленинградская обл.', stadium: 'Ленинградец', cap: 4000, colors: ['#1e3f8a', '#ffffff'], rep: 54, money: 1000, players: `
+    { id: 'leningradec', name: 'Ленинградец', city: 'Ленинградская обл.', stadium: 'Ленинградец', cap: 4000, colors: ['#1e3f8a', '#ffffff'], rep: 48, money: 1000, players: `
 Егор Смирнов|GK|24|225|RUS
 Алексей Кузнецов|GK|30|200|RUS
 Ервинг Ботака|CB|28|450|RUS
@@ -288,7 +288,7 @@ FM.addLeague({
 Илья Стефанович|ST|30|200|RUS
 Матвей Першин|ST|23|150|RUS` },
 
-    { id: 'neftekhimik', name: 'Нефтехимик', city: 'Нижнекамск', stadium: 'Нефтехимик', cap: 3500, colors: ['#0077c8', '#ffffff'], rep: 53, money: 900, players: `
+    { id: 'neftekhimik', name: 'Нефтехимик', city: 'Нижнекамск', stadium: 'Нефтехимик', cap: 3500, colors: ['#0077c8', '#ffffff'], rep: 47, money: 900, players: `
 Андрей Голубев|GK|33|275|RUS
 Артём Исмагилов|GK|22|50|RUS
 Никита Печенкин|CB|29|250|RUS
@@ -313,7 +313,7 @@ FM.addLeague({
 Султан Джамилов|ST|31|200|RUS
 Кирилл Никишин|ST|22|200|RUS` },
 
-    { id: 'ska_khab', name: 'СКА-Хабаровск', city: 'Хабаровск', stadium: 'Ленин', cap: 15200, colors: ['#003da5', '#c8102e'], rep: 54, money: 1000, players: `
+    { id: 'ska_khab', name: 'СКА-Хабаровск', city: 'Хабаровск', stadium: 'Ленин', cap: 15200, colors: ['#003da5', '#c8102e'], rep: 50, money: 1000, players: `
 Михаил Штепа|GK|23|300|RUS
 Виталий Ботнар|GK|25|200|RUS
 Дмитрий Нагаев|GK|23|50|RUS
@@ -342,7 +342,7 @@ FM.addLeague({
 Максим Максимов|ST|30|250|RUS
 Владислав Брагин|ST|28|200|RUS` },
 
-    { id: 'spartak_kos', name: 'Спартак Кострома', city: 'Кострома', stadium: 'Динамо', cap: 4000, colors: ['#c8102e', '#ffffff'], rep: 51, money: 700, players: `
+    { id: 'spartak_kos', name: 'Спартак Кострома', city: 'Кострома', stadium: 'Динамо', cap: 4000, colors: ['#c8102e', '#ffffff'], rep: 50, money: 700, players: `
 Михаил Гайдаш|GK|23|400|RUS
 Егор Шамов|GK|32|300|RUS
 Денис Терехов|GK|22|50|RUS
@@ -369,7 +369,7 @@ FM.addLeague({
 Амур Калмыков|ST|32|400|RUS
 Илья Рубцов|ST|27|275|RUS` },
 
-    { id: 'textilshik', name: 'Текстильщик', city: 'Иваново', stadium: 'Текстильщик', cap: 9500, colors: ['#e4002b', '#1a1a1a'], rep: 52, money: 800, players: `
+    { id: 'textilshik', name: 'Текстильщик', city: 'Иваново', stadium: 'Текстильщик', cap: 9500, colors: ['#e4002b', '#1a1a1a'], rep: 48, money: 800, players: `
 Семён Фадеев|GK|22|250|RUS
 Михаил Волков|GK|23|150|RUS
 Даниил Маругин|CB|28|550|RUS
@@ -398,7 +398,7 @@ FM.addLeague({
 Станислав Библик|ST|25|200|RUS
 Арсений Филев|ST|19|200|RUS` },
 
-    { id: 'ufa', name: 'Уфа', city: 'Уфа', stadium: 'Нефтяник', cap: 15200, colors: ['#00a651', '#0067b1'], rep: 54, money: 1000, players: `
+    { id: 'ufa', name: 'Уфа', city: 'Уфа', stadium: 'Нефтяник', cap: 15200, colors: ['#00a651', '#0067b1'], rep: 49, money: 1000, players: `
 Тимур Крайков|GK|25|100|RUS
 Александр Беленов|GK|40|25|RUS
 Илья Агапов|CB|25|500|RUS
@@ -426,7 +426,7 @@ FM.addLeague({
 Дилан Ортис|ST|26|400|COL
 Эмиль Маёров|ST|19|25|RUS` },
 
-    { id: 'chelyabinsk', name: 'Челябинск', city: 'Челябинск', stadium: 'Центральный', cap: 11000, colors: ['#003a70', '#ffffff'], rep: 53, money: 900, players: `
+    { id: 'chelyabinsk', name: 'Челябинск', city: 'Челябинск', stadium: 'Центральный', cap: 11000, colors: ['#003a70', '#ffffff'], rep: 52, money: 900, players: `
 Иван Ломаев|GK|27|500|RUS
 Илья Тусеев|GK|24|500|RUS
 Марк Переверзев|GK|20|275|RUS
@@ -451,7 +451,7 @@ FM.addLeague({
 Дмитрий Каменщиков|ST|28|400|RUS
 Луис Какорри|ST|28|350|ALB` },
 
-    { id: 'shinnik', name: 'Шинник', city: 'Ярославль', stadium: 'Шинник', cap: 22000, colors: ['#111111', '#ffd400'], rep: 55, money: 1000, players: `
+    { id: 'shinnik', name: 'Шинник', city: 'Ярославль', stadium: 'Шинник', cap: 22000, colors: ['#111111', '#ffd400'], rep: 49, money: 1000, players: `
 Никита Янович|GK|23|300|RUS
 Денис Вамболт|GK|31|50|RUS
 Никита Котин|CB|24|275|RUS

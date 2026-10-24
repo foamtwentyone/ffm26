@@ -42,13 +42,13 @@
       for (const L of leagues) {
         s.order.push(L.id);
         s.leagues[L.id] = {
-          id: L.id, name: L.name, short: L.short, tier: L.tier, weekday: L.weekday,
+          id: L.id, name: L.name, short: L.short, tier: L.tier, weekday: L.weekday, country: L.country || 'RUS',
           autumn: L.autumn, spring: L.spring, ticket: L.ticket, prize: L.prize, teams: [],
         };
         for (const T of L.teams) {
           const team = {
             id: T.id, name: T.name, city: T.city, stadium: T.stadium, cap: T.cap, colors: T.colors,
-            rep: T.rep, money: T.money, league: L.id, reserveOf: T.reserveOf || null, logoData: T.logoData || undefined,
+            rep: T.rep || 50, money: T.money, league: L.id, reserveOf: T.reserveOf || null, logoData: T.logoData || undefined,
             players: [], formation: '4-3-3', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 },
             form: [], sponsor: 0, fin: { income: 0, expense: 0, log: [] },
           };
@@ -59,6 +59,9 @@
             const [name, pos, age, value, nat, ovr, pot, gen] = line.split('|');
             this.createPlayer({ name, pos, age: +age, value: +value, nat: nat || 'RUS', ovr: ovr ? +ovr : null, pot: pot ? +pot : null, gen: gen === 'g' }, team);
           }
+          // у клубов без заданной репутации (европейские лиги) она считается по стоимости состава
+          if (T.rep == null) team.rep = FM.repFromValue(this.squadValue(team));
+          if (T.money == null) team.money = Math.round(this.squadValue(team) * 0.12);
           this.fillSquad(team);
         }
       }
@@ -100,7 +103,8 @@
 
     genPlayer(pos, ovr, age, team) {
       ovr = Math.round(FM.clamp(ovr, 35, 88));
-      return this.createPlayer({ name: FM.genName(), pos, age, ovr, nat: 'RUS', gen: true }, team);
+      const c = team ? this.countryOf(team.league) : 'RUS';
+      return this.createPlayer({ name: FM.genName(c), pos, age, ovr, nat: c, gen: true }, team);
     }
 
     teamBaseOvr(team) {
@@ -133,6 +137,10 @@
     }
 
     tierOf(team) { return this.s.leagues[team.league].tier; }
+    countryOf(lid) { return this.s.leagues[lid].country || 'RUS'; }
+    // лига нужного уровня в той же стране (повышение, вылет, стыки)
+    leagueAt(country, tier) { return this.s.order.find((id) => this.countryOf(id) === country && this.s.leagues[id].tier === tier); }
+    isRussian(team) { return this.countryOf(team.league) === 'RUS'; }
     userTeam() { return this.teams[this.s.user]; }
     squad(team) { return team.players.map((id) => this.players[id]); }
     wageBill(team) { return this.squad(team).reduce((a, p) => a + p.wage, 0); }
@@ -327,9 +335,9 @@
       // зоны таблицы: повышение, стыки, вылет
       const L = this.s.leagues[lid];
       const n = L.teams.length;
-      const tiers = this.s.order.map((id) => this.s.leagues[id].tier);
-      const hasLower = tiers.includes(L.tier + 1);
-      const hasUpper = tiers.includes(L.tier - 1);
+      const c = this.countryOf(lid);
+      const hasLower = !!this.leagueAt(c, L.tier + 1);
+      const hasUpper = !!this.leagueAt(c, L.tier - 1);
       const z = {};
       if (L.tier === 1) { z[1] = 'champ'; }
       if (hasUpper) {
@@ -373,7 +381,7 @@
     setupCup() {
       const s = this.s;
       const y = s.season;
-      const teams = Object.values(this.teams).filter((t) => !t.reserveOf)
+      const teams = Object.values(this.teams).filter((t) => !t.reserveOf && this.isRussian(t))
         .sort((a, b) => this.tierOf(a) - this.tierOf(b) || b.rep - a.rep).map((t) => t.id);
       let size = 2;
       while (size < teams.length) size *= 2;
@@ -448,8 +456,8 @@
     setupPlayoff() {
       const s = this.s;
       if (s.playoff) return;
-      const top = s.order.find((id) => s.leagues[id].tier === 1);
-      const second = s.order.find((id) => s.leagues[id].tier === 2);
+      const top = this.leagueAt('RUS', 1);
+      const second = this.leagueAt('RUS', 2);
       if (!top || !second || !this.leagueFinished(top) || !this.leagueFinished(second)) return;
       const t1 = this.table(top), t2 = this.table(second).filter((r) => this.eligibleUp(r.id));
       const n = t1.length;
@@ -477,8 +485,7 @@
     allDone() {
       const s = this.s;
       for (const id in s.matches) if (!s.matches[id].played) return false;
-      const tiers = s.order.map((id) => s.leagues[id].tier);
-      const po = tiers.includes(1) && tiers.includes(2);
+      const po = this.leagueAt('RUS', 1) && this.leagueAt('RUS', 2);
       return !po || !!s.playoff;
     }
 
@@ -487,8 +494,6 @@
       const y = s.season;
       const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [] };
       const moves = []; // [teamId, newLeague]
-      const byTier = {};
-      for (const lid of s.order) byTier[s.leagues[lid].tier] = lid;
 
       // итоговые таблицы, призовые, репутация
       for (const lid of s.order) {
@@ -501,9 +506,9 @@
           if (r.id === s.user) { summary.userPos = r.pos; summary.userLeague = lid; }
         });
         const champ = this.teams[tab[0].id];
-        champ.rep = Math.min(95, champ.rep + 2);
+        champ.rep = Math.min(99, champ.rep + 2);
         this.news(`«${champ.name}» — победитель турнира «${L.name}» сезона ${y}/${String(y + 1).slice(2)}!`);
-        const upper = byTier[L.tier - 1], lower = byTier[L.tier + 1];
+        const upper = this.leagueAt(this.countryOf(lid), L.tier - 1), lower = this.leagueAt(this.countryOf(lid), L.tier + 1);
         if (upper) {
           const elig = tab.filter((r) => this.eligibleUp(r.id));
           const direct = L.tier === 2 ? 2 : 3;
@@ -518,7 +523,7 @@
       if (s.playoff) {
         for (const tie of s.playoff.ties) {
           if (tie.winner === tie.low) {
-            moves.push([tie.low, byTier[1]], [tie.up, byTier[2]]);
+            moves.push([tie.low, this.leagueAt('RUS', 1)], [tie.up, this.leagueAt('RUS', 2)]);
           }
         }
       }
@@ -531,7 +536,7 @@
         s.leagues[from].teams = s.leagues[from].teams.filter((x) => x !== tid);
         s.leagues[lid].teams.push(tid);
         t.league = lid;
-        t.rep = FM.clamp(t.rep + (up ? 4 : -4), 35, 95);
+        t.rep = FM.clamp(t.rep + (up ? 4 : -4), 35, 99);
         summary.moves.push({ id: tid, up, to: lid });
         this.news(`«${t.name}» ${up ? 'повышается' : 'понижается'} в классе: ${s.leagues[lid].name}.`);
       }
@@ -546,7 +551,7 @@
       else if (moved && !moved.up) { s.board.conf -= 35; verdict = 'Вылет — тяжёлый удар для клуба.'; }
       else if (pos <= exp) { s.board.conf = Math.min(100, s.board.conf + 10 + (exp - pos) * 4); verdict = 'Задача на сезон выполнена.'; }
       else { s.board.conf -= (pos - exp) * 5; verdict = `Команда финишировала ниже ожиданий (${exp}-е место).`; }
-      if (pos < exp - 1) u.rep = Math.min(95, u.rep + 1);
+      if (pos < exp - 1) u.rep = Math.min(99, u.rep + 1);
       if (pos > exp + 3) u.rep = Math.max(35, u.rep - 1);
       s.history.unshift({ year: y, league: summary.userLeague, pos, team: u.id, cup: s.cup && s.cup.winner === u.id, moved: moved ? (moved.up ? 'up' : 'down') : null });
       this.msg(`Итоги сезона ${y}/${String(y + 1).slice(2)}`, `«${u.name}» занимает ${pos}-е место (${s.leagues[summary.userLeague].name}). ${verdict}`, 'board');
@@ -773,7 +778,8 @@
         const a = g.assist && this.players[g.assist];
         if (a) a[key].a++;
       }
-      m.ratings = ratings;
+      // оценки храним только для матчей своей команды, чтобы сохранение не разрасталось
+      if (m.h === s.user || m.a === s.user) m.ratings = ratings;
       const best = Object.entries(ratings).sort((a, b) => b[1] - a[1])[0];
       m.mvp = best ? +best[0] : null;
 
