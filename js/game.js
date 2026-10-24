@@ -466,7 +466,11 @@
         const rest = L.teams.filter((id) => !prev.includes(id)).sort((a, b) => this.teams[b].rep - this.teams[a].rep);
         ranked[this.countryOf(lid)] = prev.concat(rest).filter((id) => !this.teams[id].reserveOf);
       }
-      const used = {};
+      // Россия: чемпион — Лига чемпионов, обладатель Кубка — Лига Европы (если он уже не в ЛЧ;
+      // иначе место переходит следующей команде чемпионата), следующие две команды — Лига конференций.
+      const taken = new Set();
+      const cupW = s.lastCupWinner && this.teams[s.lastCupWinner] && !this.teams[s.lastCupWinner].reserveOf ? s.lastCupWinner : null;
+      const nextOf = (c, E) => ranked[c].find((id) => !taken.has(id) && !(c === 'RUS' && E.id !== 'ucl' && id === cupW));
       for (const E of FM.EURO) {
         // места стран, которых нет в базе (или российские при выключенной настройке), по очереди отдаются сильнейшим лигам
         const quota = Object.assign({}, E.quota);
@@ -480,9 +484,10 @@
         for (const c in quota) {
           if (!ranked[c]) continue;
           for (let i = 0; i < quota[c]; i++) {
-            used[c] = used[c] || 0;
-            const id = ranked[c][used[c]++];
-            if (id) teams.push(id);
+            let id = c === 'RUS' && E.id === 'uel' && i === 0 && cupW && !taken.has(cupW) ? cupW : nextOf(c, E);
+            // обладатель Кубка уже в Лиге чемпионов — его место в ЛЕ получает следующая команда чемпионата
+            if (!id && c === 'RUS' && cupW && !taken.has(cupW)) id = cupW;
+            if (id) { teams.push(id); taken.add(id); }
           }
         }
         if (teams.length !== 24) continue;
@@ -698,6 +703,7 @@
     endSeason() {
       const s = this.s;
       const y = s.season;
+      s.lastCupWinner = s.cup && s.cup.winner || null;
       const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [], euro: {} };
       for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) summary.euro[E.id] = s.euro[E.id].winner;
       s.lastTables = {};

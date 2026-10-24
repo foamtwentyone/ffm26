@@ -220,9 +220,9 @@ FM.potFor = (ovr, age) => {
 // Еврокубки: квоты по странам, день недели, призовые (тыс. €): участие, победа и ничья в общем этапе,
 // выход в 1/4, в 1/2, в финал и победа.
 FM.EURO = [
-  { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 4, ESP: 4, ITA: 3, GER: 3, FRA: 2, POR: 2, NED: 1, BEL: 1, TUR: 1, POL: 1, RUS: 2 },
+  { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 4, ESP: 4, ITA: 3, GER: 3, FRA: 3, POR: 2, NED: 1, BEL: 1, TUR: 1, POL: 1, RUS: 1 },
     fee: 18600, win: 2100, draw: 700, ko: [11000, 15000, 18500, 6500] },
-  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 3, ESP: 3, ITA: 2, GER: 2, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 2 },
+  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 3, ESP: 3, ITA: 3, GER: 2, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 1 },
     fee: 4300, win: 450, draw: 150, ko: [1750, 2600, 4000, 4000] },
   { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 2, ESP: 2, ITA: 3, GER: 3, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 2 },
     fee: 3200, win: 400, draw: 130, ko: [800, 1300, 2000, 2000] },
