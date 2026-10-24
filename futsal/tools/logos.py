@@ -17,8 +17,8 @@ for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5'):
 
 def pack(raw):
     im = Image.open(raw).convert('RGBA')
-    # JPEG-эмблемы приходят на белом фоне — делаем его прозрачным, если он сплошной по краям
-    if raw.endswith('.jpg'):
+    # эмблемы часто приходят на белом фоне — делаем его прозрачным, если он сплошной по углам
+    if True:
         px = im.load()
         w, h = im.size
         corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]

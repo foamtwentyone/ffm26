@@ -5,7 +5,7 @@ FM.addLeague({
   autumn: { from: '09-13', rounds: 11 }, spring: { from: '02-07', rounds: 7 },
   ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2, 2, 2],
   teams: [
-    { id: 'universal', name: 'Универсал', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#4a4a4a', '#ffffff'], rep: 32, money: 15, players: `
+    { id: 'universal', name: 'Универсал', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1f7a3a', '#f5c400'], rep: 32, money: 15, players: `
 Никита Гатилов|UN|20|0|RUS|38
 Матвей Зылев|UN|22|0|RUS|38
 Владимир Касперов|UN|21|0|RUS|38
@@ -51,7 +51,7 @@ FM.addLeague({
 Тимур Тухтаев|UN|16|0|RUS|39
 Андрей Семенов|UN|41|0|RUS|37` },
 
-    { id: 'kredo', name: 'Кредо-Транс', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#00843d', '#ffffff'], rep: 36, money: 15, players: `
+    { id: 'kredo', name: 'Кредо-Транс', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d4f91', '#3aa935'], rep: 36, money: 15, players: `
 Антон Ануфриев|UN|31|0|RUS|42
 Дмитрий Бабич|UN|32|0|RUS|42
 Семен Вагин|UN|20|0|RUS|42
@@ -75,7 +75,7 @@ FM.addLeague({
 Михаил Семенов|UN|21|0|RUS|42
 Максим Агафонов|UN|41|0|RUS|36` },
 
-    { id: 'petergof', name: 'Петергоф', city: 'Петергоф', stadium: '—', cap: 300, colors: ['#0057b8', '#f5c400'], rep: 35, money: 15, players: `
+    { id: 'petergof', name: 'Петергоф', city: 'Петергоф', stadium: '—', cap: 300, colors: ['#d71920', '#f5c400'], rep: 35, money: 15, players: `
 Ратибор Батухтин|UN|32|0|RUS|42
 Марат Гасанов|UN|24|0|RUS|42
 Артём Говоровский|UN|26|0|RUS|42
@@ -91,7 +91,7 @@ FM.addLeague({
 Сергей Шилков|UN|34|0|RUS|41
 Родион Шишов|UN|36|0|RUS|39` },
 
-    { id: 'nevskaya', name: 'Невская Ко', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d5fa8', '#ffffff'], rep: 34, money: 15, players: `
+    { id: 'nevskaya', name: 'Невская Ко', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#f07c32', '#1d4f91'], rep: 34, money: 15, players: `
 Андрей Андреев|UN|33|0|RUS|40
 Дмитрий Зароденков|UN|29|0|RUS|40
 Павел Иванов|UN|33|0|RUS|40
@@ -111,7 +111,7 @@ FM.addLeague({
 Александр Акуленко|UN|40|0|RUS|35
 Александр Кондратьев|UN|43|0|RUS|35` },
 
-    { id: 'mitropoliya', name: 'Митрополия', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#7a1f2b', '#f5c400'], rep: 36, money: 15, players: `
+    { id: 'mitropoliya', name: 'Митрополия', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d3557', '#c9a24b'], rep: 36, money: 15, players: `
 Валерий Билиходзе|UN|25|0|RUS|42
 Сергей Бодров|UN|31|0|RUS|42
 Михаил Борисов|UN|32|0|RUS|42
@@ -133,7 +133,7 @@ FM.addLeague({
 Николай Балакин|UN|38|0|RUS|38
 Богдан Полевой|UN|41|0|RUS|36` },
 
-    { id: 'azhio', name: 'Ажио', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d1d1b', '#f5c400'], rep: 39, money: 15, players: `
+    { id: 'azhio', name: 'Ажио', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d1d1b', '#ffffff'], rep: 39, money: 15, players: `
 Виталий Безотосов|UN|29|0|RUS|46
 Андрей Волегов|UN|30|0|RUS|46
 Леонид Егоров|UN|33|0|RUS|46
