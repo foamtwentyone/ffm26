@@ -160,6 +160,16 @@ const NAMES = {
     ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch', 'Richter', 'Klein', 'Wolf', 'Neumann']],
   FRA: [['Lucas', 'Hugo', 'Louis', 'Théo', 'Nathan', 'Mathis', 'Enzo', 'Maxime', 'Clément', 'Antoine', 'Yanis', 'Bastien', 'Rayan', 'Adrien', 'Jules'],
     ['Martin', 'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Simon', 'Laurent', 'Lefebvre', 'Michel', 'Garcia']],
+  NED: [['Daan', 'Sem', 'Lucas', 'Milan', 'Levi', 'Luuk', 'Thijs', 'Jesse', 'Bram', 'Stijn', 'Ruben', 'Tim', 'Jens', 'Niels', 'Sven'],
+    ['de Jong', 'Jansen', 'de Vries', 'van den Berg', 'Bakker', 'Visser', 'Smit', 'Meijer', 'de Boer', 'Mulder', 'Bos', 'Vos', 'Peters', 'Hendriks', 'Dekker']],
+  POR: [['João', 'Rodrigo', 'Martim', 'Tiago', 'Diogo', 'Rafael', 'Gonçalo', 'Tomás', 'Pedro', 'Francisco', 'Duarte', 'Afonso', 'Rúben', 'Nuno', 'André'],
+    ['Silva', 'Santos', 'Ferreira', 'Pereira', 'Oliveira', 'Costa', 'Rodrigues', 'Martins', 'Sousa', 'Fernandes', 'Gonçalves', 'Gomes', 'Lopes', 'Carvalho', 'Ribeiro']],
+  BEL: [['Arthur', 'Noah', 'Louis', 'Jules', 'Lucas', 'Mathis', 'Senne', 'Wout', 'Arne', 'Maxime', 'Thibaut', 'Jarne', 'Robbe', 'Lander', 'Victor'],
+    ['Peeters', 'Janssens', 'Maes', 'Jacobs', 'Mertens', 'Willems', 'Claes', 'Goossens', 'Wouters', 'Dubois', 'Lambert', 'Dupont', 'Martens', 'De Smet', 'Vermeulen']],
+  TUR: [['Emre', 'Burak', 'Mert', 'Arda', 'Kerem', 'Yusuf', 'Ahmet', 'Mehmet', 'Can', 'Efe', 'Ozan', 'Berkay', 'Barış', 'Cenk', 'Oğuz'],
+    ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Yıldırım', 'Öztürk', 'Aydın', 'Özdemir', 'Arslan', 'Doğan', 'Kılıç', 'Aslan', 'Koç']],
+  POL: [['Jakub', 'Kacper', 'Filip', 'Szymon', 'Bartosz', 'Mateusz', 'Michał', 'Kamil', 'Piotr', 'Patryk', 'Dawid', 'Krzysztof', 'Tomasz', 'Adrian', 'Łukasz'],
+    ['Nowak', 'Kowalski', 'Wiśniewski', 'Wójcik', 'Kowalczyk', 'Kamiński', 'Lewandowski', 'Zieliński', 'Szymański', 'Woźniak', 'Dąbrowski', 'Kozłowski', 'Mazur', 'Krawczyk', 'Piątek']],
 };
 FM.genName = (country) => {
   const n = NAMES[country];
@@ -200,11 +210,11 @@ FM.potFor = (ovr, age) => {
 // Еврокубки: квоты по странам, день недели, призовые (тыс. €): участие, победа и ничья в общем этапе,
 // выход в 1/4, в 1/2, в финал и победа.
 FM.EURO = [
-  { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 5, ESP: 5, ITA: 4, GER: 4, FRA: 3, RUS: 3 },
+  { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 4, ESP: 4, ITA: 3, GER: 3, FRA: 2, POR: 2, NED: 1, BEL: 1, TUR: 1, POL: 1, RUS: 2 },
     fee: 18600, win: 2100, draw: 700, ko: [11000, 15000, 18500, 6500] },
-  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 4, ESP: 4, ITA: 4, GER: 4, FRA: 4, RUS: 4 },
+  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 3, ESP: 3, ITA: 2, GER: 2, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 2 },
     fee: 4300, win: 450, draw: 150, ko: [1750, 2600, 4000, 4000] },
-  { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 4, ESP: 4, ITA: 4, GER: 4, FRA: 4, RUS: 4 },
+  { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 2, ESP: 2, ITA: 3, GER: 3, FRA: 2, POR: 2, NED: 2, BEL: 2, TUR: 2, POL: 2, RUS: 2 },
     fee: 3200, win: 400, draw: 130, ko: [800, 1300, 2000, 2000] },
 ];
 

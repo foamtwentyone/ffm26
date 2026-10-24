@@ -59,8 +59,13 @@
           s.leagues[L.id].teams.push(T.id);
           const lines = (T.players || '').split('\n').map((x) => x.trim()).filter(Boolean);
           for (const line of lines) {
-            const [name, pos, age, value, nat, ovr, pot, gen] = line.split('|');
-            this.createPlayer({ name, pos, age: +age, value: +value, nat: nat || 'RUS', ovr: ovr ? +ovr : null, pot: pot ? +pot : null, gen: gen === 'g' }, team);
+            // Имя|Поз|Возраст|Стоимость|Гражданство[|Контракт] или, из редактора, ...|Рейтинг|Потенциал|g|Контракт;
+            // «Контракт» — год, летом которого он истекает (как на Transfermarkt)
+            const f = line.split('|');
+            const [name, pos, age, value, nat] = f;
+            const short = /^\d{4}$/.test(f[5] || '');
+            const [ovr, pot, gen, until] = short ? [null, null, '', f[5]] : f.slice(5);
+            this.createPlayer({ name, pos, age: +age, value: +value, nat: nat || 'RUS', ovr: ovr ? +ovr : null, pot: pot ? +pot : null, gen: gen === 'g', until: until ? +until : null }, team);
           }
           // у клубов без заданной репутации (европейские лиги) она считается по стоимости состава
           if (T.rep == null) team.rep = FM.repFromValue(this.squadValue(team));
@@ -92,7 +97,7 @@
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
-        wage: 0, contract: s.season + FM.ri(1, 4), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
+        wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,
         st: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 },
         cst: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 },
@@ -463,12 +468,14 @@
       }
       const used = {};
       for (const E of FM.EURO) {
+        // места стран, которых нет в базе (или российские при выключенной настройке), по очереди отдаются сильнейшим лигам
         const quota = Object.assign({}, E.quota);
-        if (s.settings.ruEuro === false || !ranked.RUS) {
-          const extra = quota.RUS || 0;
-          delete quota.RUS;
-          ['ENG', 'ESP', 'ITA', 'GER', 'FRA'].slice(0, extra).forEach((c) => { quota[c] = (quota[c] || 0) + 1; });
+        let extra = 0;
+        for (const c in quota) {
+          if (!ranked[c] || (c === 'RUS' && s.settings.ruEuro === false)) { extra += quota[c]; delete quota[c]; }
         }
+        const order = Object.keys(E.quota).filter((c) => quota[c]);
+        for (let i = 0; extra > 0 && order.length; i++, extra--) quota[order[i % order.length]]++;
         const teams = [];
         for (const c in quota) {
           if (!ranked[c]) continue;

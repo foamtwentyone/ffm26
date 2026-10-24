@@ -88,6 +88,23 @@
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
+  // Поле суммы: крупные суммы вводятся в миллионах, мелкие — в тысячах. Внутри игры деньги хранятся в тыс. €.
+  const moneyUnit = (k) => (k >= 1000 ? 'млн' : 'тыс.');
+  const moneyField = (id, label, k, unit = moneyUnit(k), attrs = '') => {
+    const m = unit === 'млн';
+    const v = m ? Math.round(k / 10) / 100 : Math.round(k);
+    return `<label>${label}, ${unit} €<input id="${id}" data-unit="${unit}" type="number" min="0" step="${m ? 0.05 : 5}" value="${v}" ${attrs}></label>`;
+  };
+  const readMoney = (el) => Math.round((+el.value || 0) * (el.dataset.unit === 'млн' ? 1000 : 1));
+  // голы одного игрока — в одну строку: «Круговой 28', 90+2'»
+  const scorerLines = (list, nameOf) => {
+    const by = new Map();
+    for (const x of list) {
+      if (!by.has(x.scorer)) by.set(x.scorer, []);
+      by.get(x.scorer).push(`${x.min}'${x.pen ? ' (пен.)' : ''}${x.og ? ' (авт.)' : ''}`);
+    }
+    return [...by].map(([id, mins]) => `${nameOf(id)} ${mins.join(', ')}`);
+  };
   const flag = (c, cls = '') => (FM.FLAGS && FM.FLAGS.has(c)
     ? `<img class="flag ${cls}" src="img/flags/${c}.png" alt="${esc(FM.NAT[c] || c)}" title="${esc(FM.NAT[c] || c)}">`
     : `<span class="flag-code" title="${esc(FM.NAT[c] || c)}">${esc(c)}</span>`);
@@ -230,7 +247,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: РПЛ, ФНЛ, Вторая лига и топ-5 лиг Европы</div></div>
+        <div class="muted">Сезон 2026/27: РПЛ, ФНЛ, Вторая лига и топ-10 лиг Европы</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
@@ -244,7 +261,7 @@
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
-        <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
+        <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${flag(x.country || 'RUS')}${esc(x.name)}</button>`).join('')}</div>
         <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
@@ -277,6 +294,18 @@
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
     ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['menu', 'Сохранения и база'],
   ];
+  // короткая подсказка под заголовком раздела: что здесь можно сделать
+  const TAB_HINTS = {
+    squad: 'Нажмите на позицию на поле и выберите игрока. «Автосостав» поставит сильнейших. ОСН — в старте, ЗАП — на скамейке.',
+    fixtures: 'Все матчи сезона. Нажмите на сыгранный матч, чтобы открыть отчёт.',
+    tables: 'Таблицы лиг, Кубок России, стыки и еврокубки.',
+    stats: 'Лучшие бомбардиры, ассистенты и игроки по оценкам.',
+    transfers: 'Найдите игрока и нажмите на него, чтобы начать переговоры. Суммы вводятся в миллионах €.',
+    finance: 'Деньги клуба, зарплаты и все поступления и расходы.',
+    club: 'Стадион, задача от руководства и ваша тренерская история.',
+    inbox: 'Письма руководства и предложения за ваших игроков: их можно принять, отклонить или попросить больше.',
+    menu: 'Сохранения карьеры, экспорт в файл и редактор базы.',
+  };
   const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', menu: 'gear' };
 
   function seasonLabel(s) {
@@ -321,7 +350,7 @@
           <button class="chip cash" data-tab="finance" title="Деньги клуба"><b>€</b>${FM.money(u.money).replace(' €', '')}</button>
         </div>
       </div></div>
-      ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><h1>${esc(title)}</h1></div>` : ''}
+      ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><div><h1>${esc(title)}</h1>${TAB_HINTS[UI.tab] ? `<div class="crumb-hint">${TAB_HINTS[UI.tab]}</div>` : ''}</div></div>` : ''}
       <main id="main"></main>
       <div class="drawer hidden" id="drawer"><nav>
         <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div></div>
@@ -475,7 +504,7 @@
         <div><span class="muted small">Задача на сезон</span><b>${esc(G.expectText())}</b></div></div>`, '', 'shield')}
       ${tile('Расписание', 'fixtures', upcoming.map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${esc(compShort(m.comp))}</span></div>`;
+        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}" title="${home ? 'Дома' : 'В гостях'}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${esc(compShort(m.comp))}</span></div>`;
       }).join('') || '<div class="muted">Сезон завершён</div>', 'w2', 'calendar')}
       ${tile(esc(L.short), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       <div class="stack">
@@ -573,7 +602,7 @@
       <div class="card tight"><div class="tbl-wrap"><table>
         <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num">Цена</th></tr>
         ${sq.map((p) => `<tr class="click ${UI.sel && UI.sel.pid === p.id ? 'sel' : ''}" data-row="${p.id}">
-          <td>${inXI.has(p.id) ? '<span class="lineup-mark">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark">ЗАП</span>' : ''}</td>
+          <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
           <td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
           <td class="hide-m">${fitBar(p.fit)}</td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
           <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
@@ -647,7 +676,7 @@
           if (m.winner && my === op) cls = m.winner === u.id ? 'W' : 'L';
         }
         return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</td>
-          <td class="small muted">${m.h === u.id ? 'Д' : 'Г'}</td>
+          <td class="small muted">${m.h === u.id ? 'дома' : 'в гостях'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
     </table></div></div>`;
@@ -768,10 +797,15 @@
       if (f.maxAge) list = list.filter((p) => p.age <= f.maxAge);
       if (f.listed) list = list.filter((p) => p.listed);
       if (f.realOnly) list = list.filter((p) => !p.gen);
+      if (f.expiring) list = list.filter((p) => p.club && p.contract <= s.season && !p.pre);
       const k = UI.sortKey, d = UI.sortDir;
       list.sort((a, b) => (k === 'name' ? a.name.localeCompare(b.name) * -d : (a[k] - b[k]) * d));
       const page = UI.tfPage, per = 60;
       const shown = list.slice(page * per, page * per + per);
+      const winter = s.date >= `${s.season + 1}-01-01`;
+      const preNote = `<div class="note small" style="margin:12px 0 0">${winter
+        ? 'Сейчас можно подписать <b>предварительный контракт</b>: игроки, у которых летом истекает контракт, переходят к вам бесплатно после окончания сезона. Отметьте «контракт истекает летом» и откройте игрока.'
+        : 'С 1 января игрокам с истекающим контрактом можно предложить <b>предварительный контракт</b> — они бесплатно перейдут к вам летом.'}</div>`;
       const th = (key, n, cls = 'num') => `<th class="sort ${cls}" data-sort="${key}">${n}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
       body = `<div class="card" style="margin-bottom:12px"><div class="row">
         <input id="f-name" placeholder="Имя" value="${esc(f.name || '')}" style="width:150px">
@@ -782,16 +816,18 @@
         <input id="f-age" type="number" placeholder="Возраст до" value="${f.maxAge || ''}" style="width:100px">
         <label class="small"><input type="checkbox" id="f-listed" ${f.listed ? 'checked' : ''}> на трансфере</label>
         <label class="small"><input type="checkbox" id="f-real" ${f.realOnly ? 'checked' : ''}> только реальные</label>
-      </div></div>
+        <label class="small"><input type="checkbox" id="f-exp" ${f.expiring ? 'checked' : ''}> контракт истекает летом</label>
+      </div>${preNote}</div>
       <div class="card tight"><div class="tbl-wrap"><table><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
-        ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small muted">${G.potLabel(p)}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
+        ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${p.pre ? ' <span class="tag">уже подписал предв. контракт</span>' : p.club && p.contract <= s.season ? ` <span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : ''}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small muted">${G.potLabel(p)}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
       </table></div>
       <div class="row" style="padding:10px"><span class="muted small grow">Найдено: ${list.length}</span><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>›</button></div></div>`;
     } else if (view === 'mine') {
       const sq = G.squad(u).sort((a, b) => b.value - a.value);
-      body = `<div class="card tight"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">Цена</th><th class="num">Зарплата/нед</th><th class="num">Контракт</th><th></th></tr>
-        ${sq.map((p) => `<tr><td>${pos(p.pos)}</td><td>${pname(p)}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${FM.money(p.value)}</td><td class="num">${FM.money(p.wage)}</td><td class="num">${p.contract}</td>
-          <td><button class="btn sm ${p.listed ? 'on' : ''}" data-list="${p.id}">${p.listed ? 'На трансфере' : 'Выставить'}</button></td></tr>`).join('')}</table></div>`;
+      body = `<div class="card tight"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">Цена</th><th class="num">Зарплата/нед</th><th class="num">Контракт до</th><th></th></tr>
+        ${sq.map((p) => `<tr><td>${pos(p.pos)}</td><td>${pname(p)}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${FM.money(p.value)}</td><td class="num">${FM.money(p.wage)}</td><td class="num">лето ${p.contract + 1}</td>
+          <td><button class="btn sm ${p.listed ? 'on' : ''}" data-list="${p.id}">${p.listed ? 'На трансфере' : 'Выставить'}</button></td></tr>`).join('')}</table></div>
+        ${(() => { const inc = Object.values(G.players).filter((p) => p.pre && p.pre.team === u.id); return inc.length ? `<div class="card tight" style="margin-top:12px"><h3>Присоединятся летом</h3><table>${inc.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}</td><td>${p.club ? tname(T(p.club)) : ''}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${FM.money(p.pre.wage)}/нед</td><td class="num">${p.pre.years} г.</td></tr>`).join('')}</table></div>` : ''; })()}`;
     } else {
       body = `<div class="card tight"><table><tr><th>Дата</th><th>Игрок</th><th>Откуда</th><th>Куда</th><th class="num">Сумма</th></tr>
         ${s.seasonLog.map((x) => `<tr><td class="small">${FM.fmtDate(x.date)}</td><td>${G.players[x.pid] ? pname(G.players[x.pid]) : esc(x.name)}</td><td>${x.from ? esc(T(x.from).name) : '<span class="muted">своб. агент</span>'}</td><td>${esc(T(x.to).name)}</td><td class="num">${x.fee ? FM.money(x.fee) : 'бесплатно'}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Пока переходов нет</td></tr>'}</table></div>`;
@@ -814,7 +850,7 @@
       };
     };
     bindF('#f-name', 'name'); bindF('#f-pos', 'pos'); bindF('#f-league', 'league'); bindF('#f-price', 'maxPrice', true);
-    bindF('#f-ovr', 'minOvr', true); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly');
+    bindF('#f-ovr', 'minOvr', true); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly'); bindF('#f-exp', 'expiring');
     const pp = main.querySelector('#pp'), pn = main.querySelector('#pn');
     if (pp) pp.onclick = () => { UI.tfPage--; render(); };
     if (pn) pn.onclick = () => { UI.tfPage++; render(); };
@@ -897,7 +933,7 @@
       const hint = n.release ? n.ask : FM.roundValue(n.ask * (0.92 + ((p.id * 37) % 17) / 100));
       form = `<div class="tags">${(n.notes || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
         <div class="row nego-form">
-          <label>Сумма, тыс. €<input id="n-fee" type="number" step="50" min="0" value="${n.lastFee || FM.roundValue(hint * 0.85)}"></label>
+          ${moneyField('n-fee', 'Сумма', n.lastFee || FM.roundValue(hint * 0.85), moneyUnit(hint))}
           <label>Оплата<select id="n-inst"><option value="0">Сразу</option><option value="1">Рассрочка 40/30/30</option></select></label>
           <label>% с перепродажи<select id="n-sell"><option value="0">нет</option><option value="10">10%</option><option value="20">20%</option></select></label>
           <button class="btn primary" id="n-bid">Отправить</button></div>
@@ -908,9 +944,9 @@
       form = `<div class="row nego-form">
           <label>Зарплата/нед, тыс. €<input id="n-wage" type="number" step="0.5" min="0" value="${n.lastWage || Math.round(d.wage * 0.9 * 2) / 2}"></label>
           <label>Срок<select id="n-years">${[1, 2, 3, 4, 5].map((y) => `<option value="${y}" ${y === d.prefYears[0] ? 'selected' : ''}>${y} г.</option>`).join('')}</select></label>
-          <label>Подъёмные, тыс. €<input id="n-bonus" type="number" step="25" min="0" value="${d.bonus}"></label>
+          ${moneyField('n-bonus', 'Подъёмные', d.bonus)}
           <label>Роль<select id="n-role">${Object.entries(ROLE_NAME).map(([k, v]) => `<option value="${k}" ${k === role ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-          <label>Отступные, тыс. €<input id="n-release" type="number" step="500" min="0" value="0" placeholder="0 — без отступных"></label>
+          ${moneyField('n-release', 'Отступные (0 — нет)', 0, 'млн')}
           <button class="btn primary" id="n-offer">Предложить</button></div>
         <div class="small muted" style="margin-top:8px">Агент ориентируется примерно на ${FM.money(d.wage)}/нед для роли «${ROLE_NAME[role]}», удобный срок — ${d.prefYears.join(' или ')} г. Роль «ключевой игрок» снижает запрос, «запасной» — повышает. Отступные немного снижают запрос. Терпение игрока ${dots(n.pPatience, 4)}</div>`;
     } else {
@@ -936,7 +972,7 @@
     const after = (r) => { save(); negoModal(pid); if (r && r.status === 'broken') toast(esc(r.text)); };
     const bid = el.querySelector('#n-bid');
     if (bid) bid.onclick = () => {
-      const fee = +el.querySelector('#n-fee').value || 0;
+      const fee = readMoney(el.querySelector('#n-fee'));
       const r = G.bidClub(pid, fee, el.querySelector('#n-inst').value === '1', +el.querySelector('#n-sell').value);
       if (r.status === 'blocked') return toast(esc(r.text));
       n.lastFee = r.fee || fee;
@@ -946,8 +982,8 @@
     if (off) off.onclick = () => {
       const wage = +el.querySelector('#n-wage').value || 0;
       const r = G.offerPlayer(pid, {
-        wage, years: +el.querySelector('#n-years').value, bonus: +el.querySelector('#n-bonus').value || 0,
-        role: el.querySelector('#n-role').value, release: +el.querySelector('#n-release').value || 0,
+        wage, years: +el.querySelector('#n-years').value, bonus: readMoney(el.querySelector('#n-bonus')),
+        role: el.querySelector('#n-role').value, release: readMoney(el.querySelector('#n-release')),
       });
       if (r.status === 'blocked') return toast(esc(r.text));
       n.lastWage = r.wage || wage;
@@ -983,7 +1019,7 @@
     const m = s.matches[mid];
     if (!m || !m.played) return;
     const h = T(m.h), a = T(m.a);
-    const goals = (side) => (m.goals || []).filter((x) => x.side === side).map((x) => `${G.players[x.scorer] ? esc(G.players[x.scorer].name) : '?'} ${x.min}'${x.pen ? ' (пен.)' : ''}`).join('<br>');
+    const goals = (side) => scorerLines((m.goals || []).filter((x) => x.side === side), (id) => (G.players[id] ? esc(G.players[id].name) : '?')).join('<br>');
     const st = m.stats || {};
     const srow = (n, k) => st[k] ? statRow(n, st[k][0], st[k][1]) : '';
     const ratAll = Object.entries(m.ratings || {}).map(([pid, r]) => [G.players[pid], r]).filter(([p]) => p);
@@ -1073,7 +1109,7 @@
       const total = sim.phase === 'et' ? 120 : 90;
       const cur = sim.phase === 'first' ? Math.min(sim.minute, 45) : Math.min(sim.minute, total);
       $('#pg').style.width = `${sim.done ? 100 : (cur / total) * 100}%`;
-      const gl = (sd) => sim.goalsList.filter((x) => x.side === sd).map((x) => `${esc(G.players[x.scorer].name.split(' ').slice(-1)[0])} ${x.min}'`).join(', ');
+      const gl = (sd) => scorerLines(sim.goalsList.filter((x) => x.side === sd), (id) => esc(G.players[id].name)).join('<br>');
       $('#sh').innerHTML = gl('h');
       $('#sa').innerHTML = gl('a');
       const body = $('#body');
@@ -1212,13 +1248,13 @@
       <div class="row"><span class="t grow">${esc(m.title)}</span><span class="small muted">${FM.fmtDate(m.date)}</span></div>
       <div class="small">${esc(m.text)}</div>
       ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
-        <input class="sm" type="number" step="50" min="0" data-ask="${m.id}" value="${FM.roundValue(m.data.fee * 1.2)}" title="Ваша цена, тыс. €"><button class="btn sm" data-haggle="${m.id}">Торговаться</button><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
+        <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
       ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button></div>` : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
     s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
     main.querySelectorAll('[data-haggle]').forEach((b) => b.onclick = () => {
-      const v = +main.querySelector(`[data-ask="${b.dataset.haggle}"]`).value || 0;
+      const v = readMoney(main.querySelector(`[data-ask="${b.dataset.haggle}"]`));
       toast(esc(G.counterOffer(+b.dataset.haggle, v)), 4000); save(); render();
     });
     main.querySelectorAll('[data-dec]').forEach((b) => b.onclick = () => { G.answerOffer(+b.dataset.dec, false); save(); render(); });
@@ -1245,7 +1281,7 @@
         <div class="small" style="margin-bottom:10px">Составы РПЛ собраны по заявкам и составам на матчи лета–осени 2026 года, цены — оценка на уровне Transfermarkt. По ФНЛ и Второй лиге открытых данных мало: недостающих игроков игра генерирует, они помечены «*». В редакторе можно исправить любого игрока или клуба.</div>
         <div class="row"><button class="btn primary" id="editor">Редактор базы</button></div></div>
       <div class="card"><h3>Игра</h3>
-        <label class="row small" style="margin-bottom:12px"><input type="checkbox" id="set-ru-euro" ${G.s.settings.ruEuro !== false ? 'checked' : ''}> Российские клубы в еврокубках (со следующего сезона)</label>
+        <label class="check small" style="margin-bottom:12px"><input type="checkbox" id="set-ru-euro" ${G.s.settings.ruEuro !== false ? 'checked' : ''}> Российские клубы в еврокубках (со следующего сезона)</label>
         <div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
     main.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => { if (save(SAVE_SLOT + b.dataset.save)) toast('Сохранено'); render(); });
     main.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.load));
@@ -1281,7 +1317,7 @@
           const t = G.teams[tid];
           return {
             id: t.id, name: t.name, city: t.city, stadium: t.stadium, cap: t.cap, colors: t.colors, rep: t.rep, money: Math.round(t.money), reserveOf: t.reserveOf || undefined, logoData: t.logoData,
-            players: '\n' + G.squad(t).map((p) => [p.name, p.pos, p.age, p.value, p.nat, p.ovr, p.pot, p.gen ? 'g' : ''].join('|')).join('\n'),
+            players: '\n' + G.squad(t).map((p) => [p.name, p.pos, p.age, p.value, p.nat, p.ovr, p.pot, p.gen ? 'g' : '', p.contract + 1].join('|')).join('\n'),
           };
         }),
       };

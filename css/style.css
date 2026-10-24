@@ -443,3 +443,29 @@ tr.sel td { background: rgba(255, 201, 60, .14) !important; }
 .nego-form input, .nego-form select { width: 100%; }
 .pat { letter-spacing: 2px; color: var(--warn); }
 input.sm { width: 90px; padding: 4px 6px; }
+
+/* ===== читаемость: заголовки отделены от текста ===== */
+h3 { font-size: 14px; color: #dfe5ff; font-weight: 600; letter-spacing: .08em; margin-top: 4px; }
+.tile > header, .card > h3:first-child { font-size: 16px; font-weight: 600; letter-spacing: .07em; color: #fff; }
+.card > h3:first-child { padding: 15px 16px 12px; margin-bottom: 14px; background: rgba(0, 0, 0, .18); border-bottom: 1px solid var(--stroke); border-radius: var(--r) var(--r) 0 0; }
+.card > h3:first-child::before { content: ""; display: inline-block; width: 4px; height: 16px; border-radius: 2px; background: var(--accent); margin-right: 2px; flex: none; }
+.card.tight > h3:first-child { margin: 0; }
+.card.tight > h3:not(:first-child) { padding: 14px 16px 8px; margin: 0; }
+.tile > header { padding-bottom: 4px; }
+.tile .tb { padding-top: 14px; }
+.kv span:first-child { text-transform: uppercase; letter-spacing: .06em; font-size: 11px; margin-bottom: 3px; }
+.kv b { font-size: 18px; }
+.crumb { align-items: flex-start; }
+.crumb-hint { color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 760px; line-height: 1.4; }
+.inbox-item { padding: 14px 18px; }
+.inbox-item .t { font-size: 16px; color: #fff; font-family: var(--f-head); letter-spacing: .02em; }
+.inbox-item .row:first-child { margin-bottom: 4px; }
+.inbox-item > .small { color: #c4cbec; line-height: 1.5; }
+.inbox-item:not(.unread) .t { color: #c9d0f0; font-weight: 500; }
+label.check { display: flex; align-items: center; gap: 10px; }
+input[type="checkbox"] { width: 18px; height: 18px; padding: 0; flex: none; accent-color: var(--accent); vertical-align: -4px; margin: 0 6px 0 0; }
+th { color: #b4bde6; }
+.note b { color: #fff; }
+.tag.free { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, transparent); background: color-mix(in srgb, var(--good) 12%, transparent); }
+.haggle { display: inline-flex; align-items: center; gap: 6px; }
+.modal h3 { margin-top: 18px; }
