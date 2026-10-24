@@ -292,10 +292,10 @@
   // ================== каркас ==================
   const TABS = [
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
-    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['menu', 'Сохранения и база'],
+    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['coach', 'Тренер'], ['menu', 'Сохранения и база'],
   ];
   // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
-  const NAV = ['home', 'squad', 'tables', 'transfers', 'fixtures', 'finance', 'inbox'];
+  const NAV = ['home', 'squad', 'tables', 'transfers', 'fixtures', 'finance', 'inbox', 'coach'];
   const NAV_NAME = { squad: 'Состав', tables: 'Турниры', fixtures: 'Матчи' };
   // короткая подсказка под заголовком раздела: что здесь можно сделать
   const TAB_HINTS = {
@@ -308,8 +308,9 @@
     club: 'Стадион, задача от руководства и ваша тренерская история.',
     inbox: 'Письма руководства и предложения за ваших игроков: их можно принять, отклонить или попросить больше.',
     menu: 'Сохранения карьеры, экспорт в файл и редактор базы.',
+    coach: 'Ваша карьера: турниры и результаты по сезонам и итоги за всё время.',
   };
-  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', menu: 'gear' };
+  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', coach: 'user', menu: 'gear' };
 
   function seasonLabel(s) {
     return `${s.season}/${String(s.season + 1).slice(2)}`;
@@ -367,7 +368,7 @@
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => go(b.dataset.tab));
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
-    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, menu: viewMenu })[UI.tab](main);
+    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, coach: viewCoach, menu: viewMenu })[UI.tab](main);
     bindCommon(main);
     bindCommon(app.querySelector('.hdr'));
   }
@@ -1240,6 +1241,70 @@
   }
 
   // ================== почта ==================
+  // ================== тренер ==================
+  function viewCoach(main) {
+    const G = g(), s = G.s;
+    const seasons = (s.coach && s.coach.seasons ? s.coach.seasons : []).slice().sort((a, b) => b.year - a.year);
+    if (!seasons.some((x) => x.year === s.season)) seasons.unshift({ year: s.season, clubs: [G.userTeam().name], comps: {}, rec: { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }, scorers: {} });
+    const res = (r) => (r ? `${esc(r.h)} ${r.hg} : ${r.ag} ${esc(r.a)}` : '—');
+    const best = (sc) => { const x = Object.values(sc).sort((a, b) => b.g - a.g)[0]; return x ? `${esc(x.name)}, ${x.g}` : '—'; };
+    const recLine = (r) => `<div class="rec">${[['И', r.p], ['В', r.w], ['Н', r.d], ['П', r.l], ['ГЗ', r.gf], ['ГП', r.ga], ['+/−', (r.gf - r.ga > 0 ? '+' : '') + (r.gf - r.ga)]].map(([k, v]) => `<span><i>${k}</i>${v}</span>`).join('')}</div>`;
+    // стадия турнира: место в лиге, «победа», «вылет — 1/8 финала» и т. п.
+    const stage = (e, comp, c) => {
+      const cur = e.year === s.season;
+      if (s.leagues[comp] || (!c && e.final)) {
+        const pos = cur ? G.positionOf(G.userTeam().id) : e.final && e.final.league === comp ? e.final.pos : null;
+        if (!pos) return '—';
+        return pos === 1 && !cur ? '<b class="win">🏆 Чемпион</b>' : `${pos}-е место`;
+      }
+      if (c.md) {
+        const row = cur && s.euro && s.euro[comp] && G.euroTable(comp).find((r) => r.id === s.user);
+        if (row) return `общий этап · ${row.pos}-е место`;
+        return cur ? 'общий этап' : `<span class="bad">вылет · общий этап${c.pos ? `, ${c.pos}-е место` : ''}</span>`;
+      }
+      const base = c.label || 'стыки';
+      if (!c.ko) return `${base} · в борьбе`;
+      if (c.won && c.final) return '<b class="win">🏆 Победа</b>';
+      if (c.won) return `${base} · ${comp === 'po' ? 'выиграли' : 'прошли дальше'}`;
+      return `<span class="bad">вылет · ${base}</span>`;
+    };
+    const card = (e) => {
+      const comps = Object.entries(e.comps || {});
+      const hist = s.history.find((h) => h.year === e.year);
+      const rows = comps.length ? comps.map(([c, x]) => `<div class="kvl"><span>${esc(compName(c))}</span><b>${stage(e, c, x)}</b></div>`).join('')
+        : hist ? `<div class="kvl"><span>${esc(s.leagues[hist.league] ? s.leagues[hist.league].name : 'Чемпионат')}</span><b>${hist.pos}-е место</b></div>` : '<div class="muted small">Матчей ещё не было</div>';
+      return `<div class="card coach-season"><h3>Сезон ${e.year}/${String(e.year + 1).slice(2)}${e.year === s.season ? ' · текущий' : ''}<span class="grow"></span><span class="clubs">${(e.clubs || []).map(esc).join(', ')}</span></h3>
+        <div class="coach-cols"><div>${rows}</div><div>
+          <div class="kvl"><span>Лучший бомбардир</span><b>${best(e.scorers || {})}</b></div>
+          <div class="kvl"><span>Крупнейшая победа</span><b>${res(e.bigWin)}</b></div>
+          <div class="kvl"><span>Крупнейшее поражение</span><b>${res(e.bigLoss)}</b></div>
+          <div class="kvl"><span>Все матчи</span>${recLine(e.rec || { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 })}</div></div></div></div>`;
+    };
+    // итог за карьеру
+    const all = { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }, sc = {}, clubs = [];
+    let bw = null, bl = null;
+    for (const e of seasons) {
+      for (const k in all) all[k] += (e.rec || {})[k] || 0;
+      for (const pid in e.scorers || {}) { sc[pid] = sc[pid] || { name: e.scorers[pid].name, g: 0 }; sc[pid].g += e.scorers[pid].g; }
+      (e.clubs || []).forEach((c) => { if (!clubs.includes(c)) clubs.push(c); });
+      if (e.bigWin && (!bw || e.bigWin.diff > bw.diff || (e.bigWin.diff === bw.diff && e.bigWin.gf > bw.gf))) bw = e.bigWin;
+      if (e.bigLoss && (!bl || e.bigLoss.diff < bl.diff)) bl = e.bigLoss;
+    }
+    s.history.forEach((h) => { const n = G.teams[h.team] && G.teams[h.team].name; if (n && !clubs.includes(n)) clubs.push(n); });
+    const titles = s.history.filter((h) => h.pos === 1 && s.leagues[h.league] && s.leagues[h.league].tier === 1).length;
+    const cups = s.history.filter((h) => h.cup).length;
+    const euros = s.history.reduce((a, h) => a + (h.euro ? h.euro.length : 0), 0);
+    main.innerHTML = `<div class="card coach-total"><h3>Всего за карьеру · ${esc(s.manager)}</h3><div class="coach-cols"><div>
+        <div class="kvl"><span>Клубы</span><b>${clubs.map(esc).join(', ')}</b></div>
+        <div class="kvl"><span>Сезонов</span><b>${seasons.length}</b></div>
+        <div class="kvl"><span>Трофеи</span><b>${titles + cups + euros ? [titles ? `чемпионств: ${titles}` : '', cups ? `кубков: ${cups}` : '', euros ? `еврокубков: ${euros}` : ''].filter(Boolean).join(' · ') : 'пока нет'}</b></div></div><div>
+        <div class="kvl"><span>Лучший бомбардир</span><b>${best(sc)}</b></div>
+        <div class="kvl"><span>Крупнейшая победа</span><b>${res(bw)}</b></div>
+        <div class="kvl"><span>Крупнейшее поражение</span><b>${res(bl)}</b></div>
+        <div class="kvl"><span>Все матчи</span>${recLine(all)}</div></div></div></div>
+      ${seasons.map(card).join('')}`;
+  }
+
   function viewInbox(main) {
     const G = g(), s = G.s;
     main.innerHTML = `<div class="card tight">${s.inbox.map((m) => `<div class="inbox-item ${m.read ? '' : 'unread'}" data-msg="${m.id}">

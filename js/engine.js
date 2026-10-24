@@ -181,7 +181,7 @@
     }
 
     pickShooter(s) {
-      return FM.weighted(s.onPitch, (o) => (SHOOT_W[o.slot] || 0.5) * Math.pow(o.p.ovr / 60, 3)).p;
+      return FM.weighted(s.onPitch, (o) => (SHOOT_W[o.slot] ?? 0.5) * Math.pow(o.p.ovr / 60, 3)).p;
     }
 
     pickAssist(s, shooter) {
@@ -230,7 +230,7 @@
     corner(s) {
       s.stats.corners++;
       if (Math.random() < 0.035) {
-        const scorer = FM.weighted(s.onPitch, (o) => ({ CB: 4, ST: 3, DM: 1.5 }[o.slot] || 0.6)).p;
+        const scorer = FM.weighted(s.onPitch, (o) => (o.slot === 'GK' ? 0 : { CB: 4, ST: 3, DM: 1.5 }[o.slot] || 0.6)).p;
         const taker = FM.weighted(s.onPitch.filter((o) => o.p !== scorer), (o) => ({ AM: 3, LW: 3, RW: 3, CM: 2 }[o.slot] || 0.3)).p;
         s.stats.shots++;
         s.stats.sot++;

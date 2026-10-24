@@ -762,6 +762,13 @@
       else { s.board.conf -= (pos - exp) * 5; verdict = `Команда финишировала ниже ожиданий (${exp}-е место).`; }
       if (pos < exp - 1) u.rep = Math.min(99, u.rep + 1);
       if (pos > exp + 3) u.rep = Math.max(35, u.rep - 1);
+      const ce = this.coachSeason(y);
+      // место на общем этапе еврокубка (если дальше клуб не прошёл, стадия покажет вылет с этим местом)
+      for (const E of FM.EURO) {
+        const c = ce.comps[E.id];
+        if (c && c.md && s.euro && s.euro[E.id]) { const row = this.euroTable(E.id).find((r) => r.id === u.id); if (row) c.pos = row.pos; }
+      }
+      ce.final = { league: summary.userLeague, pos, cup: s.cup && s.cup.winner === u.id, euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) };
       s.history.unshift({ year: y, league: summary.userLeague, pos, team: u.id, cup: s.cup && s.cup.winner === u.id, moved: moved ? (moved.up ? 'up' : 'down') : null,
         euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) });
       this.msg(`Итоги сезона ${y}/${String(y + 1).slice(2)}`, `«${u.name}» занимает ${pos}-е место (${s.leagues[summary.userLeague].name}). ${verdict}`, 'board');
@@ -883,6 +890,44 @@
         .sort((a, b) => b.rep - a.rep);
     }
 
+    // ================== статистика тренера ==================
+    // По сезону: клубы, последний матч в каждом турнире (по нему видна стадия), баланс матчей,
+    // крупнейшие победа и поражение, бомбардиры. Старые сохранения без этих данных просто начинают с нуля.
+    coachSeason(year = this.s.season) {
+      const s = this.s;
+      s.coach = s.coach || { seasons: [] };
+      let e = s.coach.seasons.find((x) => x.year === year);
+      if (!e) {
+        e = { year, clubs: [], comps: {}, rec: { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }, bigWin: null, bigLoss: null, scorers: {} };
+        s.coach.seasons.unshift(e);
+      }
+      return e;
+    }
+
+    recordCoach(m) {
+      const s = this.s, uid = s.user;
+      const e = this.coachSeason();
+      const name = this.teams[uid].name;
+      if (!e.clubs.includes(name)) e.clubs.push(name);
+      const home = m.h === uid;
+      const gf = home ? m.hg : m.ag, ga = home ? m.ag : m.hg;
+      const r = e.rec;
+      r.p++; r.gf += gf; r.ga += ga;
+      if (gf > ga) r.w++; else if (gf < ga) r.l++; else r.d++;
+      const res = { h: this.teams[m.h].name, a: this.teams[m.a].name, hg: m.hg, ag: m.ag, diff: gf - ga, gf, date: m.date };
+      if (gf > ga && (!e.bigWin || res.diff > e.bigWin.diff || (res.diff === e.bigWin.diff && gf > e.bigWin.gf))) e.bigWin = res;
+      if (gf < ga && (!e.bigLoss || res.diff < e.bigLoss.diff || (res.diff === e.bigLoss.diff && ga > e.bigLoss.hg + e.bigLoss.ag - e.bigLoss.gf))) e.bigLoss = res;
+      for (const g of m.goals || []) {
+        if ((g.side === 'h') !== home || g.og) continue;
+        const p = this.players[g.scorer];
+        if (!p) continue;
+        const k = e.scorers[g.scorer] || (e.scorers[g.scorer] = { name: p.name, g: 0 });
+        k.g++;
+      }
+      const label = m.label || (m.comp === 'cup' && s.cup && s.cup.rounds[m.round - 1] ? s.cup.rounds[m.round - 1].name : '');
+      e.comps[m.comp] = { label: label.replace(/, (1-й|ответный) матч$/, ''), md: !!m.md, ko: !!m.winner, won: m.winner === uid, final: /^финал$/i.test(label) };
+    }
+
     takeJob(teamId) {
       const s = this.s;
       const t = this.teams[teamId];
@@ -943,6 +988,7 @@
       const euro = FM.EURO.find((E) => E.id === m.comp);
       if (m.ko || m.comp === 'cup') m.winner = sim.winner();
       if (m.comp === 'cup' && !m.winner) m.winner = m.hg >= m.ag ? m.h : m.a;
+      if (m.h === s.user || m.a === s.user) this.recordCoach(m);
       const ratings = {};
       for (const side of [sim.home, sim.away]) {
         const t = side.team;
