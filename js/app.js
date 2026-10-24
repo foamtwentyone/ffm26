@@ -69,7 +69,7 @@
 
   function badge(t, cls = '') {
     if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
-    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="img/logos/${t.id}.png" alt="${esc(t.name)}"></span>`;
+    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="${FM.LOGO_IMG ? FM.LOGO_IMG[t.id] : `img/logos/${t.id}.png`}" alt="${esc(t.name)}"></span>`;
     const init = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase();
     return `<span class="badge ${cls}" style="background:${t.colors[0]};color:${badgeText(t)}">${esc(init)}</span>`;
   }
@@ -108,7 +108,7 @@
     return [...by].map(([id, mins]) => `${nameOf(id)} ${mins.join(', ')}`);
   };
   const flag = (c, cls = '') => (FM.FLAGS && FM.FLAGS.has(c)
-    ? `<img class="flag ${cls}" src="img/flags/${c}.png" alt="${esc(FM.NAT[c] || c)}" title="${esc(FM.NAT[c] || c)}">`
+    ? `<img class="flag ${cls}" src="${FM.FLAG_IMG ? FM.FLAG_IMG[c] : `img/flags/${c}.png`}" alt="${esc(FM.NAT[c] || c)}" title="${esc(FM.NAT[c] || c)}">`
     : `<span class="flag-code" title="${esc(FM.NAT[c] || c)}">${esc(c)}</span>`);
   // цвет метки команды в ленте матча: тёмный основной цвет на тёмном фоне не виден
   const markColor = (t) => (parseInt(t.colors[0].slice(1, 3), 16) + parseInt(t.colors[0].slice(3, 5), 16) + parseInt(t.colors[0].slice(5, 7), 16) < 120 ? t.colors[1] : t.colors[0]);
