@@ -256,7 +256,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: 33 лиги — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
+        <div class="muted">Сезон 2026/27: 34 лиги — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
