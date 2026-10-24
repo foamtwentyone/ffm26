@@ -538,12 +538,22 @@
     const problems = G.lineupProblems(u);
     const str = teamStrength(u);
     const t = u.tactics;
+    // выбрана позиция на поле — подсвечиваем, кто на неё подходит; выбрано место на скамейке — всех доступных
+    const selSlot = UI.sel && UI.sel.type === 'xi' ? slots[UI.sel.i][0] : null;
+    const selCur = UI.sel ? (UI.sel.type === 'xi' ? u.lineup[UI.sel.i] : u.bench[UI.sel.i]) : null;
+    const markOf = (p) => {
+      if (!UI.sel || p.id === selCur) return null;
+      if (selSlot) return fitMark(p, selSlot);
+      return G.isAvailable(p) ? { cls: inXI.has(p.id) ? 'opt-poor' : 'opt-ok', tag: '' } : { cls: 'opt-no', tag: p.inj ? 'травма' : 'дисквал.' };
+    };
+    // подходящие на выбранную позицию — наверх списка
+    if (selSlot) sq.sort((a, b2) => (G.isAvailable(b2) - G.isAvailable(a)) || FM.fit(b2.pos, selSlot) - FM.fit(a.pos, selSlot) || b2.ovr - a.ovr);
     const segBtns = (key, opts) => `<div class="seg">${opts.map(([v, n]) => `<button data-t="${key}" data-v="${v}" class="${t[key] === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
     main.innerHTML = `<div class="squad-layout">
       <div>
         <div class="card" style="margin-bottom:14px">
           <div class="row" style="margin-bottom:10px"><select id="formation">${Object.keys(FM.FORMATIONS).map((f) => `<option ${f === u.formation ? 'selected' : ''}>${f}</option>`).join('')}</select>
-            <button class="btn sm" id="auto">Автосостав</button><span class="grow"></span><span class="small muted">${UI.sel ? 'Выберите игрока в списке' : 'Нажмите на позицию'}</span></div>
+            <button class="btn sm" id="auto">Автосостав</button><span class="grow"></span><span class="small ${UI.sel ? 'pick-hint' : 'muted'}">${UI.sel ? (selSlot ? `Кого поставить на позицию «${FM.POS_NAME[selSlot]}»? Подходящие подсвечены` : 'Выберите игрока для скамейки') : 'Нажмите на позицию'}</span></div>
           <div class="pitch"><div class="box top"></div><div class="box bot"></div>
             ${slots.map(([sp, x, y], i) => {
               const p = P(u.lineup[i]);
@@ -560,7 +570,7 @@
           <div class="row">${Array.from({ length: 9 }, (_, i) => {
             const p = P(u.bench[i]);
             const sel = UI.sel && UI.sel.type === 'bench' && UI.sel.i === i;
-            return `<button class="btn sm bench-btn ${sel ? 'on' : ''}" data-bench="${i}" title="${p ? esc(p.name) : 'Пусто'}">${p ? `${pos(p.pos)} ${esc(p.name.split(' ').slice(-1)[0])}` : '—'}</button>`;
+            return `<button class="btn sm bench-btn ${sel ? 'on' : ''} ${p && selSlot && p.id !== selCur ? fitMark(p, selSlot).cls : ''}" data-bench="${i}" title="${p ? esc(p.name) : 'Пусто'}">${p ? `${pos(p.pos)} ${esc(p.name.split(' ').slice(-1)[0])}` : '—'}</button>`;
           }).join('')}</div>
           ${problems.length ? `<div class="note bad small">${problems.map(esc).join('<br>')}<br>Перед матчем такие места заполнятся автоматически.</div>` : ''}
         </div>
@@ -577,11 +587,11 @@
       </div>
       <div class="card tight"><div class="tbl-wrap"><table>
         <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
-        ${sq.map((p) => `<tr class="click ${UI.sel && UI.sel.pid === p.id ? 'sel' : ''}" data-row="${p.id}">
+        ${sq.map((p) => { const mk = markOf(p); return `<tr class="click ${p.id === selCur ? 'sel' : ''} ${mk ? mk.cls : ''}" data-row="${p.id}">
           <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
-          <td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
+          <td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
           <td class="hide-m">${fitBar(p.fit)}</td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
-          <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`).join('')}
+          <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`; }).join('')}
       </table></div><div class="small muted" style="padding:10px">Нажмите на позицию на поле или на скамейке, затем на игрока. Без выбора позиции — откроется карточка игрока. «*» — сгенерированный игрок.</div></div>
     </div>`;
 
@@ -618,6 +628,16 @@
       UI.sel = null;
       render();
     });
+  }
+
+  // Насколько игрок подходит на позицию: класс подсветки и подпись. Используется при выборе замены.
+  function fitMark(p, slot) {
+    const G = g();
+    if (!G.isAvailable(p)) return { cls: 'opt-no', tag: p.inj ? 'травма' : 'дисквал.' };
+    const f = FM.fit(p.pos, slot);
+    if (f >= 1) return { cls: 'opt-best', tag: 'своя позиция' };
+    if (f >= 0.85) return { cls: 'opt-ok', tag: `${Math.round(f * 100)}%` };
+    return { cls: 'opt-poor', tag: `${Math.round(f * 100)}%` };
   }
 
   function placePlayer(u, sel, pid) {
@@ -1133,12 +1153,14 @@
       const t = sd.tactics;
       const seg = (key, opts) => `<div class="seg">${opts.map(([v, n]) => `<button data-mt="${key}" data-v="${v}" class="${t[key] === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
       const benchAvail = sd.bench.filter((p) => !sd.used.has(p.id));
+      const outO = subSel && sd.onPitch.find((o) => o.p.id === subSel);
+      const outSlot = outO ? outO.slot : null;
       panel.classList.remove('hidden');
       panel.innerHTML = `<div class="row"><b class="grow">Замены (осталось ${sd.subsLeft})</b><button class="btn sm" id="closeMgr">Скрыть</button></div>
         ${sim.needUserSub ? `<div class="note bad small">${esc(G.players[sim.needUserSub].name)} травмирован — замените его.</div>` : ''}
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
           <div><div class="small muted">На поле — кого заменить</div>${sd.onPitch.map((o) => `<button class="btn sm ${subSel === o.p.id ? 'on' : ''}" style="display:block;width:100%;text-align:left;margin:3px 0" data-out="${o.p.id}">${FM.POS_RU[o.slot]} · ${esc(o.p.name)} · ${Math.round(sd.fitness[o.p.id])}% · ${sd.rating[o.p.id].toFixed(1)}</button>`).join('')}</div>
-          <div><div class="small muted">Запасные — кто выйдет</div>${benchAvail.map((p) => `<button class="btn sm" style="display:block;width:100%;text-align:left;margin:3px 0" data-in="${p.id}" ${subSel && sd.subsLeft > 0 && G.isAvailable(p) ? '' : 'disabled'}>${FM.POS_RU[p.pos]} · ${esc(p.name)} · ${p.ovr}</button>`).join('') || '<div class="small muted">Никого не осталось</div>'}</div></div>
+          <div><div class="small muted">${outSlot ? `Кто выйдет на позицию «${FM.POS_NAME[outSlot]}»` : 'Запасные — сначала выберите, кого заменить'}</div>${(outSlot ? benchAvail.slice().sort((a, b) => FM.fit(b.pos, outSlot) - FM.fit(a.pos, outSlot) || b.ovr - a.ovr) : benchAvail).map((p) => { const mk = outSlot ? fitMark(p, outSlot) : null; return `<button class="btn sm sub-btn ${mk ? mk.cls : ''}" data-in="${p.id}" ${subSel && sd.subsLeft > 0 && G.isAvailable(p) ? '' : 'disabled'}>${pos(p.pos)}<span class="grow">${esc(p.name)}</span>${mk ? `<span class="fit-tag">${mk.tag}</span>` : ''}<b>${p.ovr}</b></button>`; }).join('') || '<div class="small muted">Никого не осталось</div>'}</div></div>
         <div class="row" style="margin-top:10px"><span class="small muted">Настрой</span>${seg('ment', [[-2, 'Автобус'], [-1, 'Оборона'], [0, 'Баланс'], [1, 'Атака'], [2, 'Штурм']])}
           <span class="small muted">Прессинг</span>${seg('press', [[0, 'Низкий'], [1, 'Средний'], [2, 'Высокий']])}</div>`;
       panel.querySelector('#closeMgr').onclick = () => panel.classList.add('hidden');

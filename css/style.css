@@ -563,3 +563,19 @@ input, select { font-weight: 600; }
 .str.ln-F > span { color: #ff8a98; } .str.ln-M > span { color: #6ee3a5; } .str.ln-D > span { color: #8ab8ff; }
 .bench-btn { display: inline-flex; align-items: center; gap: 6px; }
 .bench-btn .pos { min-width: 28px; font-size: 11px; padding: 1px 4px; }
+
+/* подсветка вариантов при выборе замены */
+tr.opt-best td { background: color-mix(in srgb, var(--good) 16%, transparent); }
+tr.opt-best td:first-child { box-shadow: inset 4px 0 0 var(--good); }
+tr.opt-ok td { background: color-mix(in srgb, var(--warn) 9%, transparent); }
+tr.opt-ok td:first-child { box-shadow: inset 4px 0 0 var(--warn); }
+tr.opt-poor, .bench-btn.opt-poor, .sub-btn.opt-poor { opacity: .5; }
+tr.opt-no, .bench-btn.opt-no, .sub-btn.opt-no { opacity: .3; }
+.bench-btn.opt-best, .sub-btn.opt-best { border-color: var(--good); box-shadow: 0 0 0 1px var(--good), 0 0 14px color-mix(in srgb, var(--good) 35%, transparent); }
+.bench-btn.opt-ok, .sub-btn.opt-ok { border-color: var(--warn); }
+.fit-tag { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--glass2); color: var(--muted); vertical-align: 1px; }
+.opt-best .fit-tag { background: color-mix(in srgb, var(--good) 25%, transparent); color: #7df0b5; }
+.opt-ok .fit-tag { background: color-mix(in srgb, var(--warn) 22%, transparent); color: #ffd18a; }
+.pick-hint { color: var(--gold); font-weight: 700; }
+.sub-btn { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; margin: 4px 0; }
+.sub-btn .pos { min-width: 28px; font-size: 11px; padding: 1px 4px; }
