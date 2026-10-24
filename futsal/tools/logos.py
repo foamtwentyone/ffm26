@@ -1,7 +1,7 @@
 # Эмблемы клубов: скачивает картинки из заявок РФС (st.joinsport.io, ссылки собирает scrape.py) и mosff.ru (mosff.py)
 # и упаковывает их в js/data/logos.js — WebP 96px в base64, чтобы страница грузилась одним файлом.
 # Запуск после scrape.py и build.py: python3 tools/logos.py
-import base64, io, json, os, re, subprocess, sys, time
+import base64, glob, io, json, os, re, subprocess, sys, time
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -14,6 +14,29 @@ ids = {}
 for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5'):
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
         ids[m.group(2)] = m.group(1)
+
+def pack(raw):
+    im = Image.open(raw).convert('RGBA')
+    # JPEG-эмблемы приходят на белом фоне — делаем его прозрачным, если он сплошной по краям
+    if raw.endswith('.jpg'):
+        px = im.load()
+        w, h = im.size
+        corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
+        if all(min(c[:3]) > 240 for c in corners):
+            for y in range(h):
+                for x in range(w):
+                    r, g, b, a = px[x, y]
+                    if min(r, g, b) > 245: px[x, y] = (r, g, b, 0)
+    bbox = im.getbbox()
+    if bbox: im = im.crop(bbox)
+    side = max(im.size)
+    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+    sq.paste(im, ((side - im.size[0]) // 2, (side - im.size[1]) // 2))
+    sq = sq.resize((96, 96), Image.LANCZOS)
+    buf = io.BytesIO()
+    sq.save(buf, 'WEBP', quality=88, method=6)
+    return 'data:image/webp;base64,' + base64.b64encode(buf.getvalue()).decode()
+
 
 teams = json.load(open(CACHE + '/teams.json', encoding='utf8'))
 # московская зона Первой лиги — эмблемы с mosff.ru (hb.bizmrg.com)
@@ -39,26 +62,15 @@ for t in teams:
         else:
             print('не скачалась:', t['name'], url, file=sys.stderr)
             continue
-    im = Image.open(raw).convert('RGBA')
-    # JPEG-эмблемы приходят на белом фоне — делаем его прозрачным, если он сплошной по краям
-    if raw.endswith('.jpg'):
-        px = im.load()
-        w, h = im.size
-        corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
-        if all(min(c[:3]) > 240 for c in corners):
-            for y in range(h):
-                for x in range(w):
-                    r, g, b, a = px[x, y]
-                    if min(r, g, b) > 245: px[x, y] = (r, g, b, 0)
-    bbox = im.getbbox()
-    if bbox: im = im.crop(bbox)
-    side = max(im.size)
-    sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
-    sq.paste(im, ((side - im.size[0]) // 2, (side - im.size[1]) // 2))
-    sq = sq.resize((96, 96), Image.LANCZOS)
-    buf = io.BytesIO()
-    sq.save(buf, 'WEBP', quality=88, method=6)
-    img[tid] = 'data:image/webp;base64,' + base64.b64encode(buf.getvalue()).decode()
+    img[tid] = pack(raw)
+
+
+# эмблемы, присланные вручную: .cache/saved/shields/manual/<id клуба>.png (заменяют скачанные)
+MANUAL = CACHE + '/saved/shields/manual'
+for path in sorted(glob.glob(MANUAL + '/*.png') + glob.glob(MANUAL + '/*.jpg')):
+    tid = os.path.splitext(os.path.basename(path))[0]
+    if tid not in ids.values(): continue
+    img[tid] = pack(path)
 
 with open(OUT, 'w', encoding='utf8') as f:
     f.write('// Эмблемы клубов (WebP, 96px) — из заявок на сайтах РФС (st.joinsport.io). Собирается tools/logos.py.\n')

@@ -22,7 +22,7 @@ FM.addLeague({
 Тимур Концунтейло|UN|18|0|RUS|36
 Александр Шамахов|UN|39|0|RUS|35` },
 
-    { id: 'ati', name: 'АвтоТрансИнфо', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d2a5b', '#ffffff'], rep: 37, money: 15, players: `
+    { id: 'ati', name: 'АвтоТрансИнфо', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#3d4a57', '#ffffff'], rep: 37, money: 15, players: `
 Эльдар Абдулаев|UN|30|0|RUS|44
 Евгений Асанов|UN|30|0|RUS|44
 Никита Ефремов|UN|25|0|RUS|44
@@ -159,7 +159,7 @@ FM.addLeague({
 Дмитрий Сиваков|UN|37|0|RUS|42
 Александр Цаценкин|UN|39|0|RUS|41` },
 
-    { id: 'peterburg04', name: 'Петербург 04', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#0057b8', '#ffffff'], rep: 40, money: 15, players: `
+    { id: 'peterburg04', name: 'Петербург 04', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1f6fd1', '#ffffff'], rep: 40, money: 15, players: `
 Александр Богданов|UN|30|0|RUS|46
 Никита Боровенков|UN|24|0|RUS|46
 Никита Податнов|UN|22|0|RUS|46
@@ -176,7 +176,7 @@ FM.addLeague({
 Радмир Шарипов|UN|39|0|RUS|42
 Алексей Шереметьев|UN|41|0|RUS|40` },
 
-    { id: 'std_petrovich', name: 'СТД Петрович', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#e30613', '#ffffff'], rep: 40, money: 15, players: `
+    { id: 'std_petrovich', name: 'СТД Петрович', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1d1d1b', '#e30613'], rep: 40, money: 15, players: `
 Самур Абдулов|UN|32|0|RUS|46
 Расул Бажев|UN|29|0|RUS|46
 Дмитрий Берсенёв|UN|23|0|RUS|46
@@ -198,7 +198,7 @@ FM.addLeague({
 Алексей Ивлев|UN|40|0|RUS|41
 Андрей Кузнецов|UN|41|0|RUS|40` },
 
-    { id: 'kristall_m', name: 'Кристалл-М', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#1b75bb', '#ffffff'], rep: 39, money: 15, reserveOf: 'kristall', players: `
+    { id: 'kristall_m', name: 'Кристалл-М', city: 'Санкт-Петербург', stadium: '—', cap: 300, colors: ['#f26c21', '#4a4a4a'], rep: 39, money: 15, reserveOf: 'kristall', players: `
 Василий Алексеев|UN|21|0|RUS|46
 Роман Ананьев|UN|28|0|RUS|46
 Егор Григорьев|UN|20|0|RUS|46
