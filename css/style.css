@@ -595,3 +595,10 @@ tr.opt-no, .bench-btn.opt-no, .sub-btn.opt-no { opacity: .3; }
 /* новости */
 .news-date { padding: 12px 16px 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .news-item { padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.45; }
+
+/* переучивание */
+.retrain { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: rgba(0,0,0,.22); border: 1px solid var(--line); }
+.retrain .bar { margin-top: 8px; height: 8px; }
+.alt-pos { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--glass2); color: var(--text); margin-left: 4px; }
+.pos-alt { font-size: 10px; color: var(--muted); margin-left: 4px; font-weight: 700; }
+.nowrap { white-space: nowrap; }

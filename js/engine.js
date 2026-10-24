@@ -40,7 +40,7 @@
     eff(o) {
       const fit = this.fitness[o.p.id];
       const morale = 0.97 + (o.p.morale || 50) / 1700;
-      return o.p.ovr * FM.fit(o.p.pos, o.slot) * (0.78 + 0.22 * fit / 100) * morale;
+      return o.p.ovr * FM.pfit(o.p, o.slot) * (0.78 + 0.22 * fit / 100) * morale;
     }
 
     recalc() {
@@ -366,7 +366,7 @@
       if (!avail.length) return null;
       const cands = slot === 'GK' ? avail.filter((b) => b.pos === 'GK') : avail.filter((b) => b.pos !== 'GK');
       if (!cands.length) return null;
-      return cands.sort((a, b) => b.ovr * FM.fit(b.pos, slot) * (0.78 + 0.22 * s.fitness[b.id] / 100) - a.ovr * FM.fit(a.pos, slot) * (0.78 + 0.22 * s.fitness[a.id] / 100))[0];
+      return cands.sort((a, b) => b.ovr * FM.pfit(b, slot) * (0.78 + 0.22 * s.fitness[b.id] / 100) - a.ovr * FM.pfit(a, slot) * (0.78 + 0.22 * s.fitness[a.id] / 100))[0];
     }
 
     doSub(s, out, inn, slotOverride) {

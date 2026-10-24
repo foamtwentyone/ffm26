@@ -178,7 +178,7 @@
         let best = null, bv = -1;
         for (const p of pool) {
           if (used.has(p.id)) continue;
-          const v = p.ovr * FM.fit(p.pos, slot) * cond(p);
+          const v = p.ovr * FM.pfit(p, slot) * cond(p);
           if (v > bv) { bv = v; best = p; }
         }
         if (best) { res[i] = best.id; used.add(best.id); }
@@ -188,7 +188,7 @@
       const gk = rest.find((p) => p.pos === 'GK');
       if (gk) bench.push(gk.id);
       for (const p of rest) if (bench.length < 9 && p.pos !== 'GK' && !bench.includes(p.id)) bench.push(p.id);
-      const total = res.reduce((a, id, i) => a + (id ? this.players[id].ovr * FM.fit(this.players[id].pos, slots[i][0]) : 0), 0);
+      const total = res.reduce((a, id, i) => a + (id ? this.players[id].ovr * FM.pfit(this.players[id], slots[i][0]) : 0), 0);
       return { lineup: res, bench, total };
     }
 
@@ -226,7 +226,7 @@
         if (ok(lineup[i])) continue;
         const slot = slots[i][0];
         const cand = this.squad(team).filter((p) => this.isAvailable(p) && !used.has(p.id))
-          .sort((a, b) => b.ovr * FM.fit(b.pos, slot) - a.ovr * FM.fit(a.pos, slot))[0];
+          .sort((a, b) => b.ovr * FM.pfit(b, slot) - a.ovr * FM.pfit(a, slot))[0];
         lineup[i] = cand ? cand.id : null;
         if (cand) used.add(cand.id);
       }
@@ -1151,7 +1151,37 @@
       return 'day';
     }
 
+    // ================== переучивание на другую позицию ==================
+    retrain(pid, to) {
+      const p = this.players[pid];
+      if (!p || p.club !== this.s.user) return 'Переучивать можно только своих игроков.';
+      if (to === p.pos || (p.alt || []).includes(to)) return 'Игрок уже умеет играть на этой позиции.';
+      if ((to === 'GK') !== (p.pos === 'GK')) return 'Полевого игрока нельзя переучить во вратаря и наоборот.';
+      p.train = { to, from: FM.pfit(p, to), done: 0, need: FM.retrainWeeks(p, to) };
+      return `${p.name} начал переучиваться на позицию «${FM.POS_NAME[to]}». Это займёт около ${p.train.need} нед.`;
+    }
+
+    cancelRetrain(pid) {
+      const p = this.players[pid];
+      if (p) p.train = null;
+    }
+
+    trainWeek() {
+      for (const p of this.squad(this.userTeam())) {
+        const t = p.train;
+        if (!t) continue;
+        // травмированный игрок не тренируется
+        if (!p.inj) t.done++;
+        if (t.done < t.need) continue;
+        p.alt = [p.pos].concat((p.alt || []).filter((x) => x !== t.to && x !== p.pos)).slice(0, 3);
+        p.pos = t.to;
+        p.train = null;
+        this.msg('Переучивание завершено', `${p.name} освоил позицию «${FM.POS_NAME[p.pos]}» — теперь это его основная позиция. Прежняя (${FM.POS_NAME[p.alt[0]]}) остаётся запасной.`, 'squad');
+      }
+    }
+
     weekly() {
+      this.trainWeek();
       const s = this.s;
       for (const id in this.teams) {
         const t = this.teams[id];
@@ -1495,6 +1525,7 @@
       p.role = opts.role || null;
       p.release = opts.release || 0;
       p.pre = null;
+      p.train = null;
       p.club = to.id;
       to.players.push(p.id);
       p.wage = wage || this.wageDemand(p, to);
@@ -1597,7 +1628,7 @@
       const slots = FM.FORMATIONS[buyer.formation];
       let weakest = -1, wv = 999;
       r.lineup.forEach((pid, i) => {
-        const v = pid ? this.players[pid].ovr * FM.fit(this.players[pid].pos, slots[i][0]) : 0;
+        const v = pid ? this.players[pid].ovr * FM.pfit(this.players[pid], slots[i][0]) : 0;
         if (v < wv) { wv = v; weakest = i; }
       });
       if (weakest < 0) return;

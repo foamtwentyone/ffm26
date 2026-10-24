@@ -518,7 +518,7 @@
     const grp = { G: [], D: [], M: [], F: [] };
     lineup.forEach((pid, i) => {
       const p = P(pid);
-      if (p) grp[FM.lineOf(slots[i][0], t.formation)].push(p.ovr * FM.fit(p.pos, slots[i][0]));
+      if (p) grp[FM.lineOf(slots[i][0], t.formation)].push(p.ovr * FM.pfit(p, slots[i][0]));
     });
     const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0);
     // каждая линия — только свои игроки: в схеме с одним нападающим атака — это он
@@ -544,7 +544,7 @@
       return G.isAvailable(p) ? { cls: inXI.has(p.id) ? 'opt-poor' : 'opt-ok', tag: '' } : { cls: 'opt-no', tag: p.inj ? 'травма' : 'дисквал.' };
     };
     // подходящие на выбранную позицию — наверх списка
-    if (selSlot) sq.sort((a, b2) => (G.isAvailable(b2) - G.isAvailable(a)) || FM.fit(b2.pos, selSlot) - FM.fit(a.pos, selSlot) || b2.ovr - a.ovr);
+    if (selSlot) sq.sort((a, b2) => (G.isAvailable(b2) - G.isAvailable(a)) || FM.pfit(b2, selSlot) - FM.pfit(a, selSlot) || b2.ovr - a.ovr);
     const segBtns = (key, opts) => `<div class="seg">${opts.map(([v, n]) => `<button data-t="${key}" data-v="${v}" class="${t[key] === v ? 'on' : ''}">${n}</button>`).join('')}</div>`;
     main.innerHTML = `<div class="squad-layout">
       <div>
@@ -559,7 +559,7 @@
               return `<div class="slot ${p ? '' : 'empty'} ${bad ? 'bad' : ''} ${sel ? 'sel' : ''}" data-slot="${i}" style="left:${x}%;top:${y}%">
                 <div class="shirt ln-${FM.lineOf(sp, u.formation)}">${p ? p.ovr : '+'}</div>
                 <div class="nm">${p ? esc(p.name.split(' ').slice(-1)[0]) : FM.POS_RU[sp]}</div>
-                ${p && p.pos !== sp ? `<div class="sp">${FM.POS_RU[sp]} (${Math.round(FM.fit(p.pos, sp) * 100)}%)</div>` : ''}</div>`;
+                ${p && FM.pfit(p, sp) < 1 ? `<div class="sp">${FM.POS_RU[sp]} (${Math.round(FM.pfit(p, sp) * 100)}%)</div>` : ''}</div>`;
             }).join('')}
           </div>
           <div class="legend"><span class="ln-G">Вратарь</span><span class="ln-D">Защита</span><span class="ln-M">Полузащита</span><span class="ln-F">Атака</span></div>
@@ -586,7 +586,7 @@
         <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
         ${sq.map((p) => { const mk = markOf(p); return `<tr class="click ${p.id === selCur ? 'sel' : ''} ${mk ? mk.cls : ''}" data-row="${p.id}">
           <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
-          <td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
+          <td class="nowrap">${pos(p.pos)}${(p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : ''}${p.train ? `<span class="pos-alt" title="Переучивается">→${FM.POS_RU[p.train.to]}</span>` : ''}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
           <td class="hide-m">${fitBar(p.fit)}</td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
           <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`; }).join('')}
       </table></div><div class="small muted" style="padding:10px">Нажмите на позицию на поле или на скамейке, затем на игрока. Без выбора позиции — откроется карточка игрока. «*» — сгенерированный игрок.</div></div>
@@ -631,7 +631,7 @@
   function fitMark(p, slot) {
     const G = g();
     if (!G.isAvailable(p)) return { cls: 'opt-no', tag: p.inj ? 'травма' : 'дисквал.' };
-    const f = FM.fit(p.pos, slot);
+    const f = FM.pfit(p, slot);
     if (f >= 1) return { cls: 'opt-best', tag: 'своя позиция' };
     if (f >= 0.85) return { cls: 'opt-ok', tag: `${Math.round(f * 100)}%` };
     return { cls: 'opt-poor', tag: `${Math.round(f * 100)}%` };
@@ -860,7 +860,7 @@
     const avg = p.st.apps ? (p.st.rsum / p.st.apps).toFixed(2) : '—';
     const it = mine ? null : G.playerInterest(p, u);
     const el = modal(`<div class="row">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}${p.gen ? ' <span class="gen" title="Сгенерированный игрок">*</span>' : ''}</h2>
-      <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет</div>
+      <div class="muted">${FM.POS_NAME[p.pos]}${(p.alt || []).length ? ` <span class="alt-pos">также: ${p.alt.map((a) => FM.POS_RU[a]).join(', ')}</span>` : ''} · ${p.age} лет</div>
       <div>${club ? tname(club) : '<span class="muted">Свободный агент</span>'}</div></div><div class="center">${ovr(p.ovr)}<div class="small muted">рейтинг</div></div></div>
       <div class="kv">
         <div><span>Стоимость</span><b>${FM.money(p.value)}</b></div>
@@ -870,6 +870,7 @@
         <div><span>Физ. готовность</span><b>${Math.round(p.fit)}%</b></div>
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div>
+      ${mine ? retrainBlock(p) : ''}
       ${p.inj ? `<div class="note bad">Травма: ещё ${G.injText(p.inj)}</div>` : ''}${p.sus ? `<div class="note bad">Дисквалификация: ${p.sus} матч(а)</div>` : ''}
       <table class="small"><tr><th></th><th class="num">Игры</th><th class="num">Голы</th><th class="num">Пас</th><th class="num">ЖК</th><th class="num">КК</th><th class="num">Оценка</th></tr>
         <tr><td>Чемпионат</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${p.st.a}</td><td class="num">${p.st.yc}</td><td class="num">${p.st.rc}</td><td class="num">${avg}</td></tr>
@@ -886,6 +887,12 @@
         <div class="row" style="margin-top:12px"><button class="btn primary" data-nego>${s.nego && s.nego[pid] && s.nego[pid].log.length ? 'Продолжить переговоры' : G.canPrecontract(p) ? 'Предварительный контракт' : club ? 'Начать переговоры' : 'Предложить контракт'}</button>
           <span class="small muted">${club ? `Окно: ${G.windowText()}` : 'Свободного агента можно подписать в любое время'}</span></div>`}</div>`);
     const res = el.querySelector('#res');
+    const rt = el.querySelector('#rt-go');
+    if (rt) rt.onclick = () => { toast(esc(G.retrain(pid, el.querySelector('#rt-pos').value))); save(); playerModal(pid); };
+    const rtSel = el.querySelector('#rt-pos');
+    if (rtSel) rtSel.onchange = () => { el.querySelector('#rt-weeks').textContent = `≈ ${FM.retrainWeeks(p, rtSel.value)} нед.`; };
+    const rc = el.querySelector('#rt-cancel');
+    if (rc) rc.onclick = () => { G.cancelRetrain(pid); save(); playerModal(pid); };
     if (mine) {
       el.querySelector('[data-tl]').onclick = () => { p.listed = !p.listed; save(); playerModal(pid); render(); };
       el.querySelector('[data-renew]').onclick = () => {
@@ -908,6 +915,22 @@
 
   const ROLE_NAME = { key: 'ключевой игрок', starter: 'игрок основы', rotation: 'ротация', backup: 'запасной' };
   const interestColor = (v) => (v >= 70 ? 'var(--good)' : v >= 50 ? '#9be36b' : v >= 30 ? 'var(--warn)' : 'var(--bad)');
+
+  // Переучивание (как в FC): выбор новой позиции, прогресс по неделям, отмена
+  function retrainBlock(p) {
+    if (p.train) {
+      const pct = Math.round(p.train.done / p.train.need * 100);
+      return `<div class="retrain"><div class="row"><b class="grow">Переучивание: ${FM.POS_NAME[p.train.to]}</b><span class="small muted">${p.train.done} из ${p.train.need} нед. · сейчас ${Math.round(FM.pfit(p, p.train.to) * 100)}%</span></div>
+        <div class="bar"><i style="width:${pct}%"></i></div>
+        <div class="row" style="margin-top:8px"><span class="small muted grow">Когда тренировки закончатся, это станет основной позицией, прежняя останется дополнительной.</span><button class="btn sm" id="rt-cancel">Отменить</button></div></div>`;
+    }
+    const opts = FM.POS.filter((x) => x !== p.pos && !(p.alt || []).includes(x) && (x === 'GK') === (p.pos === 'GK'))
+      .sort((a, b) => FM.pfit(p, b) - FM.pfit(p, a));
+    if (!opts.length) return '';
+    return `<div class="retrain"><div class="row"><b class="grow">Переучить на другую позицию</b></div>
+      <div class="row" style="margin-top:8px"><select id="rt-pos">${opts.map((x) => `<option value="${x}">${FM.POS_NAME[x]} — сейчас ${Math.round(FM.pfit(p, x) * 100)}%</option>`).join('')}</select>
+        <span class="small muted" id="rt-weeks">≈ ${FM.retrainWeeks(p, opts[0])} нед.</span><button class="btn sm primary" id="rt-go">Начать</button></div></div>`;
+  }
 
   // ================== переговоры ==================
   function negoModal(pid) {
@@ -1157,7 +1180,7 @@
         ${sim.needUserSub ? `<div class="note bad small">${esc(G.players[sim.needUserSub].name)} травмирован — замените его.</div>` : ''}
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
           <div><div class="small muted">На поле — кого заменить</div>${sd.onPitch.map((o) => `<button class="btn sm ${subSel === o.p.id ? 'on' : ''}" style="display:block;width:100%;text-align:left;margin:3px 0" data-out="${o.p.id}">${FM.POS_RU[o.slot]} · ${esc(o.p.name)} · ${Math.round(sd.fitness[o.p.id])}% · ${sd.rating[o.p.id].toFixed(1)}</button>`).join('')}</div>
-          <div><div class="small muted">${outSlot ? `Кто выйдет на позицию «${FM.POS_NAME[outSlot]}»` : 'Запасные — сначала выберите, кого заменить'}</div>${(outSlot ? benchAvail.slice().sort((a, b) => FM.fit(b.pos, outSlot) - FM.fit(a.pos, outSlot) || b.ovr - a.ovr) : benchAvail).map((p) => { const mk = outSlot ? fitMark(p, outSlot) : null; return `<button class="btn sm sub-btn ${mk ? mk.cls : ''}" data-in="${p.id}" ${subSel && sd.subsLeft > 0 && G.isAvailable(p) ? '' : 'disabled'}>${pos(p.pos)}<span class="grow">${esc(p.name)}</span>${mk ? `<span class="fit-tag">${mk.tag}</span>` : ''}<b>${p.ovr}</b></button>`; }).join('') || '<div class="small muted">Никого не осталось</div>'}</div></div>
+          <div><div class="small muted">${outSlot ? `Кто выйдет на позицию «${FM.POS_NAME[outSlot]}»` : 'Запасные — сначала выберите, кого заменить'}</div>${(outSlot ? benchAvail.slice().sort((a, b) => FM.pfit(b, outSlot) - FM.pfit(a, outSlot) || b.ovr - a.ovr) : benchAvail).map((p) => { const mk = outSlot ? fitMark(p, outSlot) : null; return `<button class="btn sm sub-btn ${mk ? mk.cls : ''}" data-in="${p.id}" ${subSel && sd.subsLeft > 0 && G.isAvailable(p) ? '' : 'disabled'}>${pos(p.pos)}<span class="grow">${esc(p.name)}</span>${mk ? `<span class="fit-tag">${mk.tag}</span>` : ''}<b>${p.ovr}</b></button>`; }).join('') || '<div class="small muted">Никого не осталось</div>'}</div></div>
         <div class="row" style="margin-top:10px"><span class="small muted">Настрой</span>${seg('ment', [[-2, 'Автобус'], [-1, 'Оборона'], [0, 'Баланс'], [1, 'Атака'], [2, 'Штурм']])}
           <span class="small muted">Прессинг</span>${seg('press', [[0, 'Низкий'], [1, 'Средний'], [2, 'Высокий']])}</div>`;
       panel.querySelector('#closeMgr').onclick = () => panel.classList.add('hidden');

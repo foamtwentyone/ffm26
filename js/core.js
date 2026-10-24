@@ -106,6 +106,20 @@ FM.FORMATIONS = {
   '5-3-2': [['GK', 50, 92], ['RB', 88, 66], ['CB', 70, 77], ['CB', 50, 80], ['CB', 30, 77], ['LB', 12, 66], ['CM', 70, 48], ['DM', 50, 56], ['CM', 30, 48], ['ST', 62, 17], ['ST', 38, 17]],
 };
 
+// Соответствие игрока позиции с учётом выученных дополнительных позиций (p.alt) и идущего переучивания (p.train).
+FM.pfit = (p, slot) => {
+  let f = FM.fit(p.pos, slot);
+  for (const a of p.alt || []) f = Math.max(f, FM.fit(a, slot));
+  if (p.train && p.train.to === slot) f = Math.max(f, p.train.from + (1 - p.train.from) * Math.min(1, p.train.done / p.train.need));
+  return f;
+};
+// Сколько недель переучиваться: чем дальше позиция и старше игрок, тем дольше.
+FM.retrainWeeks = (p, to) => {
+  const f = FM.pfit(p, to);
+  const base = f >= 0.9 ? 3 : f >= 0.85 ? 5 : f >= 0.75 ? 8 : 12;
+  return Math.round(base * (p.age >= 31 ? 1.5 : p.age <= 23 ? 0.8 : 1));
+};
+
 // Линия позиции в конкретной схеме определяется её высотой на поле: вингеры в 4-2-3-1 и 4-4-2 —
 // полузащита, в 4-3-3 и 3-4-3 — атака; крайние защитники в 3-5-2 — полузащита. 'G' | 'D' | 'M' | 'F'.
 FM.lineOf = (slot, formation) => {
