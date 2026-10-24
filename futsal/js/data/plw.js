@@ -112,7 +112,7 @@ FM.addLeague({
 Илья Кулаков|FW|26|0|RUS|48
 Эдуард Карелин|FW|23|0|RUS|47` },
 
-    { id: 'platon', name: 'Платон', city: '—', stadium: '—', cap: 300, colors: ['#1d1d1b', '#ffffff'], rep: 38, money: 15, players: `
+    { id: 'platon', name: 'Платон', city: 'Ульяновск', stadium: '—', cap: 300, colors: ['#1d1d1b', '#ffffff'], rep: 38, money: 15, players: `
 Андрей Сейкин|GK|29|0|RUS|45
 Александр Фомин|GK|18|0|RUS|35
 Григорий Мулин|DF|24|0|RUS|47
