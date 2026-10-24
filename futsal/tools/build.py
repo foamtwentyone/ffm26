@@ -144,10 +144,13 @@ YOUTH = {'Водник': 'vodnik', 'Газпром-Югра': 'gazprom', 'ИрА
          'Новая генерация': 'newgen', 'Норильск': 'norilsk', 'Синара': 'sinara', 'Торпедо': 'torpedo', 'Тюмень': 'tyumen',
          'Ухта': 'ukhta', 'ЮКИОР': 'surgut'}
 
-# Ручные правки составов: клуб → {игрок в заявке: замена}. Замена — новое имя или словарь с полями name/pos/age/nat.
+# Ручные правки составов: клуб → {игрок в заявке: замена}. Замена — новое имя, словарь с полями name/pos/age/nat
+# или None (игрок ушёл из клуба).
 EDITS = {
-    'kapkan': {'Тагир Карагулов': {'name': 'Денис Конкин'}},
+    'kapkan': {'Тагир Карагулов': None},
 }
+# текущие составы с sefl.ru (tools/sefl.py): игроки, которых нет в заявке Кубка, добавляются в клуб
+sefl = {t['team_id']: t['players'] for t in json.load(open(D + '/sefl.json', encoding='utf8'))} if os.path.exists(D + '/sefl.json') else {}
 
 RESERVE = {'kristall_m': 'kristall', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
            'surgut2': 'surgut', 'newgen2': 'newgen', 'norilsk2': 'norilsk'}
@@ -223,11 +226,24 @@ for t in teams:
         else:
             last, first = p['name'].split(' ', 1)
             name, nat = f'{first} {last}', NAT_BY_NAME.get(p['name'], 'RUS')
+        if name in EDITS.get(tid, {}) and EDITS[tid][name] is None: continue
         e = EDITS.get(tid, {}).get(name)
         if e:
             e = {'name': e} if isinstance(e, str) else e
             name, pos, age, nat = e.get('name', name), e.get('pos', pos), e.get('age', age), e.get('nat', nat)
         rows.append((pos, -ovr, f'{name}|{pos}|{age}|0|{nat}|{ovr}'))
+    have = {r[2].split('|')[0].replace('ё', 'е') for r in rows}
+    sgm = max([p['games'] for p in sefl.get(tid, [])] + [1])
+    for p in sefl.get(tid, []):
+        if p['name'].replace('ё', 'е') in have: continue
+        pos, age, g, gs = p['amp'], p['age'], p['games'], p['goals']
+        share, exp = min(1, g / sgm), min(1, math.log10(1 + g) / math.log10(250))
+        if pos == 'GK': adj = -10 + 9 * share + 7 * exp
+        else: adj = -10 + 7 * share + 6 * exp + 3 * min(1, (gs / max(g, 1)) / 0.7) * min(1, g / 4)
+        if age < 20: adj -= (20 - age) * 1.2
+        if age > 33: adj -= (age - 33) * 0.8
+        ovr = max(35, min(90, round(level + adj)))
+        rows.append((pos, -ovr, f"{p['name']}|{pos}|{age}|0|RUS|{ovr}"))
     rows.sort(key=lambda r: (['GK', 'DF', 'UN', 'FW'].index(r[0]), r[1]))
     if t['name'] in PL: lg = PL[t['name']][1]
     else: lg = 'sl' if t['league'] == 'sl' else ('vlw' if t['name'] in WEST else 'vle')
