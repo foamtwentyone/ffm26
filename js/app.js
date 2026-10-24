@@ -25,7 +25,7 @@
   };
   function badge(t, cls = '') {
     if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
-    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="img/logos/${t.id}.png" alt="${esc(t.name)}" loading="lazy"></span>`;
+    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="img/logos/${t.id}.png" alt="${esc(t.name)}"></span>`;
     const init = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase();
     return `<span class="badge ${cls}" style="background:${t.colors[0]};color:${badgeText(t)}">${esc(init)}</span>`;
   }
@@ -166,6 +166,9 @@
   }
 
   // ================== стартовый экран ==================
+  // репутация клуба из базы: задана явно или считается по стоимости состава, как при создании мира
+  const repOf = (t) => t.rep ?? FM.repFromValue((t.players || '').split('\n').reduce((a, l) => a + (+l.split('|')[3] || 0), 0));
+
   function startScreen() {
     const db = customDb() || FM.leagues;
     let lid = db[0].id;
@@ -189,9 +192,9 @@
         </div>
         <h2>Выберите клуб</h2>
         <div class="seg" style="margin-bottom:12px;flex-wrap:wrap">${db.map((x) => `<button data-l="${x.id}" class="${x.id === lid ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>
-        <div class="teams-pick">${L.teams.slice().sort((a, b) => b.rep - a.rep).map((t) => `
+        <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
-          ${stars(FM.clamp(Math.round((t.rep - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
+          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
       </main>`;
       app.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; draw(); });
       app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {

@@ -318,18 +318,171 @@ Daniel James|RW|28|10000|WAL
 Dominic Calvert-Lewin|ST|29|25000|ENG
 Lukas Nmecha|ST|27|10000|GER` },
     { id: 'liverpool', name: 'Ливерпуль', city: 'Ливерпуль', stadium: 'Anfield', cap: 61276, colors: ['#c8102e', '#ffffff'], players: `
-` },
+Гиорги Мамардашвили|GK|26|28000|GEO
+Alisson|GK|34|15000|BRA
+Freddie Woodman|GK|29|3000|ENG
+Harvey Davies|GK|23|500|ENG
+Jérémy Jacquet|CB|21|65000|FRA
+Ronald Araújo|CB|27|25000|URU
+Joe Gomez|CB|29|11000|ENG
+Milos Kerkez|LB|22|35000|HUN
+Konstantinos Tsimikas|LB|30|4500|GRE
+Luke Chambers|LB|22|1000|ENG
+Ryan Gravenberch|DM|24|75000|NED
+Alexis Mac Allister|CM|27|70000|ARG
+Trey Nyoni|CM|19|18000|ENG
+James McConnell|CM|22|1500|ENG
+Florian Wirtz|AM|23|85000|GER
+Bradley Barcola|LW|24|100000|FRA
+Cody Gakpo|LW|27|75000|NED
+Rio Ngumoha|LW|18|50000|ENG
+Víctor Muñoz|LW|23|40000|ESP
+Alexander Isak|ST|27|90000|SWE
+Lewis Koumas|ST|21|8000|WAL
+Jayden Danns|ST|20|800|ENG` },
     { id: 'man_city', name: 'Манчестер Сити', city: 'Манчестер', stadium: 'Etihad Stadium', cap: 61470, colors: ['#6cabdd', '#1c2c5b'], players: `
-` },
+Gianluigi Donnarumma|GK|27|45000|ITA
+Gerónimo Rulli|GK|34|5000|ARG
+Marcus Bettinelli|GK|34|300|ENG
+Marc Guéhi|CB|26|75000|ENG
+Абдукодир Хусанов|CB|22|50000|UZB
+Vitor Reis|CB|20|30000|BRA
+Josko Gvardiol|LB|24|75000|CRO
+Nico O'Reilly|LB|21|70000|ENG
+Rayan Aït-Nouri|LB|25|35000|ALG
+Matheus Nunes|RB|28|45000|POR
+Rico Lewis|RB|21|25000|ENG
+Elliot Anderson|DM|23|120000|ENG
+Ayyoub Bouaddi|DM|19|90000|MAR
+Enzo Fernández|CM|25|120000|ARG
+Mateo Kovacic|CM|32|10000|CRO
+Rayan Cherki|AM|23|110000|FRA
+Phil Foden|AM|26|65000|ENG
+Jérémy Doku|LW|24|75000|BEL
+Iliman Ndiaye|LW|26|65000|SEN
+Allan|RW|22|30000|BRA
+Ryan McAidoo|RW|18|8000|ENG
+Erling Haaland|ST|26|220000|NOR` },
     { id: 'man_utd', name: 'Манчестер Юнайтед', city: 'Манчестер', stadium: 'Old Trafford', cap: 74244, colors: ['#da291c', '#000000'], players: `
-` },
+Senne Lammens|GK|24|35000|BEL
+Karl Darlow|GK|36|200|WAL
+Tom Heaton|GK|40|100|ENG
+Dermot Mee|GK|23|500|NIR
+Lisandro Martínez|CB|28|45000|ARG
+Ayden Heaven|CB|20|30000|ENG
+Matthijs de Ligt|CB|27|25000|NED
+Harry Maguire|CB|33|8000|ENG
+Luke Shaw|LB|31|8000|ENG
+Harry Amass|LB|19|5000|ENG
+Diogo Dalot|RB|27|30000|POR
+Carlos Baleba|DM|22|65000|CMR
+Andrey Santos|DM|22|45000|BRA
+Kobbie Mainoo|CM|21|75000|ENG
+Youri Tielemans|CM|29|40000|BEL
+Tyler Fletcher|CM|19|2500|SCO
+Mason Mount|AM|27|25000|ENG
+Marcus Rashford|LW|28|35000|ENG
+Patrick Dorgu|LW|21|35000|DEN
+Bryan Mbeumo|RW|27|75000|CMR
+Amad Diallo|RW|24|45000|CIV
+Shea Lacey|RW|19|12000|ENG
+Matheus Cunha|ST|27|75000|BRA
+Benjamin Šeško|ST|23|75000|SVN
+Joshua Zirkzee|ST|25|20000|NED` },
     { id: 'newcastle', name: 'Ньюкасл', city: 'Ньюкасл', stadium: 'St James\' Park', cap: 52305, colors: ['#241f20', '#ffffff'], players: `
-` },
+Lukas Hornicek|GK|24|27000|CZE
+Ewen Jaouen|GK|20|18000|FRA
+Nick Pope|GK|34|3000|ENG
+Mark Gillespie|GK|34|100|ENG
+Malick Thiaw|CB|25|50000|GER
+Sven Botman|CB|26|35000|NED
+Fabian Schär|CB|34|3000|SUI
+Lewis Hall|LB|22|55000|ENG
+Amar Dedic|RB|24|30000|BIH
+Nico González|DM|24|50000|ESP
+Aladji Bamba|DM|20|25000|FRA
+Jacob Ramsey|CM|25|35000|ENG
+Lewis Miley|CM|20|30000|ENG
+Sean Steur|CM|18|22000|NED
+Joe Willock|CM|27|18000|ENG
+Bazoumana Touré|LW|20|50000|CIV
+Harvey Barnes|LW|28|35000|ENG
+Anthony Elanga|RW|24|35000|SWE
+Jacob Murphy|RW|31|10000|ENG
+Yoane Wissa|ST|30|25000|COD` },
     { id: 'nottingham', name: 'Ноттингем Форест', city: 'Ноттингем', stadium: 'The City Ground', cap: 31042, colors: ['#dd0000', '#ffffff'], players: `
-` },
+John Victor|GK|30|3500|BRA
+Matz Sels|GK|34|3500|BEL
+Steven Benda|GK|28|1000|GER
+Murillo|CB|24|50000|BRA
+Ousmane Diomande|CB|22|42000|CIV
+Nikola Milenković|CB|29|28000|SRB
+Jair Cunha|CB|21|25000|BRA
+Neco Williams|LB|25|32000|WAL
+Luca Netz|LB|23|8000|GER
+Daniel Muñoz|RB|30|22000|COL
+Ola Aina|RB|30|18000|NGA
+Ibrahim Sangaré|DM|28|20000|CIV
+Xaver Schlager|CM|29|15000|AUT
+Nicolás Domínguez|CM|28|13000|ARG
+Morgan Gibbs-White|AM|26|80000|ENG
+James McAtee|AM|24|22000|ENG
+Callum Hudson-Odoi|LW|25|25000|ENG
+Dan Ndoye|RW|25|35000|SUI
+Liam Delap|ST|23|40000|ENG
+Arnaud Kalimuendo|ST|24|20000|FRA
+Chris Wood|ST|34|4000|NZL` },
     { id: 'sunderland', name: 'Сандерленд', city: 'Сандерленд', stadium: 'Stadium of Light', cap: 49000, colors: ['#eb172b', '#ffffff'], players: `
-` },
+Robin Roefs|GK|23|30000|NED
+Melker Ellborg|GK|23|3000|SWE
+Simon Moore|GK|36|75|ENG
+Dan Ballard|CB|27|25000|NIR
+Kevin Danso|CB|28|20000|AUT
+Omar Alderete|CB|29|10000|PAR
+Luke O'Nien|CB|31|700|ENG
+Aji Alese|CB|25|700|ENG
+Reinildo Mandava|LB|32|4000|MOZ
+Trai Hume|RB|24|22000|NIR
+Nordi Mukiele|RB|28|18000|FRA
+Thomas Meunier|RB|35|1500|BEL
+Jules Ahoka|DM|20|7000|COD
+Noah Sadiki|CM|21|40000|COD
+Habib Diarra|CM|22|35000|SEN
+Enzo Le Fée|CM|26|30000|FRA
+Alan Browne|CM|31|1300|IRL
+Chris Rigg|AM|19|25000|ENG
+Malick Fofana|LW|21|30000|BEL
+Nilson Angulo|LW|23|20000|ECU
+Romaine Mundle|LW|23|5000|ENG
+Тимур Тутеров|LW|21|300|UKR
+Chemsdine Talbi|RW|21|25000|MAR
+Jocelin Ta Bi|RW|21|2500|CIV
+Abdoullah Ba|RW|23|1500|MTN
+Wilson Isidor|ST|26|18000|HAI` },
     { id: 'tottenham', name: 'Тоттенхэм', city: 'Лондон', stadium: 'Tottenham Hotspur Stadium', cap: 62850, colors: ['#ffffff', '#132257'], players: `
-` },
+Antonín Kinský|GK|23|18000|CZE
+Martin Dúbravka|GK|37|500|SVK
+Brandon Austin|GK|27|500|ENG
+Jan Paul van Hecke|CB|26|60000|NED
+Marcos Senesi|CB|29|20000|ARG
+Tosin Adarabioyo|CB|29|13000|ENG
+Ben Davies|CB|33|3000|WAL
+Destiny Udogie|LB|23|25000|ITA
+Andrew Robertson|LB|32|7000|SCO
+Pedro Porro|RB|27|45000|ESP
+Archie Gray|RB|20|35000|ENG
+Sandro Tonali|DM|26|90000|ITA
+Rodrigo Bentancur|DM|29|17000|URU
+Mateus Fernandes|CM|22|70000|POR
+Lucas Bergvall|CM|20|40000|SWE
+Conor Gallagher|CM|26|32000|ENG
+James Maddison|AM|29|17000|ENG
+Dejan Kulusevski|AM|26|13000|SWE
+Sávio|LW|22|50000|BRA
+Mathys Tel|LW|21|22000|FRA
+Mohammed Kudus|RW|26|45000|GHA
+Omar Marmoush|ST|27|50000|EGY
+Dominic Solanke|ST|29|25000|ENG
+Richarlison|ST|29|15000|BRA` },
   ],
 });
