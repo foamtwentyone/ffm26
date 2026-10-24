@@ -292,7 +292,7 @@
   // ================== каркас ==================
   const TABS = [
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
-    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['coach', 'Тренер'], ['menu', 'Сохранения и база'],
+    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['news', 'Новости'], ['coach', 'Тренер'], ['menu', 'Сохранения и база'],
   ];
   // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
   const NAV = ['home', 'squad', 'tables', 'transfers', 'fixtures', 'finance', 'inbox', 'coach'];
@@ -308,9 +308,10 @@
     club: 'Стадион, задача от руководства и ваша тренерская история.',
     inbox: 'Письма руководства и предложения за ваших игроков: их можно принять, отклонить или попросить больше.',
     menu: 'Сохранения карьеры, экспорт в файл и редактор базы.',
+    news: 'Все трансферы, отставки и события футбольного мира.',
     coach: 'Ваша карьера: турниры и результаты по сезонам и итоги за всё время.',
   };
-  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', coach: 'user', menu: 'gear' };
+  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', news: 'news', coach: 'user', menu: 'gear' };
 
   function seasonLabel(s) {
     return `${s.season}/${String(s.season + 1).slice(2)}`;
@@ -368,7 +369,7 @@
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => go(b.dataset.tab));
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
-    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, coach: viewCoach, menu: viewMenu })[UI.tab](main);
+    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, menu: viewMenu })[UI.tab](main);
     bindCommon(main);
     bindCommon(app.querySelector('.hdr'));
   }
@@ -419,7 +420,9 @@
   // Сила линий: среднее по стартовому составу (у ИИ — по его лучшему составу на сегодня).
   function lineRatings(t) {
     const G = g();
-    const lineup = t.id === G.s.user ? t.lineup : G.autoPick(t, t.formation).lineup;
+    // у пользователя незаполненные места перед матчем дозаполнятся автоматически — так и считаем
+    const full = t.lineup.filter((id) => id && P(id) && G.isAvailable(P(id))).length === FM.FORMATIONS[t.formation].length;
+    const lineup = t.id === G.s.user && full ? t.lineup : G.autoPick(t, t.formation).lineup;
     const st = teamStrength(t, lineup);
     return { def: Math.round(st.def), mid: Math.round(st.mid), att: Math.round(st.att) };
   }
@@ -441,8 +444,6 @@
     const upcoming = Object.values(s.matches).filter((m) => !m.played && (m.h === u.id || m.a === u.id)).sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 5);
     const c = s.cup;
     const inCup = c && !c.winner && c.alive.includes(u.id);
-    const lastMsg = s.inbox[0];
-    const unread = s.inbox.filter((m) => !m.read).length;
 
     let hero = tile('Следующий матч', 'fixtures', '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>', 'w2', 'ball');
     if (nm) {
@@ -469,9 +470,6 @@
       ['assist', 'Ассистент', lead((p) => p.st.a, (p) => p.st.a, (v) => v)],
       ['medal', 'Лучшая оценка', lead((p) => p.st.apps >= 3, (p) => p.st.rsum / p.st.apps, (v) => v.toFixed(1))],
     ].filter((x) => x[2]);
-    const ins = s.seasonLog.filter((x) => x.to === u.id).slice(0, 4);
-    const outs = s.seasonLog.filter((x) => x.from === u.id).slice(0, 4);
-    const trItem = (x) => `<div class="ti"><span ${G.players[x.pid] ? `data-player="${x.pid}"` : ''}>${esc(x.name)}</span><span class="muted">${x.fee ? FM.money(x.fee) : 'бесплатно'}</span></div>`;
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
@@ -495,10 +493,8 @@
         <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
         <div class="kvl"><span>Доверие руководства</span><b class="${conf < 45 ? 'bad' : conf < 75 ? 'warn' : 'good'}">${conf}%</b></div>
         <div class="kvl"><span>Трансферное окно</span><b>${G.inWindow() ? 'открыто' : 'закрыто'}</b></div>`, '', 'shield')}
-      ${tile(unread ? `Почта · ${unread} новых` : 'Новости', 'inbox', (unread && lastMsg ? `<div class="news"><b>${esc(lastMsg.title)}</b></div>` : '') + (s.news.slice(0, unread ? 2 : 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>'), '', 'mail')}
+      ${tile('Новости', 'news', s.news.slice(0, 3).map((n) => `<div class="news ell2">${esc(n.text)}</div>`).join('') || '<div class="muted">Пока тихо</div>', '', 'news')}
       ${tile('Статистика игроков', 'stats', leaders.map(([ic, label, { p, v }]) => `<div class="leader"><span class="li">${icon(ic)}</span><div class="grow"><b data-player="${p.id}">${esc(p.name)}</b><div class="small muted">${label}</div></div><b class="big">${v}</b></div>`).join('') || '<div class="muted">Сезон ещё не начался</div>', '', 'chart')}
-      ${tile('Трансферы клуба', 'transfers:log', `<div class="trlist"><div><h4><span class="arr in">${icon('in')}</span>Пришли · ${ins.length}</h4>${ins.map(trItem).join('') || '<div class="small muted">никого</div>'}</div>
-        <div><h4><span class="arr out">${icon('out')}</span>Ушли · ${outs.length}</h4>${outs.map(trItem).join('') || '<div class="small muted">никого</div>'}</div></div>`, '', 'swap')}
       ${cupRows.length ? tile('Кубки', euroMine ? 'tables:' + euroMine.id : 'tables:cup', cupRows.join(''), '', 'cup') : ''}
     </div>`;
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));
@@ -1241,6 +1237,17 @@
   }
 
   // ================== почта ==================
+  // ================== новости ==================
+  function viewNews(main) {
+    const s = g().s;
+    let last = '';
+    main.innerHTML = `<div class="card tight news-list">${s.news.map((n) => {
+      const d = n.date && n.date !== last ? `<div class="news-date">${FM.fmtDateWd(n.date)}</div>` : '';
+      last = n.date;
+      return `${d}<div class="news-item">${esc(n.text)}</div>`;
+    }).join('') || '<div style="padding:14px" class="muted">Новостей пока нет</div>'}</div>`;
+  }
+
   // ================== тренер ==================
   function viewCoach(main) {
     const G = g(), s = G.s;
