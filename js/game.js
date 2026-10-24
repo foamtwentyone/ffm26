@@ -99,8 +99,8 @@
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
         wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,
-        st: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 },
-        cst: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 },
+        st: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 },
+        cst: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 },
         car: { apps: 0, g: 0, a: 0 },
       };
       p.wage = Math.round(FM.wageFor(p.value, tier) * 10) / 10;
@@ -708,29 +708,12 @@
       return !po || !!s.playoff;
     }
 
-    endSeason() {
-      const s = this.s;
-      const y = s.season;
-      s.lastCupWinner = s.cup && s.cup.winner || null;
-      const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [], euro: {} };
-      for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) summary.euro[E.id] = s.euro[E.id].winner;
-      s.lastTables = {};
-      for (const lid of s.order) s.lastTables[lid] = this.table(lid).map((r) => r.id);
-      const moves = []; // [teamId, newLeague]
-
-      // итоговые таблицы, призовые, репутация
+    // Повышения и вылеты по итоговым таблицам и стыкам: [teamId, новая лига]
+    seasonMoves() {
+      const s = this.s, moves = [];
       for (const lid of s.order) {
         const L = s.leagues[lid];
         const tab = this.table(lid);
-        summary.tables[lid] = tab.slice(0, 3).map((r) => r.id);
-        tab.forEach((r) => {
-          const t = this.teams[r.id];
-          t.money += L.prize[r.pos - 1] || 0;
-          if (r.id === s.user) { summary.userPos = r.pos; summary.userLeague = lid; }
-        });
-        const champ = this.teams[tab[0].id];
-        champ.rep = Math.min(99, champ.rep + 2);
-        this.news(`«${champ.name}» — победитель турнира «${L.name}» сезона ${y}/${String(y + 1).slice(2)}!`);
         const upper = this.leagueAt(this.countryOf(lid), L.tier - 1), lower = this.leagueAt(this.countryOf(lid), L.tier + 1);
         if (upper) {
           const elig = tab.filter((r) => this.eligibleUp(r.id));
@@ -745,10 +728,64 @@
       }
       if (s.playoff) {
         for (const tie of s.playoff.ties) {
-          if (tie.winner === tie.low) {
-            moves.push([tie.low, this.leagueAt('RUS', 1)], [tie.up, this.leagueAt('RUS', 2)]);
-          }
+          if (tie.winner === tie.low) moves.push([tie.low, this.leagueAt('RUS', 1)], [tie.up, this.leagueAt('RUS', 2)]);
         }
+      }
+      return moves;
+    }
+
+    // Итоги сезона до перехода в новый: ничего не меняет, всё ещё можно посмотреть таблицы и статистику.
+    seasonReview() {
+      const s = this.s, u = this.userTeam();
+      const leagues = s.order.map((lid) => {
+        const tab = this.table(lid);
+        const rated = [];
+        for (const tid of s.leagues[lid].teams) for (const pid of this.teams[tid].players) {
+          const p = this.players[pid];
+          if (p.st.apps >= Math.max(8, tab[0].p * 0.5)) rated.push([p, p.st.rsum / p.st.apps]);
+        }
+        rated.sort((a, b) => b[1] - a[1]);
+        return { lid, top: tab.slice(0, 3), scorer: this.leaders(lid, 'g', 1)[0] || null, assist: this.leaders(lid, 'a', 1)[0] || null, best: rated[0] || null };
+      });
+      const fin = (m) => (m ? { h: m.h, a: m.a, hg: m.hg, ag: m.ag, pens: m.pens } : null);
+      const euro = FM.EURO.filter((E) => s.euro && s.euro[E.id] && s.euro[E.id].winner).map((E) => ({ id: E.id, name: E.name, winner: s.euro[E.id].winner, final: fin(s.euro[E.id].final && s.matches[s.euro[E.id].final]) }));
+      const lastR = s.cup && s.cup.rounds[s.cup.rounds.length - 1];
+      const cupFinal = s.cup && s.cup.winner && lastR && lastR.matches.length ? fin(s.matches[lastR.matches[0]]) : null;
+      const moves = this.seasonMoves().filter(([tid, lid]) => this.teams[tid].league !== lid)
+        .map(([tid, lid]) => ({ id: tid, to: lid, from: this.teams[tid].league, up: s.leagues[lid].tier < s.leagues[this.teams[tid].league].tier }));
+      const row = this.table(u.league).find((r) => r.id === u.id);
+      const all = (p) => ({ apps: p.st.apps + p.cst.apps, g: p.st.g + p.cst.g, a: p.st.a + p.cst.a, r: p.st.apps + p.cst.apps ? (p.st.rsum + p.cst.rsum) / (p.st.apps + p.cst.apps) : 0 });
+      const top = (f) => this.squad(u).map((p) => [p, f(all(p))]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1])[0] || null;
+      return {
+        year: s.season, leagues, euro, cup: s.cup && s.cup.winner || null, cupFinal, moves,
+        user: { team: u.id, league: u.league, pos: row.pos, row, expect: s.board.expect, coach: this.coachSeason(),
+          scorer: top((x) => x.g), assist: top((x) => x.a), best: top((x) => (x.apps >= 8 ? x.r : 0)) },
+      };
+    }
+
+    endSeason() {
+      const s = this.s;
+      const y = s.season;
+      s.lastCupWinner = s.cup && s.cup.winner || null;
+      const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [], euro: {} };
+      for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) summary.euro[E.id] = s.euro[E.id].winner;
+      s.lastTables = {};
+      for (const lid of s.order) s.lastTables[lid] = this.table(lid).map((r) => r.id);
+      const moves = this.seasonMoves(); // [teamId, newLeague]
+
+      // итоговые таблицы, призовые, репутация
+      for (const lid of s.order) {
+        const L = s.leagues[lid];
+        const tab = this.table(lid);
+        summary.tables[lid] = tab.slice(0, 3).map((r) => r.id);
+        tab.forEach((r) => {
+          const t = this.teams[r.id];
+          t.money += L.prize[r.pos - 1] || 0;
+          if (r.id === s.user) { summary.userPos = r.pos; summary.userLeague = lid; }
+        });
+        const champ = this.teams[tab[0].id];
+        champ.rep = Math.min(99, champ.rep + 2);
+        this.news(`«${champ.name}» — победитель турнира «${L.name}» сезона ${y}/${String(y + 1).slice(2)}!`);
       }
       // резервные команды в переходах не участвуют: eligibleUp отсекает их от повышения
       for (const [tid, lid] of moves) {
@@ -799,8 +836,8 @@
       for (const id in this.players) {
         const p = this.players[id];
         p.car.apps += p.st.apps + p.cst.apps; p.car.g += p.st.g + p.cst.g; p.car.a += p.st.a + p.cst.a;
-        p.st = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 };
-        p.cst = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0 };
+        p.st = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
+        p.cst = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
         p.ycAcc = 0;
         p.sus = 0;
         p.age++;
@@ -1019,6 +1056,9 @@
           st.rsum += r;
           p.fit = Math.round(side.fitness[pid]);
           p.morale = FM.clamp(p.morale + (r >= 7.5 ? 4 : r < 6 ? -3 : 0), 10, 100);
+          // сухой матч — вратарю и защитникам, сыгравшим от 60 минут
+          const conceded = side === sim.home ? sim.away.goals : sim.home.goals;
+          if (!conceded && (side.mins[pid] || 0) >= 60 && (FM.GROUP[p.pos] === 'G' || FM.GROUP[p.pos] === 'D')) st.cs = (st.cs || 0) + 1;
         }
         for (const pid in side.yellows) {
           const p = this.players[pid];

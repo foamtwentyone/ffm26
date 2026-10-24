@@ -302,14 +302,14 @@
     ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['news', 'Новости'], ['coach', 'Тренер'], ['menu', 'Сохранения и база'],
   ];
   // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
-  const NAV = ['home', 'squad', 'tables', 'transfers', 'fixtures', 'finance', 'inbox', 'coach'];
+  const NAV = ['home', 'squad', 'tables', 'transfers', 'stats', 'fixtures', 'finance', 'inbox', 'coach'];
   const NAV_NAME = { squad: 'Состав', tables: 'Турниры', fixtures: 'Матчи' };
   // короткая подсказка под заголовком раздела: что здесь можно сделать
   const TAB_HINTS = {
     squad: 'Нажмите на позицию на поле и выберите игрока. «Автосостав» поставит сильнейших. ОСН — в старте, ЗАП — на скамейке.',
     fixtures: 'Все матчи сезона. Нажмите на сыгранный матч, чтобы открыть отчёт.',
     tables: 'Таблицы лиг, Кубок России, стыки и еврокубки.',
-    stats: 'Лучшие бомбардиры, ассистенты и игроки по оценкам.',
+    stats: 'Статистика ваших игроков с сортировкой и лидеры всех лиг.',
     transfers: 'Найдите игрока и нажмите на него, чтобы начать переговоры. Суммы вводятся в миллионах €.',
     finance: 'Деньги клуба, зарплаты и все поступления и расходы.',
     club: 'Стадион, задача от руководства и ваша тренерская история.',
@@ -330,6 +330,7 @@
 
   // переход по плитке: «tables:cup» открывает раздел и нужную вкладку в нём
   function go(target) {
+    if (target === 'review') return reviewModal();
     const [tab, sub] = target.split(':');
     UI.tab = tab;
     UI.sel = null;
@@ -356,7 +357,7 @@
         <button class="burger" id="burger" aria-label="Разделы"><i></i><i></i><i></i></button>
         <span class="crest" data-team="${u.id}">${badge(u, 'lg')}</span>
         <b class="club-name">${esc(u.name)}</b>
-        <button class="next-btn" id="go">Далее <span>▶</span></button>
+        <button class="next-btn" id="go">${s.seasonOver ? 'Новый сезон' : 'Далее'} <span>▶</span></button>
       </div></header>
       <div class="strip"><div class="strip-in">
         <div class="when">Сезон ${seasonLabel(s)}<span class="hide-m"> · Неделя ${weekNo(s)} · ${FM.fmtDateWd(s.date)}</span></div>
@@ -391,16 +392,25 @@
   function goOn() {
     const G = g();
     if (G.s.sacked) return sackedModal();
+    // сезон окончен и итоги просмотрены — «Новый сезон» запускает переходы, контракты и календарь
+    if (G.s.seasonOver) {
+      const sum = G.endSeason();
+      G.s.seasonOver = false;
+      UI.round = null;
+      UI.tablesLid = G.userTeam().league;
+      UI.tab = 'home';
+      save();
+      render();
+      return seasonModal(sum);
+    }
     let r, guard = 0;
     do { r = G.advance(); } while (r === 'day' && guard++ < 400);
     if (r === 'match') { save(); render(); return preMatch(); }
     if (r === 'season_end') {
-      const sum = G.endSeason();
-      UI.round = null;
-      UI.tablesLid = G.userTeam().league;
+      G.s.seasonOver = true;
       save();
       render();
-      return seasonModal(sum);
+      return reviewModal();
     }
     if (r === 'sacked') { save(); render(); return sackedModal(); }
     if (r === 'offer') { toast('Новое предложение по игроку — загляните в почту.'); }
@@ -408,17 +418,63 @@
     render();
   }
 
+  // короткое окно после перехода в новый сезон: итог для руководства и задача
   function seasonModal(sum) {
-    const G = g();
-    const L = G.s.leagues;
-    modal(`<h2>Сезон ${sum.year}/${String(sum.year + 1).slice(2)} завершён</h2>
-      ${Object.keys(sum.tables).map((lid) => `<div class="list-item"><b class="grow">${esc(L[lid].name)}</b>${sum.tables[lid].map((id, i) => `${['🥇', '🥈', '🥉'][i]} ${esc(T(id).name)}`).join(' &nbsp; ')}</div>`).join('')}
-      ${sum.cup ? `<div class="list-item"><b class="grow">Кубок России</b>🏆 ${esc(T(sum.cup).name)}</div>` : ''}
-      ${FM.EURO.filter((E) => sum.euro && sum.euro[E.id]).map((E) => `<div class="list-item"><b class="grow">${esc(E.name)}</b>🏆 ${esc(T(sum.euro[E.id]).name)}</div>`).join('')}
-      <h3 style="margin-top:14px">Переходы между лигами</h3>
-      <div>${sum.moves.map((m) => `<div class="small">${m.up ? '<span class="good">▲</span>' : '<span class="bad">▼</span>'} ${esc(T(m.id).name)} → ${esc(L[m.to].name)}</div>`).join('') || '<span class="muted">—</span>'}</div>
-      <div class="note">Ваша команда: ${sum.userPos}-е место. Доверие руководства: ${Math.round(G.s.board.conf)}%.</div>
-      <button class="btn primary" data-close>К новому сезону</button>`);
+    const G = g(), u = G.userTeam();
+    const mv = sum.moves.find((m) => m.id === u.id);
+    modal(`<div class="ns-hero">${badge(u, 'xl')}<div><div class="ns-kicker">Новый сезон</div><h2>${seasonLabel(G.s)}</h2>
+        <div class="muted">${esc(G.s.leagues[u.league].name)}${mv ? (mv.up ? ' · <span class="good">повышение в классе!</span>' : ' · <span class="bad">вылет</span>') : ''}</div></div></div>
+      <div class="kv"><div><span>Прошлый сезон</span><b>${sum.userPos}-е место</b></div><div><span>Доверие руководства</span><b>${Math.round(G.s.board.conf)}%</b></div>
+        <div><span>Задача</span><b>${esc(G.expectText())}</b></div><div><span>Трансферное окно</span><b>до 7 сентября</b></div></div>
+      <div class="small muted">Подробности — в почте: оценка руководства, ушедшие свободные агенты, вернувшиеся из аренды.</div>
+      <button class="btn primary" data-close style="margin-top:12px">Начать сезон</button>`, 'ns');
+  }
+
+  // Итоги сезона: открываются в конце сезона и доступны с главной, пока не начат новый
+  function reviewModal() {
+    const G = g(), s = G.s;
+    const R = G.seasonReview();
+    const U = R.user, ut = T(U.team);
+    const L = s.leagues;
+    const medal = (i) => ['🥇', '🥈', '🥉'][i] || '';
+    const score = (f) => (f ? `${esc(T(f.h).name)} ${f.hg}:${f.ag}${f.pens ? ` (пен. ${f.pens[0]}:${f.pens[1]})` : ''} ${esc(T(f.a).name)}` : '');
+    const pl = (x, fmt) => (x ? `<span data-player="${x[0].id}" class="link">${esc(x[0].name)}</span> <span class="muted">${esc(T(x[0].club) ? T(x[0].club).name : '')}</span> <b>${fmt(x[1])}</b>` : '<span class="muted">—</span>');
+    const verdict = U.pos === 1 ? 'Чемпионы!' : U.pos <= U.expect ? 'Задача выполнена' : 'Ниже ожиданий';
+    const rec = U.coach.rec;
+    const trophies = [];
+    R.leagues.forEach((x) => { if (x.top[0].id === U.team) trophies.push(L[x.lid].name); });
+    if (R.cup === U.team) trophies.push('Кубок России');
+    R.euro.forEach((e) => { if (e.winner === U.team) trophies.push(e.name); });
+    const myMove = R.moves.find((m) => m.id === U.team);
+    modal(`<div class="rv-hero" style="--tc:${glow(ut)}">
+        <div class="rv-kicker">Итоги сезона ${R.year}/${String(R.year + 1).slice(2)}</div>
+        <div class="rv-main">${badge(ut, 'xl')}<div class="grow"><h2>${esc(ut.name)}</h2>
+          <div class="rv-place"><span class="rv-pos">${U.pos}</span><span>место · ${esc(L[U.league].name)}</span></div>
+          <div class="rv-verdict ${U.pos <= U.expect ? 'good' : 'bad'}">${verdict}${myMove ? (myMove.up ? ' · повышение в классе!' : ' · вылет') : ''} <span class="muted">(задача — ${U.expect}-е место)</span></div></div></div>
+        ${trophies.length ? `<div class="rv-trophies">${trophies.map((t) => `<span>🏆 ${esc(t)}</span>`).join('')}</div>` : ''}
+        <div class="rv-stats">
+          <div><b>${U.row.pts}</b><span>очков</span></div><div><b>${rec.w}-${rec.d}-${rec.l}</b><span>В-Н-П, все матчи</span></div>
+          <div><b>${rec.gf}:${rec.ga}</b><span>мячи</span></div>
+          <div><b>${U.scorer ? U.scorer[1] : 0}</b><span>голов</span><em>${U.scorer ? esc(U.scorer[0].name) : '—'}</em></div>
+          <div><b>${U.assist ? U.assist[1] : 0}</b><span>передач</span><em>${U.assist ? esc(U.assist[0].name) : '—'}</em></div>
+          <div><b>${U.best ? U.best[1].toFixed(2) : '—'}</b><span>лучшая оценка</span><em>${U.best ? esc(U.best[0].name) : '—'}</em></div>
+        </div></div>
+      <h3>Победители</h3>
+      <div class="rv-grid">
+        ${R.euro.map((e) => `<div class="rv-card gold">${badge(T(e.winner), 'lg')}<div><div class="rv-comp">${esc(e.name)}</div><b>${esc(T(e.winner).name)}</b><div class="small muted">${score(e.final)}</div></div></div>`).join('')}
+        ${R.cup ? `<div class="rv-card gold">${badge(T(R.cup), 'lg')}<div><div class="rv-comp">Кубок России</div><b>${esc(T(R.cup).name)}</b><div class="small muted">${score(R.cupFinal)}</div></div></div>` : ''}
+        ${R.leagues.map((x) => `<div class="rv-card ${x.top[0].id === U.team ? 'mine' : ''}">${badge(T(x.top[0].id), 'lg')}<div class="grow"><div class="rv-comp">${esc(L[x.lid].name)}</div><b>${esc(T(x.top[0].id).name)}</b> <span class="muted small">${x.top[0].pts} очк.</span>
+          <div class="small muted">${x.top.slice(1).map((r, i) => `${medal(i + 1)} ${esc(T(r.id).name)}`).join(' · ')}</div></div></div>`).join('')}
+      </div>
+      <h3>Лучшие игроки лиг</h3>
+      <div class="card tight"><table class="rv-table"><tr><th>Лига</th><th>Бомбардир</th><th class="hide-m">Ассистент</th><th class="hide-m">Лучшая оценка</th></tr>
+        ${R.leagues.map((x) => `<tr><td><b>${esc(L[x.lid].short)}</b></td><td>${pl(x.scorer, (v) => v)}</td><td class="hide-m">${pl(x.assist, (v) => v)}</td><td class="hide-m">${pl(x.best, (v) => v.toFixed(2))}</td></tr>`).join('')}</table></div>
+      ${R.moves.length ? `<h3>Повышения и вылеты</h3><div class="rv-moves">
+        <div><div class="rv-comp good">▲ Повышаются</div>${R.moves.filter((m) => m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div>
+        <div><div class="rv-comp bad">▼ Вылетают</div>${R.moves.filter((m) => !m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div></div>` : ''}
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>Посмотреть таблицы и статистику</button><span class="grow"></span><button class="btn primary" id="rv-next">Начать новый сезон ▶</button></div>
+      <div class="small muted" style="margin-top:6px">Новый сезон начнётся только по кнопке «Новый сезон» — до этого можно спокойно изучить таблицы, кубки и статистику.</div>`, 'wide review');
+    document.getElementById('rv-next').onclick = () => { closeModal(); goOn(); };
   }
 
   function sackedModal() {
@@ -486,17 +542,19 @@
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
-    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? 'победа!' : 'завершён') : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
-      if (e.winner) st = e.winner === u.id ? 'победа!' : 'завершён';
+      if (e.winner) st = e.winner === u.id ? '🏆 победа!' : `победил ${esc(T(e.winner).name)}`;
       else if (e.phase === 'league') st = `${G.euroTable(euroMine.id).find((r) => r.id === u.id).pos}-е место`;
       else { const R = e.ko[e.ko.length - 1]; st = e.final ? 'финал' : R ? esc(R.name) : ''; }
       cupRows.push(`<div class="kvl"><span>${esc(euroMine.name)}</span><b>${st}</b></div>`);
     }
     main.innerHTML = `<div class="dash dash-simple">
-      ${hero}
+      ${s.seasonOver ? `<section class="tile w2 season-over" data-go="review"><header><span class="hic">${icon('trophy')}</span><span class="tt">Сезон ${seasonLabel(s)} завершён</span><span class="chev">›</span></header>
+        <div class="tb"><div>Посмотрите итоги: чемпионы, кубки, лучшие игроки. Таблицы и статистика сезона ещё доступны.</div>
+        <div class="row" style="margin-top:10px"><button class="btn primary" id="rv-open">Итоги сезона</button><span class="small muted">Новый сезон — кнопкой «Новый сезон» вверху</span></div></div></section>` : hero}
       ${tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       ${tile('Ближайшие матчи', 'fixtures', upcoming.slice(0, 4).map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
@@ -773,17 +831,50 @@
   }
 
   // ================== статистика ==================
+  // Подробная статистика игроков своей команды с сортировкой
+  function teamStats(main) {
+    const G = g(), s = G.s, u = G.userTeam();
+    const scope = UI.tsScope || 'all';
+    const key = UI.tsKey || 'apps';
+    const pick = (p) => {
+      const parts = scope === 'league' ? [p.st] : scope === 'cups' ? [p.cst] : [p.st, p.cst];
+      const t = { apps: 0, mins: 0, g: 0, a: 0, cs: 0, yc: 0, rc: 0, rsum: 0 };
+      for (const x of parts) for (const k in t) t[k] += x[k] || 0;
+      t.r = t.apps ? t.rsum / t.apps : 0;
+      t.ga = t.g + t.a;
+      return t;
+    };
+    const rows = G.squad(u).map((p) => [p, pick(p)]);
+    rows.sort((a, b) => b[1][key] - a[1][key] || b[1].apps - a[1].apps);
+    const tot = rows.reduce((o, [, t]) => { o.g += t.g; o.a += t.a; return o; }, { g: 0, a: 0 });
+    const cols = [['apps', 'Матчи', 'И'], ['mins', 'Минуты', 'Мин'], ['g', 'Голы', 'Г'], ['a', 'Ассисты', 'П'], ['ga', 'Гол+пас', 'Г+П'], ['r', 'Средняя оценка', 'Оц'], ['cs', 'Сухие матчи', 'Сух'], ['yc', 'Жёлтые', 'ЖК'], ['rc', 'Красные', 'КК']];
+    const hideM = new Set(['mins', 'ga', 'yc', 'rc']);
+    main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}
+        <div class="seg">${[['all', 'Все турниры'], ['league', 'Чемпионат'], ['cups', 'Кубки и еврокубки']].map(([k, n]) => `<button data-sc="${k}" class="${k === scope ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <span class="small muted">Голов: <b>${tot.g}</b> · передач: <b>${tot.a}</b> · нажмите на заголовок столбца, чтобы отсортировать</span></div>
+      <div class="sortbar">${cols.filter(([k]) => ['apps', 'g', 'a', 'r', 'cs'].includes(k)).map(([k, n]) => `<button data-ts="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="card tight"><div class="tbl-wrap"><table class="ts"><tr><th>#</th><th>Поз</th><th>Игрок</th>${cols.map(([k, n, sh]) => `<th class="num sort ${k === key ? 'on' : ''} ${hideM.has(k) ? 'hide-m' : ''}" data-ts="${k}" title="${n}">${sh}${k === key ? ' ▾' : ''}</th>`).join('')}</tr>
+        ${rows.map(([p, t], i) => `<tr><td class="num muted">${i + 1}</td><td>${pos(p.pos)}</td><td>${pname(p)}${status(p)}</td>${cols.map(([k]) => `<td class="num ${k === key ? 'hl' : ''} ${hideM.has(k) ? 'hide-m' : ''}">${k === 'r' ? (t.apps ? rt(t.r) : '—') : k === 'cs' && !['G', 'D'].includes(FM.GROUP[p.pos]) ? '<span class="muted">—</span>' : t[k]}</td>`).join('')}</tr>`).join('')}
+      </table></div><div class="small muted" style="padding:10px">Сухой матч засчитывается вратарю и защитникам, сыгравшим от 60 минут без пропущенных мячей.</div></div>`;
+    main.querySelectorAll('[data-ts]').forEach((b) => b.onclick = () => { UI.tsKey = b.dataset.ts; render(); });
+    main.querySelectorAll('[data-sc]').forEach((b) => b.onclick = () => { UI.tsScope = b.dataset.sc; render(); });
+    main.querySelectorAll('[data-sv]').forEach((b) => b.onclick = () => { UI.statsView = b.dataset.sv; render(); });
+  }
+  const statsTabs = () => `<div class="seg">${[['team', 'Моя команда'], ['league', 'Лидеры лиг']].map(([k, n]) => `<button data-sv="${k}" class="${(UI.statsView || 'team') === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+
   function viewStats(main) {
+    if ((UI.statsView || 'team') === 'team') return teamStats(main);
     const G = g(), s = G.s;
     const lid = UI.tablesLid || G.userTeam().league;
     const key = UI.statsKey;
     const rows = G.leaders(lid, key, 30);
-    main.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg">${s.order.map((id) => `<button data-lid="${id}" class="${id === lid ? 'on' : ''}">${esc(s.leagues[id].short)}</button>`).join('')}</div>
-      <div class="seg">${[['g', 'Голы'], ['a', 'Передачи'], ['rating', 'Оценки'], ['yc', 'Жёлтые']].map(([k, n]) => `<button data-k="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-      <div class="card tight"><table><tr><th>#</th><th>Игрок</th><th>Клуб</th><th class="num">И</th><th class="num">${{ g: 'Голы', a: 'Пас', rating: 'Оценка', yc: 'ЖК' }[key]}</th></tr>
+    main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}<div class="seg">${s.order.map((id) => `<button data-lid="${id}" class="${id === lid ? 'on' : ''}">${esc(s.leagues[id].short)}</button>`).join('')}</div>
+      <div class="seg">${[['g', 'Голы'], ['a', 'Передачи'], ['rating', 'Оценки'], ['cs', 'Сухие'], ['yc', 'Жёлтые']].map(([k, n]) => `<button data-k="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="card tight"><table><tr><th>#</th><th>Игрок</th><th>Клуб</th><th class="num">И</th><th class="num">${{ g: 'Голы', a: 'Пас', rating: 'Оценка', yc: 'ЖК', cs: 'Сухие' }[key]}</th></tr>
       ${rows.map(([p, v], i) => `<tr class="${p.club === s.user ? 'me' : ''}"><td class="num">${i + 1}</td><td>${pos(p.pos)} ${pname(p)}</td><td>${tname(T(p.club))}</td><td class="num">${p.st.apps}</td><td class="num"><b>${key === 'rating' ? v.toFixed(2) : v}</b></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Пока нет данных</td></tr>'}</table></div>`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; render(); });
     main.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { UI.statsKey = b.dataset.k; render(); });
+    main.querySelectorAll('[data-sv]').forEach((b) => b.onclick = () => { UI.statsView = b.dataset.sv; render(); });
   }
 
   // ================== трансферы ==================
