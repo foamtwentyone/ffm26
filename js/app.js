@@ -91,10 +91,13 @@
     s.savedAt = Date.now();
     const str = JSON.stringify(s);
     const info = infoOf(s);
-    const ok = ls.set(key, str) && ls.set(key + '_meta', JSON.stringify({ info, ts: s.savedAt }));
+    const ts = s.savedAt;
+    FM.Store.localSave(key, str).then((ok) => {
+      if (ok) ls.set(key + '_meta', JSON.stringify({ info, ts }));
+      else if (!UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
+    }).catch(() => { /* остаётся облачная копия */ });
     FM.Store.cloudSave(key, str, info);
-    if (!ok && !UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
-    return ok || !!UI.cloud;
+    return true;
   }
   function loadState(state) {
     UI.g = new FM.Game(state);
@@ -111,8 +114,8 @@
         const st = await FM.Store.cloudLoad(key);
         if (st) return loadState(st);
       }
-      const raw = ls.get(key);
-      if (raw) return loadState(JSON.parse(raw));
+      const st = await FM.Store.localLoad(key);
+      if (st) return loadState(st);
       toast('Сохранение не найдено.');
     } catch (e) {
       toast('Сохранение повреждено.');
@@ -172,7 +175,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Симуляция сезона 2026/27: Мир РПЛ, Лига PARI и Вторая лига</div></div>
+        <div class="muted">Сезон 2026/27: РПЛ, ФНЛ, Вторая лига и топ-5 лиг Европы</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
@@ -397,12 +400,12 @@
         ${topAs ? `<div class="leader"><span class="li">👟</span><div class="grow"><b data-player="${topAs.id}">${esc(topAs.name)}</b><div class="small muted">Лучший ассистент</div></div><b class="big">${topAs.st.a}</b></div>` : ''}
         ${topRt ? `<div class="leader"><span class="li">🏅</span><div class="grow"><b data-player="${topRt.id}">${esc(topRt.name)}</b><div class="small muted">Высший средний рейтинг</div></div><b class="big">${(topRt.st.rsum / topRt.st.apps).toFixed(1)}</b></div>` : ''}
         ${!topSc && !topAs && !topRt ? '<div class="muted">Сезон ещё не начался</div>' : ''}`)}
-      ${tile('Кубок России', 'tables:cup', c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:6px">${inCup ? '<b class="good">Команда в борьбе</b>' : '<b class="bad">Команда выбыла</b>'}</div>`) : '')}
+      ${tile('Кубок России', 'tables:cup', !G.isRussian(u) ? '<div class="muted">Разыгрывается между российскими клубами</div>' : c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:6px">${inCup ? '<b class="good">Команда в борьбе</b>' : '<b class="bad">Команда выбыла</b>'}</div>`) : '')}
       ${tile('Финансы', 'finance', `<div class="kvl"><span>Баланс</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
         <div class="kvl"><span>Зарплаты в неделю</span><b>${FM.money(G.wageBill(u))}</b></div><div class="kvl"><span>Спонсоры в неделю</span><b>${FM.money(u.sponsor)}</b></div>`)}
       ${tile('Молодёжь', 'squad', recently.map((p) => `<div class="kvl"><span data-player="${p.id}">${esc(p.name)} (${p.age})</span><b class="good">${p.ovr}</b></div>`).join('') || '<div class="muted">Молодых игроков нет</div>')}
       ${tile('Почта', 'inbox', lastMsg ? `<div class="kvl"><span>Непрочитанных</span><b>${unread}</b></div><div class="news ell2">${esc(lastMsg.title)}</div>` : '<div class="muted">Писем нет</div>')}
-      ${tile('Лиги России', 'tables', s.order.map((id) => `<div class="mini"><span class="grow">${esc(s.leagues[id].name)}</span><span class="muted small">лидер: ${esc(T(G.table(id)[0].id).name)}</span></div>`).join(''))}
+      ${tile('Лиги', 'tables', s.order.map((id) => `<div class="mini"><span class="grow">${esc(s.leagues[id].name)}</span><span class="muted small">лидер: ${esc(T(G.table(id)[0].id).name)}</span></div>`).join(''))}
       ${tile('Статистика тренера', 'club', `<div class="kvl"><span>Сезонов</span><b>${s.history.length + 1}</b></div><div class="kvl"><span>Трофеев</span><b>${trophies}</b></div><div class="kvl"><span>Трансферное окно</span><b class="small">${G.windowText()}</b></div>`)}
     </div>`;
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));

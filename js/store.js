@@ -90,5 +90,18 @@ FM.Store = (function () {
     return JSON.parse(await unpack(meta.enc, data));
   }
 
-  return { ls, init, cloudSave, cloudMeta, cloudLoad };
+  // Локальное сохранение тоже сжимается: несжатая карьера с европейскими лигами весит около 2 МБ,
+  // и несколько слотов не поместились бы в хранилище браузера.
+  async function localSave(key, str) {
+    const { enc, data } = await pack(str);
+    return ls.set(key, enc === 'raw' ? data : 'gz:' + data);
+  }
+
+  async function localLoad(key) {
+    const raw = ls.get(key);
+    if (!raw) return null;
+    return JSON.parse(raw.startsWith('gz:') ? await unpack('gz64', raw.slice(3)) : raw);
+  }
+
+  return { ls, init, cloudSave, cloudMeta, cloudLoad, localSave, localLoad };
 })();
