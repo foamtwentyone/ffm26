@@ -147,7 +147,7 @@ YOUTH = {'Водник': 'vodnik', 'Газпром-Югра': 'gazprom', 'ИрА
 # Ручные правки составов: клуб → {игрок в заявке: замена}. Замена — новое имя, словарь с полями name/pos/age/nat
 # или None (игрок ушёл из клуба).
 EDITS = {
-    'kapkan': {'Тагир Карагулов': None},
+    'kapkan': {'Тагир Карагулов': None, 'Артем Едренкин': {'pos': 'DF'}, 'Максим Пышный': {'pos': 'FW'}, 'Семен Кузнецов': {'pos': 'FW'}},
 }
 # текущие составы с sefl.ru (tools/sefl.py): игроки, которых нет в заявке Кубка, добавляются в клуб
 sefl = {t['team_id']: t['players'] for t in json.load(open(D + '/sefl.json', encoding='utf8'))} if os.path.exists(D + '/sefl.json') else {}
