@@ -197,6 +197,17 @@ FM.potFor = (ovr, age) => {
   else if (age <= 26) g = FM.ri(0, 4);
   return Math.min(94, ovr + g);
 };
+// Еврокубки: квоты по странам, день недели, призовые (тыс. €): участие, победа и ничья в общем этапе,
+// выход в 1/4, в 1/2, в финал и победа.
+FM.EURO = [
+  { id: 'ucl', name: 'Лига чемпионов', short: 'ЛЧ', day: 3, final: '05-29', quota: { ENG: 5, ESP: 5, ITA: 4, GER: 4, FRA: 3, RUS: 3 },
+    fee: 18600, win: 2100, draw: 700, ko: [11000, 15000, 18500, 6500] },
+  { id: 'uel', name: 'Лига Европы', short: 'ЛЕ', day: 4, final: '05-19', quota: { ENG: 4, ESP: 4, ITA: 4, GER: 4, FRA: 4, RUS: 4 },
+    fee: 4300, win: 450, draw: 150, ko: [1750, 2600, 4000, 4000] },
+  { id: 'uecl', name: 'Лига конференций', short: 'ЛК', day: 4, final: '05-26', quota: { ENG: 4, ESP: 4, ITA: 4, GER: 4, FRA: 4, RUS: 4 },
+    fee: 3200, win: 400, draw: 130, ko: [800, 1300, 2000, 2000] },
+];
+
 // Репутация по стоимости состава (тыс. €): 100 млн ≈ 72, 1 млрд ≈ 92, 5 млн ≈ 46.
 FM.repFromValue = (sv) => Math.round(FM.clamp(72 + 20 * Math.log10(Math.max(sv, 1) / 100000), 35, 99));
 FM.wageFor = (value, tier) => Math.max([0, 1.5, 0.6, 0.25][tier] || 0.25, value * 0.004);

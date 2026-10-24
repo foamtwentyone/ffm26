@@ -81,7 +81,11 @@
   const pname = (p) => `<span class="pl" data-player="${p.id}" style="cursor:pointer">${esc(p.name)}</span>${p.gen ? '<span class="gen" title="Сгенерированный игрок — замените реальным в редакторе базы">*</span>' : ''}`;
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">✚${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">▮${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season ? '<span class="ico warn" title="Контракт истекает летом">✎</span>' : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
-  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Стыковые матчи' : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const euroOf = (c) => FM.EURO.find((E) => E.id === c);
+  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Стыковые матчи' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compShort = (c) => (c === 'cup' ? 'Кубок' : c === 'po' ? 'Стыки' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
+  // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
+  const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
   // цвет метки команды в ленте матча: тёмный основной цвет на тёмном фоне не виден
@@ -229,6 +233,7 @@
         <div class="card" style="margin-bottom:14px">
           <div class="row">
             <label class="grow">Имя тренера<br><input id="mgr" value="${esc(ls.get('ffm26_mgr') || 'Тренер')}" style="width:100%"></label>
+            <label class="row small" style="gap:8px"><input type="checkbox" id="ru-euro" ${ls.get('ffm26_ru_euro') === '0' ? '' : 'checked'}> Российские клубы в еврокубках</label>
             <button class="btn" id="loadfile">Загрузить из файла</button>
             ${[1, 2, 3].map((i) => metas[SAVE_SLOT + i] ? `<button class="btn" data-slot="${i}" title="${esc(metas[SAVE_SLOT + i].info)}">Слот ${i}</button>` : '').join('')}
           </div>
@@ -245,7 +250,9 @@
       app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
         const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
         ls.set('ffm26_mgr', mgr);
-        UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined);
+        const ruEuro = app.querySelector('#ru-euro').checked;
+        ls.set('ffm26_ru_euro', ruEuro ? '1' : '0');
+        UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined, { ruEuro });
         UI.tab = 'home';
         UI.tablesLid = UI.g.userTeam().league;
         save();
@@ -355,6 +362,7 @@
     modal(`<h2>Сезон ${sum.year}/${String(sum.year + 1).slice(2)} завершён</h2>
       ${Object.keys(sum.tables).map((lid) => `<div class="list-item"><b class="grow">${esc(L[lid].name)}</b>${sum.tables[lid].map((id, i) => `${['🥇', '🥈', '🥉'][i]} ${esc(T(id).name)}`).join(' &nbsp; ')}</div>`).join('')}
       ${sum.cup ? `<div class="list-item"><b class="grow">Кубок России</b>🏆 ${esc(T(sum.cup).name)}</div>` : ''}
+      ${FM.EURO.filter((E) => sum.euro && sum.euro[E.id]).map((E) => `<div class="list-item"><b class="grow">${esc(E.name)}</b>🏆 ${esc(T(sum.euro[E.id]).name)}</div>`).join('')}
       <h3 style="margin-top:14px">Переходы между лигами</h3>
       <div>${sum.moves.map((m) => `<div class="small">${m.up ? '<span class="good">▲</span>' : '<span class="bad">▼</span>'} ${esc(T(m.id).name)} → ${esc(L[m.to].name)}</div>`).join('') || '<span class="muted">—</span>'}</div>
       <div class="note">Ваша команда: ${sum.userPos}-е место. Доверие руководства: ${Math.round(G.s.board.conf)}%.</div>
@@ -390,6 +398,29 @@
     return `<div class="cmp-row"><b>${a}</b><div class="cmp-bar l"><i style="width:${w(a)}%"></i></div><span>${label}</span><div class="cmp-bar r"><i style="width:${w(b)}%"></i></div><b>${b}</b></div>`;
   };
 
+  // плитка еврокубков: свой турнир и место в нём, иначе — лидер Лиги чемпионов
+  function euroTile() {
+    const G = g(), s = G.s, u = G.userTeam();
+    if (!s.euro || !Object.keys(s.euro).length) return tile('Еврокубки', 'tables', '<div class="muted">Стартуют в новом сезоне</div>', '', 'globe');
+    const mine = FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
+    const E = mine || FM.EURO.find((x) => s.euro[x.id]);
+    const e = s.euro[E.id];
+    let body;
+    if (e.winner) body = `<div class="kvl"><span>Победитель</span><b>${esc(T(e.winner).name)}</b></div>`;
+    else if (mine && e.phase === 'league') {
+      const row = G.euroTable(E.id).find((r) => r.id === u.id);
+      body = `<div class="kvl"><span>Общий этап</span><b>${row.pos}-е место · ${row.pts} очк.</b></div><div class="small muted" style="margin-top:6px">1–4 место — сразу в 1/4 финала, 5–12 — стыки</div>`;
+    } else if (mine) {
+      const R = e.ko[e.ko.length - 1];
+      const alive = e.final ? [s.matches[e.final].h, s.matches[e.final].a].includes(u.id) : R && R.ties.some((t) => (t.hi === u.id || t.lo === u.id) && (!t.winner || t.winner === u.id));
+      body = `<div class="kvl"><span>Стадия</span><b>${e.final ? 'финал' : esc(R ? R.name : '')}</b></div><div style="margin-top:8px"><span class="tag" style="color:${alive ? 'var(--good)' : 'var(--bad)'}">${alive ? 'Команда в борьбе' : 'Команда выбыла'}</span></div>`;
+    } else {
+      const lead = G.euroTable(E.id)[0];
+      body = `<div class="muted small">Ваш клуб в этом сезоне не играет в еврокубках</div><div class="kvl" style="margin-top:6px"><span>Лидер ЛЧ</span><b>${esc(T(lead.id).name)}</b></div>`;
+    }
+    return tile(mine ? E.name : 'Еврокубки', 'tables:' + E.id, body, '', 'star');
+  }
+
   function viewHome(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const nm = G.userMatchToday() || G.nextUserMatch();
@@ -411,7 +442,7 @@
     const inCup = c && !c.winner && c.alive.includes(u.id);
     const lastMsg = s.inbox[0];
     const unread = s.inbox.filter((m) => !m.read).length;
-    const trophies = s.history.filter((x) => x.cup).length + s.history.filter((x) => x.pos === 1).length;
+    const trophies = s.history.reduce((a, x) => a + (x.cup ? 1 : 0) + (x.pos === 1 && s.leagues[x.league] && s.leagues[x.league].tier === 1 ? 1 : 0) + (x.euro ? x.euro.length : 0), 0);
     const young = sq.filter((p) => p.age <= 23).sort((a, b) => (b.pot - b.ovr) - (a.pot - a.ovr)).slice(0, 3);
 
     let hero = tile('Следующий матч', 'fixtures', '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>', 'w2', 'ball');
@@ -425,7 +456,7 @@
         <div class="tb">
           <div class="hm">${side(h)}
             <div class="hm-mid"><span class="hm-date">${FM.fmtDateWd(nm.date)}</span><span class="hm-vs">VS</span>
-              <span class="hm-tag">${esc(compName(nm.comp))}${nm.comp !== 'cup' && nm.comp !== 'po' ? ` · ${nm.round}-й тур` : ''}</span>
+              <span class="hm-tag">${esc(compName(nm.comp))}${roundText(nm) ? ` · ${esc(roundText(nm))}` : ''}</span>
               <span class="hm-tag">${esc(h.stadium)}</span></div>
             ${side(a)}</div>
           <div class="cmp">${cmpRow('ЗАЩ', rh.def, ra.def)}${cmpRow('ПЗЩ', rh.mid, ra.mid)}${cmpRow('НАП', rh.att, ra.att)}</div>
@@ -441,7 +472,7 @@
         <div><span class="muted small">Задача на сезон</span><b>${esc(G.expectText())}</b></div></div>`, '', 'shield')}
       ${tile('Расписание', 'fixtures', upcoming.map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${m.comp === 'cup' ? 'Кубок' : m.comp === 'po' ? 'Стыки' : esc(s.leagues[m.comp].short)}</span></div>`;
+        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="ha ${home ? 'home' : ''}">${home ? 'Д' : 'Г'}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted ell comp">${esc(compShort(m.comp))}</span></div>`;
       }).join('') || '<div class="muted">Сезон завершён</div>', 'w2', 'calendar')}
       ${tile(esc(L.short), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       <div class="stack">
@@ -455,6 +486,7 @@
         ${topRt ? `<div class="leader"><span class="li">${icon('medal')}</span><div class="grow"><b data-player="${topRt.id}">${esc(topRt.name)}</b><div class="small muted">Высший средний рейтинг</div></div><b class="big">${(topRt.st.rsum / topRt.st.apps).toFixed(1)}</b></div>` : ''}
         ${!topSc && !topAs && !topRt ? '<div class="muted">Сезон ещё не начался</div>' : ''}`, '', 'chart')}
       ${tile('Кубок России', 'tables:cup', !G.isRussian(u) ? '<div class="muted">Разыгрывается между российскими клубами</div>' : c ? (c.winner ? `<div>Победитель: <b>${esc(T(c.winner).name)}</b></div>` : `<div class="muted">${esc(c.rounds[c.cur].name)} · ${FM.fmtDate(c.rounds[c.cur].date)}</div><div style="margin-top:8px">${inCup ? '<span class="tag" style="color:var(--good)">Команда в борьбе</span>' : '<span class="tag" style="color:var(--bad)">Команда выбыла</span>'}</div>`) : '', '', 'cup')}
+      ${euroTile()}
       ${tile('Финансы', 'finance', `<div class="kvl"><span>Баланс</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>
         <div class="kvl"><span>Зарплаты / нед</span><b>${FM.money(G.wageBill(u))}</b></div><div class="kvl"><span>Спонсоры / нед</span><b>${FM.money(u.sponsor)}</b></div>`, '', 'coin')}
       ${tile('Молодёжь', 'squad', young.map((p) => `<div class="kvl"><span data-player="${p.id}">${esc(p.name)} <span class="muted">${p.age}</span></span>${ovr(p.ovr)}</div>`).join('') || '<div class="muted">Молодых игроков нет</div>', '', 'star')}
@@ -611,7 +643,7 @@
           cls = my > op ? 'W' : my < op ? 'L' : 'D';
           if (m.winner && my === op) cls = m.winner === u.id ? 'W' : 'L';
         }
-        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${m.comp !== 'cup' && m.comp !== 'po' ? ` · ${m.round}` : m.leg ? ` · ${m.leg}-й матч` : ''}</td>
+        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</td>
           <td class="small muted">${m.h === u.id ? 'Д' : 'Г'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
@@ -626,8 +658,10 @@
     const view = UI.tablesView;
     const L = s.leagues[lid];
     let body = '';
+    if (euroOf(view) && !(s.euro && s.euro[view])) UI.tablesView = 'table';
     if (view === 'cup') body = cupView();
     else if (view === 'po') body = playoffView();
+    else if (euroOf(view) && s.euro && s.euro[view]) body = euroView(view);
     else {
       const tab = G.table(lid);
       const z = G.zones(lid);
@@ -647,12 +681,16 @@
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg">${s.order.map((id) => `<button data-lid="${id}" class="${view === 'table' && id === lid ? 'on' : ''}">${esc(s.leagues[id].short)}</button>`).join('')}
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Стыки</button>` : ''}</div></div>${body}`;
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Стыки</button>` : ''}
+      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
     if (rp) rp.onclick = () => { UI.round = Math.max(1, UI.round - 1); render(); };
     if (rn) rn.onclick = () => { UI.round = Math.min(L.rounds.length, UI.round + 1); render(); };
+    const ep = main.querySelector('#ep'), en = main.querySelector('#en');
+    if (ep) ep.onclick = () => { UI.euroMd[view] = Math.max(1, UI.euroMd[view] - 1); render(); };
+    if (en) en.onclick = () => { UI.euroMd[view] = Math.min(8, UI.euroMd[view] + 1); render(); };
   }
 
   function cupView() {
@@ -664,6 +702,29 @@
         return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(h.name)}</span><span class="score">–:–</span><span class="grow">${esc(a.name)}</span></div>`;
       }).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
       ${i === c.rounds.length - 1 && c.winner ? `<div class="note">🏆 ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
+  }
+
+  function euroView(id) {
+    const G = g(), s = G.s, u = G.userTeam();
+    const E = euroOf(id), e = s.euro[id];
+    const tab = G.euroTable(id);
+    const zone = (pos) => (pos <= 4 ? 'up' : pos <= 12 ? 'po' : '');
+    const mdCount = e.md.length;
+    let cur = UI.euroMd && UI.euroMd[id];
+    if (!cur) cur = (e.md.findIndex((md) => md.some((mid) => !s.matches[mid].played)) + 1) || mdCount;
+    UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
+    const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
+    const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
+    const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">🏆 ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
+    return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
+      <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
+        <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
+        ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${zone(r.pos)}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${esc(s.leagues[T(r.id).league].short)}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}
+      </table></div><div class="small muted" style="padding:10px 16px"><span class="zone up"></span>сразу в 1/4 финала &nbsp; <span class="zone po"></span>стыки за 1/4 финала</div></div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card"><div class="row" style="margin:14px 0 8px"><button class="btn sm" id="ep">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[e.md[cur - 1][0]].date)}</b><button class="btn sm" id="en">›</button></div>${e.md[cur - 1].map(line).join('')}</div>
+        ${ko}${fin}
+      </div></div>`;
   }
 
   function playoffView() {
@@ -877,7 +938,7 @@
       const f = s.matches[m.firstLeg];
       extra = `<div class="note">Первый матч: ${esc(T(f.h).name)} ${f.hg}:${f.ag} ${esc(T(f.a).name)}</div>`;
     }
-    const el = modal(`<div class="muted center small">${esc(compName(m.comp))}${m.comp !== 'cup' && m.comp !== 'po' ? `, ${m.round}-й тур` : ''} · ${FM.fmtDateWd(m.date)}</div>
+    const el = modal(`<div class="muted center small">${esc(compName(m.comp))}${roundText(m) ? `, ${esc(roundText(m))}` : ''} · ${FM.fmtDateWd(m.date)}</div>
       <div class="next"><div class="side">${badge(h, 'lg')}<b>${esc(h.name)}</b><span class="small muted">${form(h.form.slice(-5))}</span></div><div class="vs">vs</div>
       <div class="side">${badge(a, 'lg')}<b>${esc(a.name)}</b><span class="small muted">${form(a.form.slice(-5))}</span></div></div>
       ${extra}
@@ -1065,7 +1126,7 @@
         <button class="btn" data-team="${u.id}">Весь состав</button></div>
       <div class="card"><h3>Руководство</h3><div>Задача: <b>${esc(G.expectText())}</b></div><div class="small muted">Ориентир — ${s.board.expect}-е место</div>
         <div class="bar" style="margin:10px 0"><i style="width:${Math.round(s.board.conf)}%"></i></div><div class="small">Доверие: ${Math.round(s.board.conf)}%</div></div>
-      <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? '<span class="good">▲</span>' : x.moved === 'down' ? '<span class="bad">▼</span>' : ''}${x.cup ? ' 🏆' : ''}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
+      <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? '<span class="good">▲</span>' : x.moved === 'down' ? '<span class="bad">▼</span>' : ''}${x.cup ? ' 🏆' : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} 🏆</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
   }
 
   // ================== почта ==================
@@ -1102,7 +1163,9 @@
       <div class="card"><h3>База данных</h3>
         <div class="small" style="margin-bottom:10px">Составы РПЛ собраны по заявкам и составам на матчи лета–осени 2026 года, цены — оценка на уровне Transfermarkt. По ФНЛ и Второй лиге открытых данных мало: недостающих игроков игра генерирует, они помечены «*». В редакторе можно исправить любого игрока или клуба.</div>
         <div class="row"><button class="btn primary" id="editor">Редактор базы</button></div></div>
-      <div class="card"><h3>Игра</h3><div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
+      <div class="card"><h3>Игра</h3>
+        <label class="row small" style="margin-bottom:12px"><input type="checkbox" id="set-ru-euro" ${G.s.settings.ruEuro !== false ? 'checked' : ''}> Российские клубы в еврокубках (со следующего сезона)</label>
+        <div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
     main.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => { if (save(SAVE_SLOT + b.dataset.save)) toast('Сохранено'); render(); });
     main.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.load));
     slotMetas().then((m) => {
@@ -1111,6 +1174,7 @@
     main.querySelector('#exp').onclick = () => download(`ffm26_${G.userTeam().id}_${G.s.date}.json`, JSON.stringify(G.s));
     main.querySelector('#imp').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     main.querySelector('#editor').onclick = () => editor();
+    main.querySelector('#set-ru-euro').onchange = (e) => { G.s.settings.ruEuro = e.target.checked; save(); };
     const ng = main.querySelector('#newgame');
     ng.onclick = () => {
       // подтверждение вторым нажатием: системные диалоги на странице claude.ai не показываются

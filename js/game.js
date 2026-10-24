@@ -12,6 +12,9 @@
     { name: 'Финал', date: '05-22', y: 1 },
   ];
 
+  // туры общего этапа еврокубков (ближайший нужный день недели не раньше этой даты)
+  const EURO_MD = ['09-15', '09-29', '10-20', '11-03', '11-24', '12-08', '01-19', '01-26'];
+
   class Game {
     constructor(state) {
       this.s = state;
@@ -21,12 +24,12 @@
     }
 
     // ================== создание мира ==================
-    static newGame(teamId, manager, db) {
+    static newGame(teamId, manager, db, opts = {}) {
       const s = {
         v: 1, manager, user: teamId, season: 2026, date: '2026-06-25',
         leagues: {}, order: [], teams: {}, players: {}, nextPid: 1, matches: {}, nextMid: 1,
         cup: null, playoff: null, inbox: [], news: [], freeAgents: [], history: [], nextMsg: 1,
-        board: { conf: 60, expect: 8 }, settings: { autoSubs: false }, sacked: false,
+        board: { conf: 60, expect: 8 }, settings: { autoSubs: false, ruEuro: opts.ruEuro !== false }, sacked: false,
         seasonLog: [], records: {},
       };
       const g = new Game(s);
@@ -258,6 +261,7 @@
       }
       this._tables = {};
       this.setupCup();
+      this.setupEuro();
       s.playoff = null;
       s.window = { from: `${y}-06-20`, to: `${y}-09-07`, from2: `${y + 1}-01-20`, to2: `${y + 1}-02-25` };
       for (const id in this.teams) {
@@ -443,6 +447,201 @@
       this.drawCup(next, c.cur);
     }
 
+    // ================== еврокубки ==================
+    // 24 клуба в каждом турнире. Общий этап — 8 туров: корзины по 6 клубов, с каждой корзиной по матчу дома
+    // и в гостях (со своей — тоже). 1–4 места сразу в 1/4 финала, 5–12 играют стыки, 13–24 выбывают.
+    setupEuro() {
+      const s = this.s;
+      s.euro = {};
+      const ranked = {};
+      for (const lid of s.order) {
+        const L = s.leagues[lid];
+        if (L.tier !== 1) continue;
+        const prev = (s.lastTables && s.lastTables[lid] || []).filter((id) => this.teams[id] && this.teams[id].league === lid);
+        const rest = L.teams.filter((id) => !prev.includes(id)).sort((a, b) => this.teams[b].rep - this.teams[a].rep);
+        ranked[this.countryOf(lid)] = prev.concat(rest).filter((id) => !this.teams[id].reserveOf);
+      }
+      const used = {};
+      for (const E of FM.EURO) {
+        const quota = Object.assign({}, E.quota);
+        if (s.settings.ruEuro === false || !ranked.RUS) {
+          const extra = quota.RUS || 0;
+          delete quota.RUS;
+          ['ENG', 'ESP', 'ITA', 'GER', 'FRA'].slice(0, extra).forEach((c) => { quota[c] = (quota[c] || 0) + 1; });
+        }
+        const teams = [];
+        for (const c in quota) {
+          if (!ranked[c]) continue;
+          for (let i = 0; i < quota[c]; i++) {
+            used[c] = used[c] || 0;
+            const id = ranked[c][used[c]++];
+            if (id) teams.push(id);
+          }
+        }
+        if (teams.length !== 24) continue;
+        const e = { id: E.id, teams, md: [], ko: [], final: null, winner: null, phase: 'league' };
+        s.euro[E.id] = e;
+        this.euroLeaguePhase(E, e);
+        for (const id of teams) {
+          this.teams[id].money += E.fee;
+          if (id === s.user) {
+            this.finLog(this.teams[id], `${E.name}: участие`, E.fee);
+            this.msg(E.name, `Команда сыграет в общем этапе турнира «${E.name}». Первый матч — ${FM.fmtDate(this.s.matches[e.md[0].find((mid) => [this.s.matches[mid].h, this.s.matches[mid].a].includes(id))].date)}.`, 'cup');
+          }
+        }
+      }
+    }
+
+    euroDate(E, md) {
+      const y = this.s.season;
+      const [mm] = md.split('-');
+      const year = +mm < 7 ? y + 1 : y;
+      return FM.nextWeekday(`${year}-${md}`, E.day);
+    }
+
+    euroLeaguePhase(E, e) {
+      const s = this.s;
+      const byRep = e.teams.slice().sort((a, b) => this.teams[b].rep - this.teams[a].rep);
+      const pots = [0, 1, 2, 3].map((i) => byRep.slice(i * 6, i * 6 + 6));
+      const met = new Set();
+      const key = (a, b) => (a < b ? a + '|' + b : b + '|' + a);
+      const sameC = (a, b) => this.countryOf(this.teams[a].league) === this.countryOf(this.teams[b].league);
+      const cost = (pairs) => pairs.reduce((c, [a, b]) => c + (met.has(key(a, b)) ? 100 : 0) + (sameC(a, b) ? 1 : 0), 0);
+      const best = (gen) => {
+        let bestPairs = null, bc = Infinity;
+        for (let t = 0; t < 300 && bc > 0; t++) {
+          const pairs = gen();
+          const c = cost(pairs);
+          if (c < bc) { bc = c; bestPairs = pairs; }
+        }
+        bestPairs.forEach(([a, b]) => met.add(key(a, b)));
+        return bestPairs;
+      };
+      const mds = [];
+      for (const pattern of [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]]) {
+        for (const leg of [0, 1]) {
+          const md = [];
+          for (const [i, j] of pattern) {
+            const pairs = best(() => { const B = FM.shuffle(pots[j].slice()); return pots[i].map((a, k) => [a, B[k]]); });
+            for (const [a, b] of pairs) md.push(leg ? [b, a] : [a, b]);
+          }
+          mds.push(md);
+        }
+      }
+      // матчи внутри корзины: цикл из шести клубов делится на два тура, у каждого по матчу дома и в гостях
+      const inner = [[], []];
+      for (const P of pots) {
+        const cyc = [];
+        best(() => { const c = FM.shuffle(P.slice()); cyc.length = 0; cyc.push(...c); return c.map((a, k) => [a, c[(k + 1) % 6]]); });
+        for (let k = 0; k < 6; k++) inner[k % 2].push([cyc[k], cyc[(k + 1) % 6]]);
+      }
+      mds.push(...inner);
+      FM.shuffle(mds);
+      e.md = mds.map((md, i) => md.map(([h, a]) => this.addMatch({ comp: E.id, md: i + 1, label: `общий этап, ${i + 1}-й тур`, date: this.euroDate(E, EURO_MD[i]), h, a })));
+    }
+
+    euroTable(id) {
+      const e = this.s.euro[id];
+      return this.tableFrom(e.teams, e.md.flat());
+    }
+
+    tableFrom(teamIds, mids) {
+      const rows = {};
+      for (const id of teamIds) rows[id] = { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [] };
+      for (const mid of mids) {
+        const m = this.s.matches[mid];
+        if (!m.played) continue;
+        const h = rows[m.h], a = rows[m.a];
+        if (!h || !a) continue;
+        h.p++; a.p++; h.gf += m.hg; h.ga += m.ag; a.gf += m.ag; a.ga += m.hg;
+        if (m.hg > m.ag) { h.w++; a.l++; h.pts += 3; h.form.push('W'); a.form.push('L'); }
+        else if (m.hg < m.ag) { a.w++; h.l++; a.pts += 3; h.form.push('L'); a.form.push('W'); }
+        else { h.d++; a.d++; h.pts++; a.pts++; h.form.push('D'); a.form.push('D'); }
+      }
+      const list = Object.values(rows).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || y.w - x.w || this.teams[y.id].rep - this.teams[x.id].rep);
+      list.forEach((r, i) => { r.pos = i + 1; r.form = r.form.slice(-5); });
+      return list;
+    }
+
+    euroTies(E, name, pairs, d1, d2) {
+      const s = this.s;
+      return pairs.map(([hi, lo]) => {
+        const l1 = this.addMatch({ comp: E.id, label: `${name}, 1-й матч`, date: this.euroDate(E, d1), h: lo, a: hi });
+        const l2 = this.addMatch({ comp: E.id, label: `${name}, ответный матч`, date: this.euroDate(E, d2), h: hi, a: lo, ko: true, firstLeg: l1 });
+        if ([hi, lo].includes(s.user)) {
+          const opp = this.teams[hi === s.user ? lo : hi];
+          this.msg(`${E.name}: ${name}`, `Соперник — «${opp.name}». Матчи ${FM.fmtDate(s.matches[l1].date)} и ${FM.fmtDate(s.matches[l2].date)}.`, 'cup');
+        }
+        return { hi, lo, legs: [l1, l2], winner: null };
+      });
+    }
+
+    euroReward(E, ids, amount, what) {
+      for (const id of ids) {
+        this.teams[id].money += amount;
+        if (id === this.s.user) this.finLog(this.teams[id], `${E.name}: ${what}`, amount);
+      }
+    }
+
+    progressEuro() {
+      const s = this.s;
+      if (!s.euro) return;
+      for (const E of FM.EURO) {
+        const e = s.euro[E.id];
+        if (!e || e.winner) continue;
+        if (e.phase === 'league') {
+          if (!e.md.flat().every((mid) => s.matches[mid].played)) continue;
+          const tab = this.euroTable(E.id);
+          e.direct = tab.slice(0, 4).map((r) => r.id);
+          const po = tab.slice(4, 12).map((r) => r.id);
+          e.ko.push({ name: 'Стыки', ties: this.euroTies(E, 'стыки', [[po[0], po[7]], [po[1], po[6]], [po[2], po[5]], [po[3], po[4]]], '02-16', '02-23') });
+          e.phase = 'ko';
+          this.euroReward(E, e.direct, E.ko[0], 'выход в 1/4 финала');
+          const my = tab.find((r) => r.id === s.user);
+          if (my) this.msg(E.name, my.pos <= 4 ? `Общий этап завершён: ${my.pos}-е место, команда сразу вышла в 1/4 финала!` : my.pos <= 12 ? `Общий этап завершён: ${my.pos}-е место, впереди стыковые матчи.` : `Общий этап завершён: ${my.pos}-е место. Команда выбыла из турнира.`, 'cup');
+          this.news(`${E.name}: завершён общий этап, первое место — «${this.teams[tab[0].id].name}».`);
+          continue;
+        }
+        if (e.final) {
+          const m = s.matches[e.final];
+          if (!m.played) continue;
+          e.winner = m.winner;
+          this.euroReward(E, [e.winner], E.ko[3], 'победа в турнире');
+          this.news(`«${this.teams[e.winner].name}» — победитель турнира «${E.name}»!`);
+          if (e.winner === s.user) {
+            this.msg(`${E.name} наша!`, `Команда выиграла «${E.name}»! Это историческая победа.`, 'board');
+            s.board.conf = Math.min(100, s.board.conf + 30);
+            this.userTeam().rep = Math.min(99, this.userTeam().rep + 3);
+          }
+          continue;
+        }
+        const R = e.ko[e.ko.length - 1];
+        for (const t of R.ties) if (!t.winner && s.matches[t.legs[1]].played) t.winner = s.matches[t.legs[1]].winner;
+        if (!R.ties.every((t) => t.winner)) continue;
+        const winners = R.ties.map((t) => t.winner);
+        for (const t of R.ties) {
+          const loser = t.winner === t.hi ? t.lo : t.hi;
+          if (loser === s.user) this.msg(E.name, `Команда выбыла из турнира «${E.name}» (${R.name}).`, 'cup');
+        }
+        if (R.name === 'Стыки') {
+          // посев: 1-е место против победителя пары 8–9, 2-е — 7–10, 3-е — 6–11, 4-е — 5–12
+          this.euroReward(E, winners, E.ko[0], 'выход в 1/4 финала');
+          const pairs = e.direct.map((id, k) => [id, winners[3 - k]]);
+          e.ko.push({ name: '1/4 финала', ties: this.euroTies(E, '1/4 финала', pairs, '04-06', '04-13') });
+        } else if (R.name === '1/4 финала') {
+          this.euroReward(E, winners, E.ko[1], 'выход в 1/2 финала');
+          const w = FM.shuffle(winners.slice());
+          e.ko.push({ name: '1/2 финала', ties: this.euroTies(E, '1/2 финала', [[w[0], w[1]], [w[2], w[3]]], '04-27', '05-04') });
+        } else {
+          this.euroReward(E, winners, E.ko[2], 'выход в финал');
+          const [a, b] = FM.shuffle(winners.slice());
+          e.final = this.addMatch({ comp: E.id, label: 'финал', date: `${s.season + 1}-${E.final}`, h: a, a: b, ko: true, neutral: true });
+          if ([a, b].includes(s.user)) this.msg(`Финал: ${E.name}`, `Команда сыграет в финале против «${this.teams[a === s.user ? b : a].name}», ${FM.fmtDate(s.matches[e.final].date)}.`, 'board');
+          this.news(`Финал турнира «${E.name}»: «${this.teams[a].name}» — «${this.teams[b].name}».`);
+        }
+      }
+    }
+
     // ================== стыковые матчи и конец сезона ==================
     leagueFinished(lid) {
       return this.s.leagues[lid].rounds.every((r) => r.every((id) => this.s.matches[id].played));
@@ -492,7 +691,10 @@
     endSeason() {
       const s = this.s;
       const y = s.season;
-      const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [] };
+      const summary = { year: y, tables: {}, cup: s.cup && s.cup.winner, userPos: null, userLeague: null, moves: [], euro: {} };
+      for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) summary.euro[E.id] = s.euro[E.id].winner;
+      s.lastTables = {};
+      for (const lid of s.order) s.lastTables[lid] = this.table(lid).map((r) => r.id);
       const moves = []; // [teamId, newLeague]
 
       // итоговые таблицы, призовые, репутация
@@ -553,7 +755,8 @@
       else { s.board.conf -= (pos - exp) * 5; verdict = `Команда финишировала ниже ожиданий (${exp}-е место).`; }
       if (pos < exp - 1) u.rep = Math.min(99, u.rep + 1);
       if (pos > exp + 3) u.rep = Math.max(35, u.rep - 1);
-      s.history.unshift({ year: y, league: summary.userLeague, pos, team: u.id, cup: s.cup && s.cup.winner === u.id, moved: moved ? (moved.up ? 'up' : 'down') : null });
+      s.history.unshift({ year: y, league: summary.userLeague, pos, team: u.id, cup: s.cup && s.cup.winner === u.id, moved: moved ? (moved.up ? 'up' : 'down') : null,
+        euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) });
       this.msg(`Итоги сезона ${y}/${String(y + 1).slice(2)}`, `«${u.name}» занимает ${pos}-е место (${s.leagues[summary.userLeague].name}). ${verdict}`, 'board');
 
       // предложения о работе после удачного сезона
@@ -722,6 +925,8 @@
       m.goals = sim.goalsList;
       m.stats = ['shots', 'sot', 'corners', 'yc', 'rc', 'poss'].reduce((o, k) => { o[k] = [sim.home.stats[k], sim.away.stats[k]]; return o; }, {});
       m.stats.xg = [Math.round(sim.home.stats.xg * 100) / 100, Math.round(sim.away.stats.xg * 100) / 100];
+      const isLeague = !!s.leagues[m.comp];
+      const euro = FM.EURO.find((E) => E.id === m.comp);
       if (m.ko || m.comp === 'cup') m.winner = sim.winner();
       if (m.comp === 'cup' && !m.winner) m.winner = m.hg >= m.ag ? m.h : m.a;
       const ratings = {};
@@ -733,7 +938,7 @@
           if (!p) continue;
           const r = side.rating[pid];
           ratings[pid] = r;
-          const st = m.comp === 'cup' || m.comp === 'po' ? p.cst : p.st;
+          const st = isLeague ? p.st : p.cst;
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;
@@ -742,8 +947,8 @@
         }
         for (const pid in side.yellows) {
           const p = this.players[pid];
-          (m.comp === 'cup' || m.comp === 'po' ? p.cst : p.st).yc++;
-          if (side.yellows[pid] < 2 && m.comp !== 'cup') {
+          (isLeague ? p.st : p.cst).yc++;
+          if (side.yellows[pid] < 2 && isLeague) {
             p.ycAcc++;
             if (p.ycAcc % 4 === 0) {
               p.sus++;
@@ -753,7 +958,7 @@
         }
         for (const pid of side.redCards || []) {
           const p = this.players[pid];
-          (m.comp === 'cup' || m.comp === 'po' ? p.cst : p.st).rc++;
+          (isLeague ? p.st : p.cst).rc++;
           p.sus += side.yellows[pid] >= 2 ? 1 : FM.ri(2, 3);
           if (t.id === s.user) this.msg('Удаление', `${p.name} дисквалифицирован на ${p.sus} матч(а).`, 'squad');
         }
@@ -771,7 +976,7 @@
         t.form.push(res > 0 ? 'W' : res < 0 ? 'L' : 'D');
         if (t.form.length > 10) t.form.shift();
       }
-      const key = m.comp === 'cup' || m.comp === 'po' ? 'cst' : 'st';
+      const key = isLeague ? 'st' : 'cst';
       for (const g of sim.goalsList) {
         const p = this.players[g.scorer];
         if (p) p[key].g++;
@@ -787,12 +992,17 @@
       const home = this.teams[m.h];
       if (!m.neutral) {
         const away = this.teams[m.a];
-        const fill = FM.clamp(0.12 + home.rep / 160 + (away.rep - 60) / 250 + (m.comp === 'cup' ? 0.05 : 0) + FM.gauss(0, 0.05), 0.08, 0.98);
+        const fill = FM.clamp(0.12 + home.rep / 160 + (away.rep - 60) / 250 + (m.comp === 'cup' ? 0.05 : euro ? 0.15 : 0) + FM.gauss(0, 0.05), 0.08, 0.98);
         m.att = Math.round(home.cap * fill);
-        const price = (s.leagues[home.league].ticket || 2) * (m.comp === 'po' ? 1.5 : 1);
+        const price = (s.leagues[home.league].ticket || 2) * (m.comp === 'po' ? 1.5 : euro ? 2 : 1);
         const inc = Math.round((m.att * price) / 100) / 10;
         home.money += inc;
         if (home.id === s.user) this.finLog(home, 'Билеты', inc);
+      }
+      if (euro && m.md) {
+        // премия за результат в общем этапе
+        if (m.hg !== m.ag) this.euroReward(euro, [m.hg > m.ag ? m.h : m.a], euro.win, 'победа в общем этапе');
+        else this.euroReward(euro, [m.h, m.a], euro.draw, 'ничья в общем этапе');
       }
       if (m.comp === 'cup') {
         for (const id of [m.h, m.a]) {
@@ -807,7 +1017,7 @@
         const opp = this.teams[m.h === s.user ? m.a : m.h];
         const repDiff = (opp.rep - this.userTeam().rep) / 10;
         let d = my > op ? 2 + Math.max(0, repDiff) : my < op ? -2.5 + Math.max(0, repDiff) * 0.8 : 0.3 * repDiff;
-        if (m.comp === 'cup') d *= 0.6;
+        if (!isLeague) d *= 0.6;
         s.board.conf = FM.clamp(s.board.conf + d, 0, 100);
       }
 
@@ -829,6 +1039,7 @@
     simulateToday() {
       for (const m of this.todayMatches()) this.playMatch(m);
       this.progressCup();
+      this.progressEuro();
       this.setupPlayoff();
     }
 
