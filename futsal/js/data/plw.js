@@ -149,7 +149,7 @@ FM.addLeague({
 Александр Фурцев|FW|18|0|RUS|42
 Максим Родин|FW|31|0|RUS|36` },
 
-    { id: 'start_alumika', name: 'Старт Алюмика', city: '—', stadium: '—', cap: 300, colors: ['#c9a24b', '#1d1d1b'], rep: 40, money: 15, players: `
+    { id: 'start_alumika', name: 'Старт Алюмика', city: 'Нижний Новгород', stadium: '—', cap: 300, colors: ['#c9a24b', '#1d1d1b'], rep: 40, money: 15, players: `
 Кирилл Новожилов|GK|22|0|RUS|50
 Степан Борисов|GK|18|0|RUS|50
 Егор Ситчихин|GK|26|0|RUS|41
