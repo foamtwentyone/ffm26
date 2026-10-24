@@ -506,25 +506,28 @@
       const order = (s) => s.onPitch.slice().sort((a, b) => b.p.ovr * ((SHOOT_W[b.slot] || 0.3) + 1) - a.p.ovr * ((SHOOT_W[a.slot] || 0.3) + 1)).map((o) => o.p);
       const H = order(this.home), A = order(this.away);
       const res = { h: 0, a: 0, kicks: [] };
+      // каждый удар — отдельное событие с текущим счётом серии: в живом матче они показываются по очереди
       const kick = (side, shooters, i, opp) => {
         const p = shooters[i % shooters.length];
         const gk = opp.gkPlayer();
         const ok = Math.random() < FM.clamp(0.72 + (p.ovr - gk.ovr) / 250, 0.58, 0.86);
+        if (ok) res[side]++;
         res.kicks.push({ side, pid: p.id, ok });
+        const how = ok ? 'гол' : Math.random() < 0.6 ? `${gk.name} отбивает` : 'мимо';
+        this.log('pk', `${p.name} — ${how}! ${res.h}:${res.a}`, side === 'h' ? this.home : this.away, { min: '6-м', pk: { ok, h: res.h, a: res.a } });
         return ok;
       };
       this.log('pens', 'Серия 6-метровых ударов!');
       for (let i = 0; i < 5; i++) {
-        if (kick('h', H, i, this.away)) res.h++;
+        kick('h', H, i, this.away);
         if (res.h > res.a + (5 - i) || res.a > res.h + (5 - i)) break;
-        if (kick('a', A, i, this.home)) res.a++;
+        kick('a', A, i, this.home);
         if (res.h > res.a + (4 - i) || res.a > res.h + (4 - i)) break;
       }
       let i = 5;
       while (res.h === res.a) {
-        const hk = kick('h', H, i, this.away), ak = kick('a', A, i, this.home);
-        if (hk) res.h++;
-        if (ak) res.a++;
+        kick('h', H, i, this.away);
+        kick('a', A, i, this.home);
         i++;
       }
       this.pens = res;

@@ -1265,7 +1265,7 @@
   }
 
   // ================== живой матч ==================
-  const ICONS = { goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', info: '' };
+  const ICONS = { goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', pk: '🥅', info: '' };
 
   function liveMatch(m) {
     const G = g();
@@ -1282,6 +1282,7 @@
       <div class="board"><div class="tm">${badge(h, 'lg')}<b>${esc(h.name)}</b><div class="scorers" id="sh"></div></div>
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
+      <div class="pkrow hidden" id="pk"><div id="pkh"></div><div class="muted small">6-метровые</div><div id="pka"></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -1291,10 +1292,16 @@
       <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary hidden" id="done">Завершить</button></div></div>`;
     const $ = (q) => root.querySelector(q);
     const feed = [];
+    // серия 6-метровых показывается по одному удару: queue — ещё не показанные события, pk — показанные удары
+    let queue = [], pk = null;
+    const pkDelays = { 1: 1500, 2: 1000, 4: 550 };
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
-      $('#mn').textContent = sim.done ? (sim.pens ? `6-м. ${sim.pens.h}:${sim.pens.a}` : 'Конец') : `${sim.minuteLabel()}'`;
-      $('#mn').classList.toggle('live', !sim.done);
+      const last = pk && pk.kicks[pk.kicks.length - 1];
+      $('#mn').textContent = pk ? `6-м. ${last ? `${last.h}:${last.a}` : '0:0'}` : sim.done ? 'Конец' : `${sim.minuteLabel()}'`;
+      $('#mn').classList.toggle('live', !sim.done || queue.length > 0);
+      $('#pk').classList.toggle('hidden', !pk);
+      if (pk) for (const sd of ['h', 'a']) $(`#pk${sd}`).innerHTML = pk.kicks.map((k, i) => k.side === sd ? `<i class="${k.ok ? 'ok' : 'no'}${i === pk.kicks.length - 1 ? ' new' : ''}"></i>` : '').join('');
       const total = sim.phase === 'et' ? 4 * FM.HALF / 2 + 10 : 2 * FM.HALF;
       const cur = Math.min(sim.minute, total);
       $('#pg').style.width = `${sim.done ? 100 : (cur / total) * 100}%`;
@@ -1316,9 +1323,25 @@
       }
     };
     const stop = () => { if (timer) clearInterval(timer); timer = null; };
+    // события матча в ленту; с началом серии 6-метровых удары откладываются в очередь
+    const take = (evs) => {
+      const i = evs.findIndex((e) => e.type === 'pens');
+      if (i < 0) return feed.push(...evs);
+      feed.push(...evs.slice(0, i + 1));
+      queue = evs.slice(i + 1);
+      pk = { kicks: [] };
+    };
+    const reveal = () => {
+      const e = queue.shift();
+      feed.push(e);
+      if (e.pk) pk.kicks.push({ side: e.side, ...e.pk });
+      if (!queue.length) { stop(); finish(); }
+      draw();
+    };
     const tick = () => {
-      const evs = sim.step();
-      feed.push(...evs);
+      if (queue.length) return reveal();
+      take(sim.step());
+      if (queue.length) { setSpeed(speed || 1); draw(); return; }
       if (sim.done) { stop(); finish(); }
       else if (sim.halfTime || sim.needUserSub) {
         setSpeed(0);
@@ -1329,7 +1352,7 @@
     const setSpeed = (v) => {
       speed = v;
       stop();
-      if (v > 0 && !sim.done) timer = setInterval(tick, delays[v]);
+      if (v > 0 && (!sim.done || queue.length)) timer = setInterval(tick, (queue.length ? pkDelays : delays)[v]);
       root.querySelectorAll('#spd button').forEach((b) => b.classList.toggle('on', +b.dataset.s === v));
     };
     const finish = () => {
@@ -1381,8 +1404,13 @@
     $('#mng').onclick = openMgr;
     $('#fin').onclick = () => {
       stop();
+      if (queue.length) {
+        // уже идёт серия — «До конца» показывает её целиком
+        while (queue.length) reveal();
+        return;
+      }
       while (!sim.done) {
-        feed.push(...sim.step());
+        take(sim.step());
         if (sim.needUserSub) {
           // без участия тренера травмированного меняет ассистент
           const sd = sim.userSide, o = sd.onPitch.find((x) => x.p.id === sim.needUserSub);
@@ -1390,6 +1418,8 @@
           if (sub) sim.doSub(sd, o.p, sub); else sim.needUserSub = null;
         }
       }
+      // до серии 6-метровых доматываем быстро, а сами удары — по одному
+      if (queue.length) { $('#fin').disabled = true; setSpeed(speed || 1); draw(); return; }
       finish();
       draw();
     };
