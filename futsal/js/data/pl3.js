@@ -164,7 +164,7 @@ FM.addLeague({
 Азамат Якупов|FW|22|0|RUS|44
 Павел Селиверстов|FW|24|0|RUS|44` },
 
-    { id: 'liga', name: 'Лига', city: '—', stadium: '—', cap: 300, colors: ['#f5e400', '#1d1d1b'], rep: 36, money: 15, players: `
+    { id: 'liga', name: 'Лига', city: 'Нефтекамск', stadium: '—', cap: 300, colors: ['#f5e400', '#1d1d1b'], rep: 36, money: 15, players: `
 Альмир Хузиахметов|GK|30|0|RUS|46
 Даниил Охотников|GK|19|0|RUS|45
 Ильнур Латыпов|DF|33|0|RUS|45
@@ -193,7 +193,7 @@ FM.addLeague({
 Даниил Шубин|GK|22|0|RUS|46
 Андрей Вилесов|UN|31|0|RUS|44` },
 
-    { id: 'sber', name: 'СБЕР', city: '—', stadium: '—', cap: 300, colors: ['#21a038', '#ffffff'], rep: 37, money: 15, players: `
+    { id: 'sber', name: 'СБЕР', city: 'Курган', stadium: '—', cap: 300, colors: ['#21a038', '#ffffff'], rep: 37, money: 15, players: `
 Олег Герингер|GK|44|0|RUS|39
 Алексей Собольков|DF|23|0|RUS|46
 Максим Герман|UN|20|0|RUS|45
