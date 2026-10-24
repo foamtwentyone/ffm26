@@ -1,4 +1,4 @@
-// Первая лига 2026/27, зона «Москва — Центр». Любительские клубы; заявки — из Кубка России 2026/27 или 2025/26 (futsal.rfs.ru).
+// Первая лига 2026/27, зона «Москва — Центр». Любительские клубы; заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru).
 // Два круга в зоне; 3 лучших команды зоны играют во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.
 FM.addLeague({
   id: 'pl1', name: 'Первая лига «Москва — Центр»', short: 'ПЛ-1', tier: 3, conf: 'W', finalQuota: 3, weekday: 0,
@@ -33,7 +33,7 @@ FM.addLeague({
 Педро Кайо|UN|27|0|RUS|36
 Владислав Крицын|FW|20|0|RUS|39` },
 
-    { id: 'svok', name: 'СВОК', city: 'Чехов', stadium: '—', cap: 300, colors: ['#0057b8', '#ffffff'], rep: 39, money: 15, players: `
+    { id: 'svok', name: 'СВОК', city: 'Чехов', stadium: '—', cap: 300, colors: ['#1d5fa8', '#ffffff'], rep: 39, money: 15, players: `
 Александр Кучаев|GK|32|0|RUS|49
 Дмитрий Файзулин|GK|35|0|RUS|47
 Сергей Бурцев|GK|42|0|RUS|35
@@ -57,7 +57,7 @@ FM.addLeague({
 Дмитрий Бондарев|UN|18|0|RUS|36
 Павел Рубцов|UN|40|0|RUS|35` },
 
-    { id: 'alar', name: 'Алар', city: 'Москва', stadium: '—', cap: 300, colors: ['#c8102e', '#ffffff'], rep: 38, money: 15, players: `
+    { id: 'alar', name: 'Алар', city: 'Москва', stadium: '—', cap: 300, colors: ['#1d1d1b', '#c9a24b'], rep: 38, money: 15, players: `
 Максим Гвинджилия|GK|31|0|RUS|48
 Игорь Вергильев|GK|34|0|RUS|36
 Филипп Демидов|UN|33|0|RUS|49
@@ -79,7 +79,7 @@ FM.addLeague({
 Аслиддин Халматов|UN|20|0|RUS|37
 Дмитрий Цырдя|UN|24|0|RUS|37` },
 
-    { id: 'squadra', name: 'Сквадра', city: 'Москва', stadium: '—', cap: 300, colors: ['#1d1d1b', '#f5c400'], rep: 38, money: 15, players: `
+    { id: 'squadra', name: 'Сквадра', city: 'Москва', stadium: '—', cap: 300, colors: ['#e8a0b4', '#1d1d1b'], rep: 38, money: 15, players: `
 Николай Лапаев|GK|22|0|RUS|48
 Михаил Нужнов|GK|25|0|RUS|48
 Глеб Болдовский|GK|28|0|RUS|37
@@ -104,7 +104,7 @@ FM.addLeague({
 Никита Гуржий|FW|24|0|RUS|44
 Федор Шевченко|FW|23|0|RUS|40` },
 
-    { id: 'hpss', name: 'ХПСС', city: 'Москва', stadium: '—', cap: 300, colors: ['#1d2a5b', '#ffffff'], rep: 36, money: 15, players: `
+    { id: 'hpss', name: 'ХПСС', city: 'Москва', stadium: '—', cap: 300, colors: ['#1d1d1b', '#e30613'], rep: 36, money: 15, players: `
 Игорь Духан|GK|38|0|RUS|35
 Ярослав Гудков|DF|44|0|RUS|35
 Данила Каюмов|DF|35|0|RUS|35
@@ -130,7 +130,7 @@ FM.addLeague({
 Михаил Тимохин|UN|42|0|RUS|35
 Дмитрий Харченко|UN|42|0|RUS|35` },
 
-    { id: 'finish', name: 'Финиш', city: 'Москва', stadium: '—', cap: 300, colors: ['#e30613', '#1d1d1b'], rep: 37, money: 15, players: `
+    { id: 'finish', name: 'Финиш', city: 'Москва', stadium: '—', cap: 300, colors: ['#1f6fd1', '#ffffff'], rep: 37, money: 15, players: `
 Даниил Петросов|GK|18|0|RUS|44
 Никита Зырянов|GK|32|0|RUS|43
 Александр Хомяков|GK|35|0|RUS|35

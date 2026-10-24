@@ -1,4 +1,4 @@
-# Эмблемы клубов: скачивает картинки из заявок РФС (st.joinsport.io, ссылки собирает scrape.py)
+# Эмблемы клубов: скачивает картинки из заявок РФС (st.joinsport.io, ссылки собирает scrape.py) и mosff.ru (mosff.py)
 # и упаковывает их в js/data/logos.js — WebP 96px в base64, чтобы страница грузилась одним файлом.
 # Запуск после scrape.py и build.py: python3 tools/logos.py
 import base64, io, json, os, re, subprocess, sys, time
@@ -16,6 +16,8 @@ for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4'):
         ids[m.group(2)] = m.group(1)
 
 teams = json.load(open(CACHE + '/teams.json', encoding='utf8'))
+# московская зона Первой лиги — эмблемы с mosff.ru (hb.bizmrg.com)
+if os.path.exists(CACHE + '/mosff.json'): teams += json.load(open(CACHE + '/mosff.json', encoding='utf8'))
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']), t.get('logo')
