@@ -151,7 +151,15 @@
     isRussian(team) { return this.countryOf(team.league) === 'RUS'; }
     userTeam() { return this.teams[this.s.user]; }
     squad(team) { return team.players.map((id) => this.players[id]); }
-    wageBill(team) { return this.squad(team).reduce((a, p) => a + p.wage, 0); }
+    // Арендованный игрок: часть зарплаты (loan.wagePct) платит взявший клуб, остальное — владелец.
+    wageBill(team) {
+      let w = this.squad(team).reduce((a, p) => a + (p.loan ? p.wage * p.loan.wagePct / 100 : p.wage), 0);
+      for (const pid of this.s.loans || []) {
+        const p = this.players[pid];
+        if (p && p.loan && p.loan.from === team.id) w += p.wage * (100 - p.loan.wagePct) / 100;
+      }
+      return w;
+    }
     squadValue(team) { return this.squad(team).reduce((a, p) => a + p.value, 0); }
     isAvailable(p) { return !p.inj && !p.sus; }
 
@@ -800,6 +808,7 @@
         p.pot = Math.max(p.pot, p.ovr);
         this.revalue(p);
       }
+      this.returnLoans();
       for (const tid in this.teams) {
         const t = this.teams[tid];
         for (const pid of t.players.slice()) {
@@ -1151,10 +1160,121 @@
       return 'day';
     }
 
+    // ================== аренда ==================
+    // p.club — клуб, где игрок сейчас играет; p.loan = { from: владелец, wagePct: доля зарплаты арендатора,
+    // fee: плата за аренду, buy: цена опции выкупа или 0 }. Все аренды — до конца сезона.
+    loanMove(p, to, terms) {
+      const from = this.teams[p.club];
+      this.removeFromTeam(p);
+      p.club = to.id;
+      to.players.push(p.id);
+      p.loan = Object.assign({ from: from.id, start: this.s.date }, terms);
+      p.listed = false;
+      p.train = null;
+      this.s.loans = (this.s.loans || []).concat(p.id);
+      if (terms.fee) {
+        to.money -= terms.fee; from.money += terms.fee;
+        if (to.id === this.s.user) this.finLog(to, `Аренда: ${p.name}`, -terms.fee);
+        if (from.id === this.s.user) this.finLog(from, `Аренда: ${p.name}`, terms.fee);
+      }
+      this.news(`${p.name} отправляется в аренду: «${from.name}» → «${to.name}» до конца сезона.`);
+    }
+
+    // Что клуб-владелец хочет за аренду своего игрока
+    loanAsk(p) {
+      const rank = this.squadRank(p);
+      const owner = this.teams[p.club];
+      const key = rank <= 11 && !p.listed;
+      return {
+        refuse: key && !(p.age <= 21 && rank > 6) ? `«${owner.name}» не отдаёт в аренду игроков основы.` : null,
+        minPct: rank > 16 || p.listed ? 50 : rank > 12 ? 75 : 100,
+        fee: FM.roundValue(p.value * (key ? 0.12 : rank > 16 ? 0.03 : 0.06)),
+        buyMin: FM.roundValue(p.value * 1.15),
+      };
+    }
+
+    loanIn(pid, t) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      if (!p || !p.club || p.club === u.id) return { ok: false, text: 'Этого игрока нельзя взять в аренду.' };
+      if (p.loan) return { ok: false, text: `${p.name} уже играет в аренде.` };
+      if (p.pre) return { ok: false, text: `${p.name} уже подписал предварительный контракт.` };
+      if (!this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто — арендовать можно только в окно.' };
+      if (u.players.length >= MAX_SQUAD) return { ok: false, text: `В заявке уже ${MAX_SQUAD} игроков.` };
+      if (this.teams[p.club].players.length <= 18) return { ok: false, text: `«${this.teams[p.club].name}» не готов сокращать короткий состав.` };
+      if ((t.fee || 0) > u.money) return { ok: false, text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
+      const a = this.loanAsk(p);
+      if (a.refuse) return { ok: false, text: a.refuse };
+      if (t.wagePct < a.minPct) return { ok: false, text: `Клуб хочет, чтобы вы платили не меньше ${a.minPct}% зарплаты игрока.` };
+      const need = Math.round(a.fee * (t.buy ? 0.7 : 1) * (t.wagePct > a.minPct ? 0.7 : 1));
+      if ((t.fee || 0) < need) return { ok: false, text: `Клуб просит за аренду не меньше ${FM.money(need)}.` };
+      if (t.buy && t.buy < a.buyMin) return { ok: false, text: `Опция выкупа слишком дешёвая: клуб согласен от ${FM.money(a.buyMin)}.` };
+      const it = this.playerInterest(p, u);
+      if (it.score < 30 && !it.starter) return { ok: false, text: `${p.name} не хочет переходить в ваш клуб даже в аренду.` };
+      this.loanMove(p, u, { wagePct: t.wagePct, fee: t.fee || 0, buy: t.buy || 0 });
+      this.msg('Аренда', `${p.name} будет играть за «${u.name}» до конца сезона. Вы платите ${t.wagePct}% зарплаты (${FM.money(p.wage * t.wagePct / 100)}/нед)${t.buy ? `, опция выкупа — ${FM.money(t.buy)}` : ''}.`, 'transfer');
+      return { ok: true, text: `${p.name} — ваш игрок до конца сезона!` };
+    }
+
+    // Клубы, готовые взять игрока пользователя в аренду: те, где он будет играть
+    loanOffers(pid) {
+      const p = this.players[pid], u = this.userTeam();
+      const out = [];
+      for (const t of Object.values(this.teams)) {
+        if (t.id === u.id || t.reserveOf || t.players.length >= MAX_SQUAD - 1 || t.rep > u.rep + 4 || t.rep < u.rep - 30) continue;
+        const better = this.squad(t).filter((x) => FM.GROUP[x.pos] === FM.GROUP[p.pos] && x.ovr >= p.ovr).length;
+        if (better >= { G: 1, D: 3, M: 3, F: 2 }[FM.GROUP[p.pos]]) continue;
+        out.push(t);
+      }
+      return FM.shuffle(out).slice(0, 4).sort((a, b) => b.rep - a.rep).map((t) => {
+        const wagePct = t.money > p.wage * 60 ? 100 : t.money > p.wage * 30 ? 75 : 50;
+        return { club: t.id, wagePct, fee: FM.roundValue(p.value * (wagePct === 100 ? 0.04 : 0.02)) };
+      });
+    }
+
+    loanOut(pid, offer) {
+      const p = this.players[pid], t = this.teams[offer.club];
+      if (!this.inWindow()) return 'Трансферное окно закрыто.';
+      if (p.loan) return 'Игрок уже в аренде.';
+      this.loanMove(p, t, { wagePct: offer.wagePct, fee: Math.min(offer.fee, t.money), buy: 0 });
+      return `${p.name} уходит в аренду в «${t.name}» до конца сезона.`;
+    }
+
+    // выкуп арендованного игрока по опции
+    loanBuy(pid) {
+      const p = this.players[pid], u = this.userTeam();
+      if (!p.loan || p.club !== u.id || !p.loan.buy) return 'Опции выкупа нет.';
+      if (u.money < p.loan.buy) return `Не хватает денег: нужно ${FM.money(p.loan.buy)}.`;
+      const from = this.teams[p.loan.from], price = p.loan.buy, wage = p.wage;
+      // вернуть игрока владельцу и сразу оформить трансфер
+      this.removeFromTeam(p);
+      p.club = from.id; from.players.push(p.id);
+      this.s.loans = (this.s.loans || []).filter((x) => x !== p.id);
+      p.loan = null;
+      this.transfer(p, u, price, wage, Math.max(2, p.contract - this.s.season));
+      return `${p.name} выкуплен у «${from.name}» за ${FM.money(price)}.`;
+    }
+
+    returnLoans() {
+      const s = this.s;
+      for (const pid of s.loans || []) {
+        const p = this.players[pid];
+        if (!p || !p.loan) continue;
+        const owner = this.teams[p.loan.from];
+        const was = this.teams[p.club];
+        this.removeFromTeam(p);
+        p.club = owner.id;
+        owner.players.push(p.id);
+        if (owner.id === s.user) this.msg('Возвращение из аренды', `${p.name} вернулся из аренды в «${was.name}».`, 'squad');
+        if (was && was.id === s.user) this.msg('Аренда закончилась', `${p.name} вернулся в «${owner.name}».`, 'squad');
+        p.loan = null;
+      }
+      s.loans = [];
+    }
+
     // ================== переучивание на другую позицию ==================
     retrain(pid, to) {
       const p = this.players[pid];
-      if (!p || p.club !== this.s.user) return 'Переучивать можно только своих игроков.';
+      if (!p || p.club !== this.s.user || p.loan) return 'Переучивать можно только своих игроков (не арендованных).';
       if (to === p.pos || (p.alt || []).includes(to)) return 'Игрок уже умеет играть на этой позиции.';
       if ((to === 'GK') !== (p.pos === 'GK')) return 'Полевого игрока нельзя переучить во вратаря и наоборот.';
       p.train = { to, from: FM.pfit(p, to), done: 0, need: FM.retrainWeeks(p, to) };
@@ -1300,7 +1420,7 @@
 
     canPrecontract(p) {
       const s = this.s;
-      return !!p.club && p.club !== s.user && p.contract <= s.season && s.date >= `${s.season + 1}-01-01` && !p.pre;
+      return !!p.club && p.club !== s.user && p.contract <= s.season && s.date >= `${s.season + 1}-01-01` && !p.pre && !p.loan;
     }
 
     // Состояние переговоров по игроку: начинаются с клуба, потом — с игроком и его агентом.
@@ -1341,6 +1461,7 @@
       const blocked = this.negoBlocked(n);
       if (blocked) return { status: 'blocked', text: blocked };
       if (n.stage !== 'club') return { status: 'blocked', text: 'С клубом уже есть договорённость.' };
+      if (p.loan) return { status: 'blocked', text: `${p.name} сейчас в аренде — купить его можно после её окончания.` };
       if (!this.inWindow()) return { status: 'blocked', text: 'Трансферное окно закрыто. Покупать игроков можно летом (до 7 сентября) и зимой (20 января — 25 февраля).' };
       if (u.players.length >= MAX_SQUAD) return { status: 'blocked', text: `В заявке уже ${MAX_SQUAD} игроков. Сначала кого-нибудь продайте или отпустите.` };
       if ((inst ? fee * 0.4 : fee) > u.money) return { status: 'blocked', text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
@@ -1526,6 +1647,7 @@
       p.release = opts.release || 0;
       p.pre = null;
       p.train = null;
+      if (p.loan) { s.loans = (s.loans || []).filter((x) => x !== p.id); p.loan = null; }
       p.club = to.id;
       to.players.push(p.id);
       p.wage = wage || this.wageDemand(p, to);
@@ -1578,7 +1700,7 @@
       // предложения за игроков пользователя
       for (const pid of u.players) {
         const p = this.players[pid];
-        if (s.inbox.some((x) => x.type === 'offer' && x.data && x.data.pid === pid && !x.data.closed)) continue;
+        if (p.loan || s.inbox.some((x) => x.type === 'offer' && x.data && x.data.pid === pid && !x.data.closed)) continue;
         const rank = this.squadRank(p);
         let pr = 0.0018 * Math.pow(p.ovr / 65, 4) * (rank <= 5 ? 1.4 : 1);
         if (p.listed) pr = 0.06;
@@ -1641,7 +1763,7 @@
         if (t.rep > buyer.rep + 3) continue;
         for (const pid of t.players) {
           const p = this.players[pid];
-          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre) continue;
+          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre || p.loan) continue;
           const fee = this.askingPrice(p);
           if (fee > budget) continue;
           cands.push([p, fee]);
