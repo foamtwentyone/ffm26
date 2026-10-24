@@ -397,7 +397,7 @@
       } else if (L.tier === 2) {
         for (let i = 1; i <= 8 && i <= n; i++) z[i] = 'up';
         if (this.thirdLeagues().some((id) => this.s.leagues[id].conf === L.conf)) z[n] = 'down';
-      } else z[1] = 'up';
+      } else { z[1] = 'up'; z[2] = 'up'; }
       return z;
     }
 
@@ -745,6 +745,33 @@
         this.addRound(B, '1/8 финала', 3, pairs);
         this.news('Высшая лига: регулярный чемпионат завершён, начинается плей-офф.');
       }
+      // Первая лига: Всероссийский финал — по две лучшие команды каждой зоны, все матчи в один день каждый,
+      // на нейтральной площадке: 1/4 финала, 1/2 финала и финал
+      const third = this.thirdLeagues();
+      if (third.length && !s.playoff.pl && third.every((lid) => this.leagueFinished(lid))) {
+        const zones = third.map((lid) => this.table(lid).filter((r) => this.eligibleUp(r.id)).slice(0, 2).map((r) => r.id));
+        const all = zones.flat().sort((a, b) => this.ppg(b) - this.ppg(a));
+        const B = { lid: 'pl', name: 'Первая лига · Всероссийский финал', seed: all, rounds: [], winner: null, start: FM.addDays(this.lastDate(third), 1), gap: 1, neutral: true };
+        s.playoff.pl = B;
+        // победитель зоны играет со вторым местом другой зоны; при нечётном числе зон — по посеву
+        let pairs;
+        if (zones.length === 4 && zones.every((z) => z.length === 2)) {
+          const [a, b, c, d] = zones;
+          pairs = [[a[0], c[1]], [b[0], d[1]], [c[0], a[1]], [d[0], b[1]]];
+        } else {
+          const n = all.length >= 8 ? 8 : all.length >= 4 ? 4 : 2;
+          pairs = [];
+          for (let i = 0; i < n / 2; i++) pairs.push([all[i], all[n - 1 - i]]);
+        }
+        this.addRound(B, pairs.length === 4 ? '1/4 финала' : pairs.length === 2 ? '1/2 финала' : 'Финал', 1, pairs);
+        this.news('Первая лига: зональные турниры завершены, начинается Всероссийский финал.');
+      }
+    }
+
+    // очки за матч в своей лиге — для посева в финальных турнирах
+    ppg(id) {
+      const r = this.table(this.teams[id].league).find((x) => x.id === id);
+      return r && r.p ? r.pts / r.p : 0;
     }
 
     lastDate(lids) {
@@ -754,7 +781,7 @@
     }
 
     addRound(B, name, best, pairs) {
-      const start = FM.addDays(B.rounds.length ? this.lastSeriesDate(B) : B.start, 6);
+      const start = FM.addDays(B.rounds.length ? this.lastSeriesDate(B) : B.start, B.gap || 6);
       const R = { name, best, ties: pairs.map(([hi, lo]) => ({ hi, lo, games: [], wins: { [hi]: 0, [lo]: 0 }, winner: null })) };
       B.rounds.push(R);
       for (const t of R.ties) this.nextSeriesGame(B, R, t, start);
@@ -776,13 +803,13 @@
       const i = t.games.length;
       const host = SERIES[R.best][i] === 'hi' ? t.hi : t.lo;
       const g = R.best === 1 ? '' : `, ${i + 1}-й матч`;
-      t.games.push(this.addMatch({ comp: 'po', po: B.lid, label: `плей-офф, ${R.name.toLowerCase()}${g}`, date, h: host, a: host === t.hi ? t.lo : t.hi, ko: true, neutral: false }));
+      t.games.push(this.addMatch({ comp: 'po', po: B.lid, label: `плей-офф, ${R.name.toLowerCase()}${g}`, date, h: host, a: host === t.hi ? t.lo : t.hi, ko: true, neutral: !!B.neutral }));
     }
 
     progressPlayoff() {
       const s = this.s;
       if (!s.playoff) return;
-      for (const key of ['sl', 'vl']) {
+      for (const key of ['sl', 'vl', 'pl']) {
         const B = s.playoff[key];
         if (!B || B.winner) continue;
         const R = B.rounds[B.rounds.length - 1];
@@ -813,17 +840,18 @@
           this.addRound(B, '1/4 финала', 3, [better(w[0], w[1]), better(w[2], w[3]), better(w[4], w[5]), better(w[6], w[7])]);
         } else if (R.name === '1/4 финала') {
           // в Высшей лиге полуфиналы перекрёстные: победитель одной половины конференции «Запад» против другой половины «Востока»
-          this.addRound(B, '1/2 финала', 5, key === 'vl' ? [better(w[0], w[3]), better(w[2], w[1])] : [better(w[0], w[1]), better(w[2], w[3])]);
+          this.addRound(B, '1/2 финала', key === 'pl' ? 1 : 5, key === 'vl' ? [better(w[0], w[3]), better(w[2], w[1])] : [better(w[0], w[1]), better(w[2], w[3])]);
         } else if (R.name === '1/2 финала') {
-          this.addRound(B, 'Финал', 5, [better(w[0], w[1])]);
+          this.addRound(B, 'Финал', key === 'pl' ? 1 : 5, [better(w[0], w[1])]);
           this.news(`${B.name}, финал: «${this.teams[w[0]].name}» — «${this.teams[w[1]].name}».`);
         } else {
           B.winner = w[0];
           const champ = this.teams[B.winner];
           champ.rep = Math.min(99, champ.rep + (key === 'sl' ? 3 : 2));
-          this.news(key === 'sl' ? `«${champ.name}» — чемпион России по футзалу!` : `«${champ.name}» — победитель Высшей лиги!`);
+          const title = { sl: 'чемпион России по футзалу', vl: 'победитель Высшей лиги', pl: 'победитель Первой лиги' }[key];
+          this.news(`«${champ.name}» — ${title}!`);
           if (B.winner === s.user) {
-            this.msg(key === 'sl' ? 'Чемпионы России!' : 'Победа в Высшей лиге!', key === 'sl' ? 'Команда выиграла чемпионат России! Руководство в восторге.' : 'Команда выиграла Высшую лигу!', 'board');
+            this.msg(key === 'sl' ? 'Чемпионы России!' : key === 'vl' ? 'Победа в Высшей лиге!' : 'Победа в Первой лиге!', key === 'sl' ? 'Команда выиграла чемпионат России! Руководство в восторге.' : `Команда выиграла ${key === 'vl' ? 'Высшую' : 'Первую'} лигу!`, 'board');
             s.board.conf = Math.min(100, s.board.conf + 25);
           }
         }
@@ -832,6 +860,7 @@
 
     // место в посеве: для Высшей лиги — по очкам за матч в своей конференции (при равенстве — «Запад»)
     seedOf(B, id) {
+      if (B.lid === 'pl') return -this.ppg(id);
       if (B.lid !== 'vl') return B.seed.indexOf(id);
       for (let c = 0; c < B.seed.length; c++) {
         const i = B.seed[c].indexOf(id);
@@ -886,7 +915,8 @@
       const s = this.s;
       for (const id in s.matches) if (!s.matches[id].played) return false;
       const p = s.playoff || {};
-      return (!this.topLeague() || (p.sl && p.sl.winner)) && (!this.lowerLeagues().length || (p.vl && p.vl.winner));
+      return (!this.topLeague() || (p.sl && p.sl.winner)) && (!this.lowerLeagues().length || (p.vl && p.vl.winner))
+        && (!this.thirdLeagues().length || (p.pl && p.pl.winner));
     }
 
     // Повышение и вылет: [teamId, новая лига]. Победитель Высшей лиги (если он не резервная команда; иначе —
@@ -906,15 +936,22 @@
       const down = tab[tab.length - 1].id;
       // вылетевший клуб попадает в конференцию, где стало на одну команду меньше
       moves.push([up, top], [down, this.teams[up].league]);
-      // Первая лига: победитель зоны меняется местами с последней командой конференции Высшей лиги той же стороны
-      for (const lid of this.thirdLeagues()) {
-        const L3 = s.leagues[lid];
-        const vl = low.find((id) => s.leagues[id].conf === L3.conf);
-        if (!vl || !this.leagueFinished(lid)) continue;
-        const winner = this.table(lid).find((r) => this.eligibleUp(r.id));
-        const vt = this.table(vl);
-        const last = vt.slice().reverse().find((r) => r.id !== up && !moves.some(([id]) => id === r.id));
-        if (winner && last) moves.push([winner.id, vl], [last.id, lid]);
+      // Первая лига: финалисты Всероссийского финала выходят в конференцию Высшей лиги своей стороны, на их место
+      // опускается последняя команда этой конференции — в зону своей стороны, где после переходов меньше всего клубов
+      const P = s.playoff && s.playoff.pl;
+      if (P && P.winner) {
+        const order = [P.winner];
+        for (let i = P.rounds.length - 1; i >= 0; i--) for (const t of P.rounds[i].ties) for (const id of [t.winner, t.hi, t.lo]) if (!order.includes(id)) order.push(id);
+        const size = (lid) => s.leagues[lid].teams.length - moves.filter(([id]) => this.teams[id].league === lid).length + moves.filter(([, l]) => l === lid).length;
+        for (const id of order.filter((x) => this.eligibleUp(x)).slice(0, 2)) {
+          const side = s.leagues[this.teams[id].league].conf;
+          const vl = low.find((lid) => s.leagues[lid].conf === side);
+          if (!vl) continue;
+          const last = this.table(vl).slice().reverse().find((r) => !moves.some(([m]) => m === r.id));
+          if (!last) continue;
+          const zone = this.thirdLeagues().filter((lid) => s.leagues[lid].conf === side).sort((a, b) => size(a) - size(b))[0] || this.teams[id].league;
+          moves.push([id, vl], [last.id, zone]);
+        }
       }
       return moves;
     }

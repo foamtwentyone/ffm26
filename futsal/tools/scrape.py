@@ -1,6 +1,7 @@
 # Шаг 1 из 3: скачивает заявки команд сезона 2026/27 с сайтов РФС и карточки игроков (полное имя с отчеством
 # и число матчей). Страницы кэшируются в tools/.cache.
-#   Суперлига — superliga.rfs.ru; Высшая лига, Кубок России (из него — клубы Первой лиги), ЮФЛ U-19 и U-17 — futsal.rfs.ru.
+#   Суперлига — superliga.rfs.ru; Высшая лига, Кубок России 2026/27 и 2025/26 (из них — клубы Первой лиги),
+#   ЮФЛ U-19 и U-17 — futsal.rfs.ru.
 # Запуск: python3 tools/scrape.py, затем python3 tools/build.py и python3 tools/logos.py
 import re, html, json, os, subprocess, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -10,7 +11,8 @@ BASE = CACHE + '/raw'
 os.makedirs(BASE, exist_ok=True)
 SL, FUTSAL = 'https://superliga.rfs.ru', 'https://futsal.rfs.ru'
 # турнир: (сайт, id, нужны ли карточки игроков)
-TOURNAMENTS = {'sl': (SL, 1066129, True), 'vl': (FUTSAL, 1066108, True), 'cup': (FUTSAL, 1066980, True),
+# Кубок России 2025/26 — источник составов любительских клубов Первой лиги, не заявившихся в Кубок 2026/27.
+TOURNAMENTS = {'sl': (SL, 1066129, True), 'vl': (FUTSAL, 1066108, True), 'cup': (FUTSAL, 1066980, True), 'cup25': (FUTSAL, 1055318, True),
                'u19': (FUTSAL, 1067383, False), 'u17': (FUTSAL, 1067382, False)}
 
 

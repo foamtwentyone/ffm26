@@ -11,7 +11,7 @@ os.makedirs(CACHE + '/logos', exist_ok=True)
 
 # id клубов в игре — из файлов лиг: название → id
 ids = {}
-for f in ('sl', 'vlw', 'vle', 'plw', 'ple'):
+for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4'):
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
         ids[m.group(2)] = m.group(1)
 

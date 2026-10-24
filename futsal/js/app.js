@@ -753,7 +753,7 @@
   function viewTables(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const lid = UI.tablesLid || u.league;
-    if (UI.tablesView === 'po' && !(s.playoff && (s.playoff.sl || s.playoff.vl))) UI.tablesView = 'table';
+    if (UI.tablesView === 'po' && !(s.playoff && (s.playoff.sl || s.playoff.vl || s.playoff.pl))) UI.tablesView = 'table';
     const view = UI.tablesView;
     const L = s.leagues[lid];
     let body = '';
@@ -774,13 +774,13 @@
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num" title="Победы в серии 6-метровых">ВП</th><th class="num" title="Поражения в серии 6-метровых">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', L.tier === 1 ? '1/4 финала плей-офф' : L.tier === 2 ? 'плей-офф' : 'выход в Высшую лигу'], ['po', 'стыковой турнир за 1/4 финала'], ['down', L.tier === 1 ? 'вылет (меняется с победителем Высшей лиги)' : 'вылет (меняется с победителем зоны Первой лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', L.tier === 1 ? '1/4 финала плей-офф' : L.tier === 2 ? 'плей-офф' : 'Всероссийский финал (финалисты выходят в Высшую лигу)'], ['po', 'стыковой турнир за 1/4 финала'], ['down', L.tier === 1 ? 'вылет (меняется с победителем Высшей лиги)' : 'вылет (меняется с финалистом Первой лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && (s.playoff.sl || s.playoff.vl) ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && (s.playoff.sl || s.playoff.vl || s.playoff.pl) ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
       ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
@@ -832,7 +832,7 @@
     const game = (id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
     const bracket = (B) => `<h2>${esc(B.name)}${B.winner ? ` · 🏆 ${esc(T(B.winner).name)}` : ''}</h2><div class="grid">${B.rounds.map((R) => `<div class="card"><h3>${esc(R.name)} · ${R.best === 1 ? 'один матч' : `до ${(R.best + 1) / 2} побед`}</h3>
       ${R.ties.map((t) => `<div style="margin-bottom:10px"><div class="row small"><b class="grow">${esc(T(t.hi).name)} — ${esc(T(t.lo).name)}</b>${R.best > 1 ? `<b>${t.wins[t.hi]}:${t.wins[t.lo]}</b>` : ''}</div>${t.games.map(game).join('')}${t.winner ? `<div class="small muted">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}</div>`).join('')}</div>`).join('')}</div>`;
-    return ['sl', 'vl'].map((k) => s.playoff[k]).filter(Boolean).map(bracket).join('');
+    return ['sl', 'vl', 'pl'].map((k) => s.playoff[k]).filter(Boolean).map(bracket).join('');
   }
 
   // ================== статистика ==================

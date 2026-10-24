@@ -1,4 +1,4 @@
-# Шаг 2 из 3: собирает файлы лиг js/data/sl.js, vlw.js, vle.js, plw.js, ple.js и академии js/data/academy.js
+# Шаг 2 из 3: собирает файлы лиг js/data/sl.js, vlw.js, vle.js, pl1–pl4.js и академии js/data/academy.js
 # из скачанных заявок РФС (scrape.py).
 # Рейтинг игрока = уровень клуба + роль в команде (доля сыгранных матчей сезона, опыт, результативность) − поправка на возраст.
 import json, math, os, sys
@@ -66,30 +66,48 @@ META = {
     'Норильск-2': ('norilsk2', 'Норильск', 'МСК «Сопка» (Красноярск)', 500, ['#f39200', '#1d1d1b'], 44, 40, 53),
     'София': ('sofia', 'Тюмень', 'СК «Софи-Лэнд»', 500, ['#c2185b', '#ffffff'], 42, 50, 52),
 }
-# Первая лига: клубы из заявок Кубка России, которых нет в Суперлиге и Высшей лиге. Цвета — по эмблемам.
+# Первая лига: любительские клубы из заявок Кубка России 2026/27, а если клуб в него не заявился — из заявок
+# Кубка 2025/26. Зоны — по межрегиональным объединениям реальной Первой лиги; зона клуба без указанного города
+# определена по группе Кубка, в которой он играл. Цвета — по эмблемам.
+# Зоны: (название, сторона — конференция Высшей лиги, куда выходят клубы зоны)
+PL_ZONES = {'pl1': ('Центр — Поволжье', 'W'), 'pl2': ('Поволжье — Урал', 'W'), 'pl3': ('Урал — Западная Сибирь', 'E'), 'pl4': ('Сибирь', 'E')}
 # название: (id, зона, город, площадка, цвета, уровень игроков)
 PL = {
-    'Столица': ('stolitsa', 'W', 'Москва', '—', ['#1d4f91', '#d71920'], 49),
-    'Старт Алюмика': ('start_alumika', 'W', 'Нижний Новгород', '—', ['#c9a24b', '#1d1d1b'], 49),
-    'Волна-ФФК': ('volna', 'W', 'Нижний Новгород', '—', ['#39b54a', '#1d1d1b'], 47),
-    'Витязь': ('vityaz', 'W', 'Маркс', '—', ['#1d2a5b', '#c8102e'], 47),
-    'МБЛ': ('mbl', 'W', 'Саратов', '—', ['#4fb6e3', '#ffffff'], 47),
-    'Доминанта': ('dominanta', 'W', 'Оренбург', '—', ['#1d1d1b', '#c9a24b'], 46),
-    'Механический завод': ('mehzavod', 'W', 'Переволоцкий', '—', ['#2a6ebb', '#ffffff'], 45),
-    'Платон': ('platon', 'W', 'Ульяновск', '—', ['#1d1d1b', '#ffffff'], 47),
-    'Мир': ('mir', 'W', 'Челябинск', '—', ['#e30613', '#ffffff'], 47),
-    'Сигма-К': ('sigma', 'W', 'Копейск', '—', ['#1d1d1b', '#f2e600'], 46),
-    'Вектор': ('vektor', 'E', 'Тюмень', '—', ['#1d2a5b', '#c8102e'], 47),
-    'Факел-Динамо': ('fakel_dinamo', 'E', 'Тюмень', '—', ['#1d1d1b', '#ffffff'], 47),
-    'Трейд': ('treid', 'E', 'Курган', '—', ['#1f5aa6', '#ffffff'], 45),
-    'Газпромнефть – СШ им. К. Еременко': ('gpn_noyabrsk', 'E', 'Ноябрьск', '—', ['#0072bc', '#f58220'], 47),
-    'Нефтяник': ('neftyanik', 'E', 'Сургут', '—', ['#1f9ad6', '#ffffff'], 47),
-    'РН-Ремонт НПО': ('rn_remont', 'E', 'Губкинский', '—', ['#1d1d1b', '#ffd100'], 46),
-    'АлтПолитех': ('altpoliteh', 'E', 'Барнаул', '—', ['#e8542f', '#ffffff'], 47),
-    'Виджей спортс': ('vj_sports', 'E', 'Барнаул', '—', ['#1d1d1b', '#c9a24b'], 46),
-    'Сибирьэнергосервис': ('sibenergo', 'E', 'Новосибирск', '—', ['#1d5fa8', '#f39200'], 47),
-    'Провинция': ('provintsiya', 'E', 'Кемерово', '—', ['#1d1d1b', '#f5c400'], 46),
-    'АЯН': ('ayan', 'E', 'Чита', '—', ['#d71920', '#1d1d1b'], 44),
+    'Столица': ('stolitsa', 'pl1', 'Видное', '—', ['#1d4f91', '#d71920'], 49),
+    'ЛКС': ('lks', 'pl1', 'Липецк', '—', ['#1d5e2f', '#ffffff'], 46),
+    'Старт Алюмика': ('start_alumika', 'pl1', 'Нижний Новгород', '—', ['#c9a24b', '#1d1d1b'], 49),
+    'Волна-ФФК': ('volna', 'pl1', 'Нижний Новгород', '—', ['#39b54a', '#1d1d1b'], 47),
+    'Платон': ('platon', 'pl1', 'Ульяновск', '—', ['#1d1d1b', '#ffffff'], 47),
+    'Витязь': ('vityaz', 'pl1', 'Маркс', '—', ['#1d2a5b', '#c8102e'], 47),
+    'МБЛ': ('mbl', 'pl1', 'Саратов', '—', ['#4fb6e3', '#ffffff'], 47),
+    'Капкан': ('kapkan', 'pl1', 'Балаково', '—', ['#1d1d1b', '#ffffff'], 45),
+    'Сотранс': ('sotrans', 'pl1', '—', '—', ['#e8542f', '#1d1d1b'], 45),
+    'Доминанта': ('dominanta', 'pl2', 'Оренбург', '—', ['#1d1d1b', '#c9a24b'], 46),
+    'Механический завод': ('mehzavod', 'pl2', 'Переволоцкий', '—', ['#2a6ebb', '#ffffff'], 45),
+    'СтройПутьСервис': ('stroyput', 'pl2', '—', '—', ['#1d1d1b', '#f2c500'], 44),
+    'Прогресс-КПРФ': ('progress_kprf', 'pl2', '—', '—', ['#d71920', '#ffffff'], 45),
+    'Лига': ('liga', 'pl2', '—', '—', ['#f5e400', '#1d1d1b'], 45),
+    'Прогресс-Бионорд': ('bionord', 'pl2', 'Пермь', '—', ['#1d5fa8', '#e30613'], 46),
+    'Красноусольская премиум': ('krasnousol', 'pl2', 'Красноусольский', '—', ['#1d1d1b', '#ffffff'], 45),
+    'Мир': ('mir', 'pl2', 'Челябинск', '—', ['#e30613', '#ffffff'], 47),
+    'Сигма-К': ('sigma', 'pl2', 'Копейск', '—', ['#1d1d1b', '#f2e600'], 46),
+    'СБЕР': ('sber', 'pl2', '—', '—', ['#21a038', '#ffffff'], 46),
+    'Спарта': ('sparta', 'pl2', 'Талица', '—', ['#c8102e', '#1d1d1b'], 48),
+    'Вектор': ('vektor', 'pl3', 'Тюмень', '—', ['#1d2a5b', '#c8102e'], 47),
+    'Факел-Динамо': ('fakel_dinamo', 'pl3', 'Тюмень', '—', ['#1d1d1b', '#ffffff'], 47),
+    'Трейд': ('treid', 'pl3', 'Курган', '—', ['#1f5aa6', '#ffffff'], 45),
+    'Газпромнефть – СШ им. К. Еременко': ('gpn_noyabrsk', 'pl3', 'Ноябрьск', '—', ['#0072bc', '#f58220'], 47),
+    'Нефтяник': ('neftyanik', 'pl3', 'Сургут', '—', ['#1f9ad6', '#ffffff'], 47),
+    'РН-Ремонт НПО': ('rn_remont', 'pl3', 'Губкинский', '—', ['#1d1d1b', '#ffd100'], 46),
+    'Газпром СУМУО': ('sumuo', 'pl3', 'Новый Уренгой', '—', ['#1f5aa6', '#ffffff'], 47),
+    'Север': ('sever', 'pl3', '—', '—', ['#1d2a5b', '#ffffff'], 45),
+    'АлтПолитех': ('altpoliteh', 'pl4', 'Барнаул', '—', ['#e8542f', '#ffffff'], 47),
+    'Виджей спортс': ('vj_sports', 'pl4', 'Барнаул', '—', ['#1d1d1b', '#c9a24b'], 46),
+    'Сибирьэнергосервис': ('sibenergo', 'pl4', 'Новосибирск', '—', ['#1d5fa8', '#f39200'], 47),
+    'Кузбасс': ('kuzbass', 'pl4', 'Кемерово', '—', ['#1d1d1b', '#3fae49'], 50),
+    'Кемерово': ('kemerovo', 'pl4', 'Кемерово', '—', ['#f5c400', '#d71920'], 46),
+    'Провинция': ('provintsiya', 'pl4', 'Кемерово', '—', ['#1d1d1b', '#f5c400'], 46),
+    'АЯН': ('ayan', 'pl4', 'Чита', '—', ['#d71920', '#1d1d1b'], 44),
 }
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
@@ -109,7 +127,11 @@ def num(x):
     return int(x) if x.isdigit() else 0
 
 all_teams = teams
-teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 'cup' and t['name'] in PL)]
+cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
+teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 'cup' and t['name'] in PL)
+         or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26)]
+missing = set(PL) - {t['name'] for t in teams}
+if missing: sys.exit(f'нет заявок: {missing}')
 
 # Игрок, заявленный и за основу, и за дубль, остаётся там, где сыграл больше матчей в этом сезоне (при равенстве — в основе).
 seen = {}
@@ -122,12 +144,13 @@ for t in teams:
         if cur is None or g > cur[0] or (g == cur[0] and main and not cur[2]):
             seen[key] = (g, t['team_id'], main)
 
-leagues = {'sl': [], 'vlw': [], 'vle': [], 'plw': [], 'ple': []}
+leagues = {'sl': [], 'vlw': [], 'vle': [], **{z: [] for z in PL_ZONES}}
 for t in teams:
     meta = META[t['name']]
     tid, city, stadium, cap, colors, rep, money, level = meta
     rows = []
-    rel = [p for p in t['players'] if seen[(p['name'], p['birth'][:10])][1] == t['team_id']]
+    # игроки без даты рождения (бывают в старых заявках) пропускаются
+    rel = [p for p in t['players'] if ',' in p.get('birth', '') and p.get('amp') in POS and seen[(p['name'], p['birth'][:10])][1] == t['team_id']]
     gm = max([num(p['stats'][0]) for p in t['players'] if p['stats']] + [1])
     for p in rel:
         info = pinfo.get(t['league'] + '_' + p['pid'], {})
@@ -152,7 +175,7 @@ for t in teams:
             name, nat = f'{first} {last}', NAT_BY_NAME.get(p['name'], 'RUS')
         rows.append((pos, -ovr, f'{name}|{pos}|{age}|0|{nat}|{ovr}'))
     rows.sort(key=lambda r: (['GK', 'DF', 'UN', 'FW'].index(r[0]), r[1]))
-    if t['league'] == 'cup': lg = 'plw' if PL[t['name']][1] == 'W' else 'ple'
+    if t['name'] in PL: lg = PL[t['name']][1]
     else: lg = 'sl' if t['league'] == 'sl' else ('vlw' if t['name'] in WEST else 'vle')
     extra = f", reserveOf: '{RESERVE[tid]}'" if tid in RESERVE else ''
     leagues[lg].append(f"    {{ id: '{tid}', name: '{t['name']}', city: '{city}', stadium: '{stadium}', cap: {cap}, colors: ['{colors[0]}', '{colors[1]}'], rep: {rep}, money: {money}{extra}, players: `\n" + '\n'.join(r[2] for r in rows) + '` },\n')
@@ -176,17 +199,17 @@ HEAD = {
             "FM.addLeague({\n  id: 'vle', name: 'Высшая лига «Восток»', short: 'ВЛ-В', tier: 2, conf: 'E', weekday: 6,\n"
             "  autumn: { from: '09-05', rounds: 12 }, spring: { from: '02-06', rounds: 6 },\n"
             "  ticket: 1.5, prize: [80, 60, 45, 35, 30, 25, 20, 15, 12],\n  teams: [\n"),
-    'plw': ("// Первая лига 2026/27, зона «Запад». Любительские клубы; заявки — из Кубка России (futsal.rfs.ru, октябрь 2026).\n"
-            "// В реальности Первая лига проводится по регионам с финальным турниром; в игре — две зоны, победитель выходит в Высшую лигу.\n"
-            "FM.addLeague({\n  id: 'plw', name: 'Первая лига «Запад»', short: 'ПЛ-З', tier: 3, conf: 'W', weekday: 0,\n"
-            "  autumn: { from: '09-13', rounds: 11 }, spring: { from: '02-14', rounds: 7 },\n"
-            "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2],\n  teams: [\n"),
-    'ple': ("// Первая лига 2026/27, зона «Восток». Любительские клубы; заявки — из Кубка России (futsal.rfs.ru, октябрь 2026).\n"
-            "// В реальности Первая лига проводится по регионам с финальным турниром; в игре — две зоны, победитель выходит в Высшую лигу.\n"
-            "FM.addLeague({\n  id: 'ple', name: 'Первая лига «Восток»', short: 'ПЛ-В', tier: 3, conf: 'E', weekday: 0,\n"
-            "  autumn: { from: '09-13', rounds: 13 }, spring: { from: '02-14', rounds: 9 },\n"
-            "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2, 2],\n  teams: [\n"),
 }
+for z, (zname, side) in PL_ZONES.items():
+    n = len(leagues[z])
+    rounds = 2 * (n - 1 + n % 2)
+    HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; заявки — из Кубка России 2026/27 или 2025/26 (futsal.rfs.ru).\n"
+               "// Два круга в зоне; две лучшие команды зоны играют во Всероссийском финале, финалисты выходят в Высшую лигу.\n"
+               f"FM.addLeague({{\n  id: '{z}', name: 'Первая лига «{zname}»', short: 'ПЛ-{z[-1]}', tier: 3, conf: '{side}', weekday: 0,\n"
+               f"  autumn: {{ from: '09-13', rounds: {round(rounds * 0.6)} }}, spring: {{ from: '02-07', rounds: {rounds - round(rounds * 0.6)} }},\n"
+               "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2, 2, 2],\n  teams: [\n")
+for lg in ('plw', 'ple'):
+    if os.path.exists(f'{OUT}/{lg}.js'): os.remove(f'{OUT}/{lg}.js')
 for lg, items in leagues.items():
     open(f'{OUT}/{lg}.js', 'w', encoding='utf8').write(HEAD[lg] + '\n'.join(items) + '  ],\n});\n')
 
