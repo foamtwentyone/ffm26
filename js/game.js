@@ -314,6 +314,7 @@
       this._tables = {};
       this.setupCup();
       this.setupEuro();
+      this.spreadRounds();
       s.playoff = null;
       s.window = { from: `${y}-06-20`, to: `${y}-09-07`, from2: `${y + 1}-01-20`, to2: `${y + 1}-02-25` };
       for (const id in this.teams) {
@@ -323,6 +324,113 @@
       }
       this.setExpectation();
       s.board.conf = first ? 60 : FM.clamp(s.board.conf, 35, 80);
+    }
+
+    // занятые даты клуба: id клуба → множество дат его матчей
+    busyDates() {
+      const busy = {};
+      for (const id in this.s.matches) {
+        const m = this.s.matches[id];
+        (busy[m.h] = busy[m.h] || new Set()).add(m.date);
+        (busy[m.a] = busy[m.a] || new Set()).add(m.date);
+      }
+      return busy;
+    }
+
+    // нет ли у клуба другого матча ближе чем за gap дней до/после даты
+    freeAround(busy, team, date, gap) {
+      const b = busy[team];
+      if (!b) return true;
+      for (let k = -gap; k <= gap; k++) if (b.has(FM.addDays(date, k))) return false;
+      return true;
+    }
+
+    // Тур растягивается на два дня, как в жизни (суббота и воскресенье, воскресенье и понедельник).
+    // Последние два тура — в один день. Матч не переносится ближе чем за день до/после еврокубка или Кубка.
+    spreadRounds() {
+      const s = this.s, busy = this.busyDates();
+      for (const lid of s.order) {
+        const L = s.leagues[lid];
+        const shift = L.weekday === 0 ? -1 : 1;
+        const free = (m, d) => this.freeAround(busy, m.h, d, 1) && this.freeAround(busy, m.a, d, 1);
+        const move = (m, d) => { busy[m.h].delete(m.date); busy[m.a].delete(m.date); m.date = d; busy[m.h].add(d); busy[m.a].add(d); };
+        L.rounds.forEach((round, ri) => {
+          const ms = round.map((id) => s.matches[id]);
+          // матч вплотную к еврокубку или Кубку сдвигается в любом случае
+          const clash = (m) => { busy[m.h].delete(m.date); busy[m.a].delete(m.date); const c = !free(m, m.date); busy[m.h].add(m.date); busy[m.a].add(m.date); return c; };
+          if (ri >= L.rounds.length - 2) {
+            // последние туры — в один день: при совпадении переносится весь тур
+            if (!ms.some(clash)) return;
+            for (const k of [shift, 2 * shift]) {
+              const d = FM.addDays(ms[0].date, k);
+              ms.forEach((m) => { busy[m.h].delete(m.date); busy[m.a].delete(m.date); });
+              const ok = ms.every((m) => free(m, d));
+              ms.forEach((m) => { busy[m.h].add(m.date); busy[m.a].add(m.date); });
+              if (ok) { ms.forEach((m) => move(m, d)); return; }
+            }
+            return;
+          }
+          for (const m of ms) {
+            const forced = clash(m);
+            if (!forced && !FM.chance(0.45)) continue;
+            busy[m.h].delete(m.date); busy[m.a].delete(m.date);
+            const to = [shift, ...(forced ? [2 * shift, -shift] : [])].map((k) => FM.addDays(m.date, k)).find((d) => free(m, d));
+            busy[m.h].add(m.date); busy[m.a].add(m.date);
+            if (to) move(m, to);
+          }
+        });
+      }
+    }
+
+    // плей-офф еврокубков и Кубка жеребьюются по ходу сезона: матч чемпионата вплотную к ним сдвигается на день-два
+    fixClashes() {
+      const s = this.s, busy = this.busyDates();
+      for (const id in s.matches) {
+        const m = s.matches[id], L = s.leagues[m.comp];
+        if (!L || m.played || m.date <= s.date) continue;
+        busy[m.h].delete(m.date); busy[m.a].delete(m.date);
+        const free = (d) => this.freeAround(busy, m.h, d, 1) && this.freeAround(busy, m.a, d, 1);
+        if (!free(m.date)) {
+          const sh = L.weekday === 0 ? -1 : 1;
+          const to = [sh, 2 * sh, -sh, -2 * sh].map((k) => FM.addDays(m.date, k)).find((d) => d > s.date && free(d));
+          if (to) m.date = to;
+        }
+        busy[m.h].add(m.date); busy[m.a].add(m.date);
+      }
+    }
+
+    // Изредка матч чемпионата переносят (погода, состояние поля, совпадение с другими турнирами) —
+    // так у клубов появляются игры в запасе. Новая дата — среда, свободная у обоих клубов, до последних туров.
+    postponeToday() {
+      const s = this.s, month = +s.date.slice(5, 7);
+      if (month >= 4 && month <= 7) return;
+      let busy = null;
+      // будущие туры Кубка и еврокубков ещё не в календаре — их среды не трогаем
+      const inEuro = new Set(Object.values(s.euro || {}).flatMap((e) => e.teams));
+      const cupDays = ((s.cup && s.cup.rounds) || []).map((R) => R.date);
+      const nearCup = (d) => cupDays.some((c) => Math.abs(FM.parseDate(c) - FM.parseDate(d)) <= 2 * 864e5);
+      for (const m of this.todayMatches()) {
+        const L = s.leagues[m.comp];
+        if (!L || inEuro.has(m.h) || inEuro.has(m.a) || !FM.chance(0.025)) continue;
+        const lastRounds = s.matches[L.rounds[Math.max(0, L.rounds.length - 3)][0]].date;
+        busy = busy || this.busyDates();
+        busy[m.h].delete(m.date); busy[m.a].delete(m.date);
+        const cand = [];
+        for (let d = FM.addDays(s.date, 10); d < FM.addDays(lastRounds, -3) && cand.length < 4; d = FM.addDays(d, 1)) {
+          if (FM.weekday(d) === 3 && !(this.countryOf(m.comp) === 'RUS' && nearCup(d)) && this.freeAround(busy, m.h, d, 2) && this.freeAround(busy, m.a, d, 2)) cand.push(d);
+        }
+        if (!cand.length) { busy[m.h].add(m.date); busy[m.a].add(m.date); continue; }
+        const to = FM.pick(cand);
+        m.date = to;
+        busy[m.h].add(to); busy[m.a].add(to);
+        const why = FM.pick(['из-за непогоды', 'из-за плохого состояния поля', 'по просьбе клуба, у которого несколько игроков вызваны в сборные', 'по решению лиги']);
+        if (m.h === s.user || m.a === s.user) {
+          const opp = this.teams[m.h === s.user ? m.a : m.h];
+          this.msg('Матч перенесён', `Матч с «${opp.name}» перенесён ${why}. Новая дата — ${FM.fmtDate(to)}.`, 'board');
+        } else if (FM.chance(0.3)) {
+          this.news(`Матч «${this.teams[m.h].name}» — «${this.teams[m.a].name}» перенесён ${why} на ${FM.fmtDate(to)}.`);
+        }
+      }
     }
 
     makeFixtures(L, year) {
@@ -1348,7 +1456,9 @@
     nextDay() {
       const s = this.s;
       s.date = FM.addDays(s.date, 1);
+      this.postponeToday();
       const monday = FM.weekday(s.date) === 1;
+      if (monday) this.fixClashes();
       for (const id in this.players) {
         const p = this.players[id];
         if (p.inj > 0) {

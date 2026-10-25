@@ -785,8 +785,8 @@
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
       <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['champ', 'чемпион'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
-      <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
-        ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
+      <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${roundDates(L.rounds[cur - 1])}</b><button class="btn sm" id="rn">›</button></div>
+        ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
@@ -836,6 +836,17 @@
         <div class="card"><div class="row" style="margin:14px 0 8px"><button class="btn sm" id="ep">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[e.md[cur - 1][0]].date)}</b><button class="btn sm" id="en">›</button></div>${e.md[cur - 1].map(line).join('')}</div>
         ${ko}${fin}
       </div></div>`;
+  }
+
+  // дни тура без перенесённых матчей: «25–26 июля» или «31 октября»
+  function roundDates(ids) {
+    const s = g().s, ds = ids.map((id) => s.matches[id].date).sort();
+    const mid = ds[Math.floor(ds.length / 2)];
+    const near = ds.filter((d) => Math.abs(FM.parseDate(d) - FM.parseDate(mid)) <= 3 * 864e5);
+    const a = near[0], b = near[near.length - 1];
+    if (a === b) return FM.fmtDate(a);
+    const fa = FM.fmtDate(a), fb = FM.fmtDate(b);
+    return fa.split(' ')[1] === fb.split(' ')[1] ? `${fa.split(' ')[0]}–${fb}` : `${fa} – ${fb}`;
   }
 
   function playoffView() {
@@ -1281,6 +1292,8 @@
   }
 
   function afterUserMatch(m) {
+    // остальные матчи этого дня доигрываются сразу — таблица не «отстаёт» от вашего матча
+    g().simulateToday();
     save();
     render();
     matchReport(m.id);
