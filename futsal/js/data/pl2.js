@@ -140,7 +140,7 @@ FM.addLeague({
 Михаил Чепукин|FW|19|0|RUS|47
 Степан Разоренов|FW|17|0|RUS|35` },
 
-    { id: 'kapkan', name: 'Капкан', city: 'Балаково', stadium: '—', cap: 300, colors: ['#1d1d1b', '#ffffff'], rep: 36, money: 15, players: `
+    { id: 'kapkan', name: 'Капкан', city: 'Балаково', stadium: '—', cap: 300, colors: ['#1d1d1b', '#fdbe01'], rep: 36, money: 15, players: `
 Глеб Епифанов|GK|18|0|RUS|43
 Денис Конкин|GK|37|0|RUS|38
 Максим Могутов|DF|35|0|RUS|44
