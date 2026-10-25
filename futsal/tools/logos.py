@@ -47,14 +47,14 @@ if os.path.exists(CACHE + '/nagradion.json'):
         if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
         if t.get('logo') and os.path.exists(f"{CACHE}/saved/{t['logo']}"): teams.append(dict(t, logo='file:' + t['logo']))
 # зоны «Золотое кольцо» (goldfootball.ru) и «Северо-Запад» (st.joinsport.io) — ссылки собирают goldring.py и nwfutsal.py
-for f in ('goldring.json', 'nwfutsal.json'):
+for f in ('goldring.json', 'nwfutsal.json', 'south.json'):
     if os.path.exists(f'{CACHE}/{f}'): teams += json.load(open(f'{CACHE}/{f}', encoding='utf8'))
 img = {}
 for t in teams:
-    tid, url = ids.get(t['name']), t.get('logo')
+    tid, url = ids.get(t['name']) if 'name' in t else t['team_id'], t.get('logo')  # в south.json вместо названия — id клуба
     if t['league'] in ('u19', 'u17') or tid in img: continue  # молодёжные команды и повторы из заявок Кубка
     if not tid or not url:
-        print('нет эмблемы:', t['name'], file=sys.stderr)
+        print('нет эмблемы:', t.get('name', t['team_id']), file=sys.stderr)
         continue
     raw = f"{CACHE}/saved/{url[5:]}" if url.startswith('file:') else f'{CACHE}/logos/{tid}{os.path.splitext(url)[1]}'
     if not os.path.exists(raw) or not os.path.getsize(raw):

@@ -4,6 +4,7 @@
 #   ingame-sports.ru — состав в Чемпионате ЮФО и СКФО (возраст, амплуа, голы; матчей нет);
 #   ВКонтакте — состав «Спортинга» на 2025 год (только фамилии и вратари).
 # Где возраст не указан, ставится 26 лет; у составов без матчей рейтинг считается со средней ролью (как у «Наградиона»).
+# Составы с ingame-sports.ru (tools/ingame.py), если они есть, заменяют сохранённые страницы.
 # Пишет .cache/south.json в формате заявок scrape.py. Запуск: python3 tools/south.py, затем python3 tools/build.py
 import glob, html, json, os, re
 
@@ -71,10 +72,16 @@ def vk(a):
     return [player(n.strip(), 'ВРТ' if gk else None, None, 0, 0) for n, gk in re.findall(r'№\s*\d+\s*-\s*([А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+)\s*(\(Врт\))?', b)]
 
 
+# заявки на Чемпионат ЮФО и СКФО с ingame-sports.ru (tools/ingame.py) точнее сохранённых страниц — берутся первыми
+ig = json.load(open(CACHE + '/ingame.json', encoding='utf8')) if os.path.exists(CACHE + '/ingame.json') else {}
 out = []
+for tid, t in ig.items():
+    out.append({'league': 'south', 'team_id': tid, 'nostats': False, 'logo': t['logo'], 'players': t['players']})
+    print(tid, len(t['players']), t['source'])
 for f in sorted(glob.glob(CACHE + '/saved/south/*.html')):
     a = open(f, encoding='utf8', errors='replace').read()
     tid = os.path.basename(f)[:-5]
+    if tid in ig: continue
     if 'TeamSquads_' in a: players, nostats = ingame(a), True
     elif re.search(r'saved from url=\(\d+\)https://vk\.(ru|com)/', a): players, nostats = vk(a), True
     elif 'data-troster-pane="0"' in a: players, nostats = roster(a), False

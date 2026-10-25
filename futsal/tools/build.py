@@ -166,7 +166,7 @@ PL = {
     'Гагаринг': ('gagaring', 'pl8', 'Краснодар', '—', ['#1d1d1b', '#c9a24b'], 45),
     'Собер': ('sober', 'pl8', 'Северская', '—', ['#d71920', '#1d1d1b'], 44),
     'Юнити': ('unity', 'pl8', 'Абинск', '—', ['#6a1b9a', '#ffffff'], 44),
-    'Авиатор': ('aviator', 'pl8', 'Абинск', '—', ['#1d9bd7', '#ffffff'], 44),
+    'Авиатор': ('aviator', 'pl8', 'Ростов-на-Дону', '—', ['#1d9bd7', '#ffffff'], 44),
 }
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
@@ -317,7 +317,7 @@ for z, (zname, side, quota) in PL_ZONES.items():
     rounds = 2 * (n - 1 + n % 2)
     src = {'pl6': 'составы — Межрегиональная мини-футбольная лига 2025/26 АМФ «Золотое кольцо» (mini-football76.ru)',
            'pl7': 'составы — протоколы чемпионата СЗФО по футзалу 2024/25 (nwfootball.ru)',
-           'pl8': 'составы — сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru, nml.su, ingame-sports.ru) и ВКонтакте'}.get(
+           'pl8': 'составы — заявки на Чемпионат ЮФО и СКФО (ingame-sports.ru) и сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru)'}.get(
            z, 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
     HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; {src}.\n"
                f"// Два круга в зоне; {'победитель зоны играет' if quota == 1 else f'{quota} лучших команды зоны играют'} во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"
