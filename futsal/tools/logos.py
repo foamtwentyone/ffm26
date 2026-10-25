@@ -11,7 +11,7 @@ os.makedirs(CACHE + '/logos', exist_ok=True)
 
 # id клубов в игре — из файлов лиг: название → id
 ids = {}
-for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5'):
+for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5', 'pl6', 'pl7'):
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
         ids[m.group(2)] = m.group(1)
 
@@ -46,6 +46,9 @@ if os.path.exists(CACHE + '/nagradion.json'):
     for t in json.load(open(CACHE + '/nagradion.json', encoding='utf8')):
         if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
         if t.get('logo') and os.path.exists(f"{CACHE}/saved/{t['logo']}"): teams.append(dict(t, logo='file:' + t['logo']))
+# зоны «Золотое кольцо» (goldfootball.ru) и «Северо-Запад» (st.joinsport.io) — ссылки собирают goldring.py и nwfutsal.py
+for f in ('goldring.json', 'nwfutsal.json'):
+    if os.path.exists(f'{CACHE}/{f}'): teams += json.load(open(f'{CACHE}/{f}', encoding='utf8'))
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']), t.get('logo')

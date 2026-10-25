@@ -60,6 +60,8 @@ for gid in games:
 out, pinfo = [], {}
 for tid, t in teams.items():
     page = get(f'/team/{tid}', f'team_{tid}')
+    # эмблема — в заголовке страницы команды (картинки лежат на goldfootball.ru)
+    logo = re.search(r'class="lbl_lft" nowrap><img src="([^"]+)"', page)
     if SEASON not in page: print('нет состава', SEASON, t['name'], file=sys.stderr)
     pids = list(dict.fromkeys(re.findall(r'<b><a href="/player/(\d+)">', page) + sorted(played[tid], key=int)))
 
@@ -78,7 +80,7 @@ for tid, t in teams.items():
         players.append({'pid': pid, 'name': name, 'birth': f'{birth}, {age} лет', 'amp': amp,
                         'stats': [str(s['games']), str(s['goals'])]})
         pinfo[f'zk_{pid}'] = {'full': None, 'games': s['games'], 'goals': s['goals']}
-    out.append({'league': 'zk', 'host': HOST, 'team_id': tid, 'name': t['name'], 'region': t['city'], 'logo': None, 'players': players})
+    out.append({'league': 'zk', 'host': HOST, 'team_id': tid, 'name': t['name'], 'region': t['city'], 'logo': logo and logo.group(1), 'players': players})
     print(t['name'], t['city'], len(players), file=sys.stderr)
 json.dump(out, open(CACHE + '/goldring.json', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
 all_info = json.load(open(CACHE + '/pinfo.json', encoding='utf8'))

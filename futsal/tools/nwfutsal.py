@@ -38,7 +38,8 @@ for tid in dict.fromkeys(re.findall(rf'{TOUR}/teams/application\?team_id=(\d+)',
     a = get(f'/tournament/{TOUR}/teams/application?team_id={tid}', f'app_{tid}')
     name = re.search(r'blk-tteams__promo-name"[^>]*>(.*?)</a>', a, re.S)
     region = re.search(r'Регион</div><div class="blk-tteams__attributes-value">(.*?)</div>', a)
-    teams[tid] = {'name': txt(name.group(1)), 'region': region and txt(region.group(1))}
+    logo = re.search(r'https://st\.joinsport\.io/team/%s/logo/[^"\s]+' % tid, a)
+    teams[tid] = {'name': txt(name.group(1)), 'region': region and txt(region.group(1)), 'logo': logo and logo.group(0)}
 cal = get(f'/tournament/{TOUR}/calendar', 'calendar')
 # в календаре есть и виджет футбольного турнира — его матчи отсекаются по отсутствию команд турнира в протоколе
 matches = list(dict.fromkeys(re.findall(r'/match/(\d+)', cal)))
@@ -92,7 +93,7 @@ for pid, s in stat.items():
     out[s['team'].most_common(1)[0][0]].append({'pid': pid, 'name': s['name'], 'birth': f'{birth:%d.%m.%Y}, {age} лет', 'amp': amp,
                                                 'stats': [str(s['games']), str(s['goals'])]})
     pinfo[f'nwf_{pid}'] = {'full': full, 'games': max(s['games'], career[0] if career else 0), 'goals': max(s['goals'], career[1] if career else 0)}
-res = [{'league': 'nwf', 'host': HOST, 'team_id': tid, 'name': t['name'], 'region': t['region'], 'logo': None, 'players': out[tid]}
+res = [{'league': 'nwf', 'host': HOST, 'team_id': tid, 'name': t['name'], 'region': t['region'], 'logo': t['logo'], 'players': out[tid]}
        for tid, t in teams.items()]
 for t in res: print(t['name'], t['region'], len(t['players']), file=sys.stderr)
 json.dump(res, open(CACHE + '/nwfutsal.json', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
