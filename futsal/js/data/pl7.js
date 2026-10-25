@@ -33,7 +33,7 @@ FM.addLeague({
 Егор Пунанцев|FW|38|0|RUS|46
 Антон Сучков|FW|39|0|RUS|42` },
 
-    { id: 'inter_nw', name: 'Интер', city: '—', stadium: '—', cap: 300, colors: ['#1d1d1b', '#1d5fa8'], rep: 35, money: 15, players: `
+    { id: 'inter_nw', name: 'Интер', city: 'Псков', stadium: '—', cap: 300, colors: ['#1d1d1b', '#1d5fa8'], rep: 35, money: 15, players: `
 Максим Богданов|GK|27|0|RUS|47
 Владислав Афанасьев|GK|37|0|RUS|42
 Александр Алексеев|UN|30|0|RUS|47
