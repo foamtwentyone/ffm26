@@ -1182,6 +1182,7 @@
     removeFromTeam(p) {
       if (!p.club) return;
       const t = this.teams[p.club];
+      p.lastTier = this.tierOf(t);  // уровень последнего клуба — свободный агент не опустится намного ниже
       t.players = t.players.filter((x) => x !== p.id);
       t.lineup = t.lineup.map((x) => (x === p.id ? null : x));
       t.bench = t.bench.filter((x) => x !== p.id);
@@ -1877,8 +1878,16 @@
       return out;
     }
 
+    // Игрок опускается не больше чем на уровень: из Суперлиги — максимум в Высшую лигу, из Высшей — в Первую;
+    // ветераны от 33 лет — на два уровня. Иностранные лиги считаются высшим уровнем.
+    willJoin(p, team) {
+      const from = p.club ? this.tierOf(this.teams[p.club]) : p.lastTier;
+      return !from || this.tierOf(team) - from <= (p.age >= 33 ? 2 : 1);
+    }
+
     playerInterest(p, team) {
       const s = this.s;
+      if (!this.willJoin(p, team)) return { score: 0, label: 'Не хочет переходить', why: ['не пойдёт в лигу так низко'], starter: false };
       const cur = p.club ? this.teams[p.club] : null;
       let sc = 55;
       const why = [];
@@ -2081,7 +2090,7 @@
         let pr = 0.0018 * Math.pow(p.ovr / 65, 4) * (rank <= 5 ? 1.4 : 1);
         if (p.listed) pr = 0.06;
         if (!FM.chance(pr)) continue;
-        const buyers = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1);
+        const buyers = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && this.willJoin(p, t));
         if (!buyers.length) continue;
         const b = FM.pick(buyers);
         const fee = FM.roundValue(p.value * (p.listed ? FM.rnd() * 0.3 + 0.75 : FM.rnd() * 0.45 + 0.9));
@@ -2092,7 +2101,7 @@
       for (const pid of u.players.slice()) {
         const p = this.players[pid];
         if (!p.release || p.release > p.value * 1.6 || !FM.chance(0.004)) continue;
-        const b = Object.values(this.teams).find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5);
+        const b = Object.values(this.teams).find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5 && this.willJoin(p, t));
         if (!b) continue;
         this.msg('Отступные активированы', `«${b.name}» выплатил отступные ${FM.money(p.release)} — ${p.name} уходит из клуба.`, 'transfer');
         this.transfer(p, b, p.release, null, FM.ri(3, 5));
@@ -2107,7 +2116,7 @@
       // подписание свободных агентов и разгрузка составов
       for (const t of ai) {
         if (t.players.length < 21 && s.freeAgents.length) {
-          const best = s.freeAgents.map((id) => this.players[id]).filter((p) => p && p.ovr <= this.teamBaseOvr(t) + 4)
+          const best = s.freeAgents.map((id) => this.players[id]).filter((p) => p && p.ovr <= this.teamBaseOvr(t) + 4 && this.willJoin(p, t))
             .sort((a, b) => b.ovr - a.ovr)[0];
           if (best) this.transfer(best, t, 0, null, FM.ri(1, 2));
         }
@@ -2139,7 +2148,7 @@
         if (t.rep > buyer.rep + 3) continue;
         for (const pid of t.players) {
           const p = this.players[pid];
-          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre || p.loan) continue;
+          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre || p.loan || !this.willJoin(p, buyer)) continue;
           const fee = this.askingPrice(p);
           if (fee > budget) continue;
           cands.push([p, fee]);
@@ -2147,7 +2156,7 @@
       }
       for (const pid of s.freeAgents) {
         const p = this.players[pid];
-        if (p && p.pos === pos && p.ovr >= wv + 2) cands.push([p, 0]);
+        if (p && p.pos === pos && p.ovr >= wv + 2 && this.willJoin(p, buyer)) cands.push([p, 0]);
       }
       if (!cands.length) return;
       cands.sort((a, b) => b[0].ovr - a[0].ovr);
