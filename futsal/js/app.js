@@ -82,8 +82,9 @@
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">✚${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">▮${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? '<span class="ico warn" title="Контракт истекает летом">✎</span>' : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
-  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
-  const compShort = (c) => (c === 'cup' ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
+  const ncupOf = (c) => (typeof c === 'string' && c.startsWith('cup_') && g().s.ncups ? g().s.ncups[c.slice(4)] : null);
+  const compName = (c) => (c === 'cup' ? 'Кубок России' : ncupOf(c) ? ncupOf(c).name : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compShort = (c) => (c === 'cup' || ncupOf(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
@@ -551,6 +552,12 @@
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
     if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? (c.stage === 1 || c.stage === 2 ? (c.byes.includes(u.id) ? 'старт с 1/8 финала' : `${c.stage}-й этап`) : esc(c.rounds[c.cur].name)) : c.stage && !c.byes.includes(u.id) && !c.groups.some((gr) => gr.teams.includes(u.id)) ? 'не участвуем' : 'выбыли'}</b></div>`);
+    const nc = !G.isRussian(u) && s.ncups && s.ncups[G.countryOf(u.league)];
+    if (nc) {
+      const R = nc.rounds[nc.cur];
+      const alive = !nc.winner && nc.alive.includes(u.id);
+      cupRows.push(`<div class="kvl"><span>${esc(nc.name)}</span><b>${nc.winner ? (nc.winner === u.id ? '🏆 победа!' : `победил ${esc(T(nc.winner).name)}`) : alive ? (nc.cur === 0 && nc.byes.includes(u.id) ? `старт со 2-го раунда` : esc(R.name)) : 'выбыли'}</b></div>`);
+    }
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
@@ -767,7 +774,8 @@
     const L = s.leagues[lid];
     let body = '';
     if (euroOf(view) && !(s.euro && s.euro[view])) UI.tablesView = 'table';
-    if (view === 'cup') body = cupView();
+    const lc = G.countryOf(lid);
+    if (view === 'cup') body = lc === 'RUS' ? cupView() : s.ncups && s.ncups[lc] ? ncupView(s.ncups[lc]) : '<div class="card muted">В этой стране национального кубка в игре нет.</div>';
     else if (view === 'po') body = playoffView();
     else if (euroOf(view) && s.euro && s.euro[view]) body = euroView(view);
     else {
@@ -794,10 +802,10 @@
       UI.roundKey = `${lid}|${s.date}`;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && (s.playoff.sl || s.playoff.vl || s.playoff.pl) ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">${lc === 'RUS' ? 'Кубок России' : esc(FM.NCUPS[lc] || 'Кубок')}</button>${s.playoff && (s.playoff.sl || s.playoff.vl || s.playoff.pl) ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
       ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
-      ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
-    main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
+      ${view === 'table' || view === 'cup' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
+    main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; if (UI.tablesView !== 'cup') UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
     if (rp) rp.onclick = () => { UI.round = Math.max(1, UI.round - 1); render(); };
@@ -821,6 +829,14 @@
     return stage('1-й этап', 'Клубы Высшей лиги (без дублей) и Первой лиги, по 4 группы на Западе и Востоке. Турнир в один круг, дальше проходит победитель группы.', c.groups, 1)
       + stage('2-й этап', 'Победители групп 1-го этапа: группы «Запад» и «Восток», в 1/8 финала выходят по два клуба.', c.groups2, 2)
       + (c.stage ? '<h2>Финальный этап</h2>' : '') + ko;
+  }
+
+  // национальный кубок иностранной лиги: сетка на вылет
+  function ncupView(c) {
+    const G = g(), s = G.s;
+    const game = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
+    return `<h2>${esc(c.name)}</h2><div class="small muted" style="margin:-6px 0 12px">Все клубы высшей лиги, на вылет; сильнейшие стартуют со второго раунда${c.byes.length ? ` (${c.byes.map((id) => esc(T(id).name)).join(', ')})` : ''}. Финал — на нейтральном поле.</div>
+      <div class="grid">${c.rounds.map((R) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>${R.matches.length ? R.matches.map(game).join('') : '<div class="muted small">Жеребьёвка после предыдущего раунда</div>'}${R.name === 'Финал' && c.winner ? `<div class="note">🏆 ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
   }
 
   function euroView(id) {
