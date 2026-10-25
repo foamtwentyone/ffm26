@@ -82,10 +82,10 @@
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">✚${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">▮${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? '<span class="ico warn" title="Контракт истекает летом">✎</span>' : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
-  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
-  const compShort = (c) => (c === 'cup' ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
+  const compName = (c) => (FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compShort = (c) => (FM.isCup(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
-  const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
+  const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : FM.isCup(m.comp) && g().cupOf(m.comp) && g().cupOf(m.comp).rounds[m.round - 1] ? g().cupOf(m.comp).rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
   // Поле суммы: крупные суммы вводятся в миллионах, мелкие — в тысячах. Внутри игры деньги хранятся в тыс. €.
@@ -317,7 +317,7 @@
   const TAB_HINTS = {
     squad: 'Нажмите на позицию на поле и выберите игрока. «Автосостав» поставит сильнейших. ОСН — в старте, ЗАП — на скамейке.',
     fixtures: 'Все матчи сезона. Нажмите на сыгранный матч, чтобы открыть отчёт.',
-    tables: 'Таблицы лиг, Кубок России, стыки и еврокубки.',
+    tables: 'Таблицы лиг, национальные кубки, плей-офф и еврокубки.',
     stats: 'Статистика ваших игроков с сортировкой и лидеры всех лиг.',
     transfers: 'Найдите игрока и нажмите на него, чтобы начать переговоры. Суммы вводятся в миллионах €.',
     finance: 'Деньги клуба, зарплаты и все поступления и расходы.',
@@ -343,7 +343,7 @@
     const [tab, sub] = target.split(':');
     UI.tab = tab;
     UI.sel = null;
-    if (tab === 'tables') UI.tablesView = sub || 'table';
+    if (tab === 'tables') { UI.tablesView = sub || 'table'; if (sub === 'cup') UI.cupC = null; }
     if (tab === 'transfers' && sub) UI.tf.view = sub;
     render();
     window.scrollTo(0, 0);
@@ -452,7 +452,7 @@
     const rec = U.coach.rec;
     const trophies = [];
     R.leagues.forEach((x) => { if (x.top[0].id === U.team) trophies.push(L[x.lid].name); });
-    if (R.cup === U.team) trophies.push('Кубок России');
+    (R.cups || []).forEach((c) => { if (c.winner === U.team) trophies.push(c.name); });
     R.euro.forEach((e) => { if (e.winner === U.team) trophies.push(e.name); });
     const myMove = R.moves.find((m) => m.id === U.team);
     modal(`<div class="rv-hero" style="--tc:${glow(ut)}">
@@ -471,7 +471,7 @@
       <h3>Победители</h3>
       <div class="rv-grid">
         ${R.euro.map((e) => `<div class="rv-card gold">${badge(T(e.winner), 'lg')}<div><div class="rv-comp">${esc(e.name)}</div><b>${esc(T(e.winner).name)}</b><div class="small muted">${score(e.final)}</div></div></div>`).join('')}
-        ${R.cup ? `<div class="rv-card gold">${badge(T(R.cup), 'lg')}<div><div class="rv-comp">Кубок России</div><b>${esc(T(R.cup).name)}</b><div class="small muted">${score(R.cupFinal)}</div></div></div>` : ''}
+        ${(R.cups || []).map((c) => `<div class="rv-card gold">${badge(T(c.winner), 'lg')}<div><div class="rv-comp">${flag(c.c)} ${esc(c.name)}</div><b>${esc(T(c.winner).name)}</b><div class="small muted">${score(c.final)}</div></div></div>`).join('')}
         ${R.leagues.map((x) => `<div class="rv-card ${x.top[0].id === U.team ? 'mine' : ''}">${badge(T(x.top[0].id), 'lg')}<div class="grow"><div class="rv-comp">${esc(L[x.lid].name)}</div><b>${esc(T(x.top[0].id).name)}</b> <span class="muted small">${x.top[0].pts} очк.</span>
           <div class="small muted">${x.top.slice(1).map((r, i) => `${medal(i + 1)} ${esc(T(r.id).name)}`).join(' · ')}</div></div></div>`).join('')}
       </div>
@@ -520,7 +520,7 @@
     const myRow = tab.find((r) => r.id === u.id);
     const conf = Math.round(s.board.conf);
     const upcoming = Object.values(s.matches).filter((m) => !m.played && (m.h === u.id || m.a === u.id)).sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 5);
-    const c = s.cup;
+    const c = G.userCup();
     const inCup = c && !c.winner && c.alive.includes(u.id);
 
     let hero = tile('Следующий матч', 'fixtures', '<div class="muted">Матчей в календаре нет — сезон подходит к концу.</div>', 'w2', 'ball');
@@ -551,7 +551,7 @@
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
-    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (c) cupRows.push(`<div class="kvl"><span>${esc(c.name)}</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
@@ -790,11 +790,12 @@
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубки</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
       ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
+    main.querySelectorAll('[data-cupc]').forEach((b) => b.onclick = () => { UI.cupC = b.dataset.cupc; render(); });
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
     if (rp) rp.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.max(1, UI.round - 1) }; render(); };
     if (rn) rn.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.min(L.rounds.length, UI.round + 1) }; render(); };
@@ -804,13 +805,21 @@
   }
 
   function cupView() {
-    const G = g(), s = G.s, c = s.cup;
-    return `<div class="grid">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
-      ${R.matches.length ? R.matches.map((id) => {
-        const m = s.matches[id];
-        const h = T(m.h), a = T(m.a);
-        return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(h.name)}</span><span class="score">–:–</span><span class="grow">${esc(a.name)}</span></div>`;
-      }).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
+    const G = g(), s = G.s;
+    const list = Object.keys(s.cups);
+    if (!list.length) return '<div class="card muted">Кубков в этом сезоне нет.</div>';
+    // по умолчанию — кубок страны, чья лига открыта в таблицах (или страны вашего клуба)
+    const def = G.countryOf(UI.tablesLid || G.userTeam().league);
+    const cc = list.includes(UI.cupC) ? UI.cupC : list.includes(def) ? def : list[0];
+    const c = s.cups[cc];
+    const pick = `<div class="lpick"><div class="lp-c">${list.map((k) => `<button data-cupc="${k}" class="${k === cc ? 'on' : ''}" title="${esc(s.cups[k].name)}">${flag(k)}<span>${esc(FM.NAT[k] || k)}</span></button>`).join('')}</div></div>`;
+    const line = (id) => {
+      const m = s.matches[id];
+      return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`;
+    };
+    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}${c.winner ? ` · 🏆 ${esc(T(c.winner).name)}` : ''}</h3>
+      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(400px,100%),1fr))">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
+      ${R.matches.length ? R.matches.map(line).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
       ${i === c.rounds.length - 1 && c.winner ? `<div class="note">🏆 ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
   }
 
