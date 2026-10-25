@@ -774,9 +774,13 @@
       const tab = G.table(lid);
       const z = G.zones(lid);
       const rounds = L.rounds.length;
-      let cur = UI.round;
+      // по умолчанию — последний тур, в котором уже есть сыгранные матчи; тур, выбранный стрелками,
+      // держится только в пределах дня и лиги
+      let cur = UI.round && UI.roundKey === `${lid}|${s.date}` ? UI.round : null;
       if (!cur || cur > rounds) {
-        cur = L.rounds.findIndex((r) => r.some((id) => !s.matches[id].played)) + 1 || rounds;
+        let last = 0;
+        L.rounds.forEach((r, i) => { if (r.some((id) => s.matches[id].played)) last = i + 1; });
+        cur = last || 1;
       }
       body = `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><div class="tbl-wrap"><table>
@@ -787,6 +791,7 @@
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
+      UI.roundKey = `${lid}|${s.date}`;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
       <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && (s.playoff.sl || s.playoff.vl || s.playoff.pl) ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
@@ -1264,6 +1269,8 @@
   }
 
   function afterUserMatch(m) {
+    // остальные матчи этого дня доигрываются сразу — таблица не отстаёт от твоего матча
+    g().simulateToday();
     save();
     render();
     matchReport(m.id);
@@ -1288,6 +1295,7 @@
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="pkrow hidden" id="pk"><div id="pkh"></div><div class="muted small">6-метровые</div><div id="pka"></div></div>
+      ${(() => { const c = G.matchContext(m); return c ? `<div class="center small muted" style="margin-top:8px">${esc(c)}</div>` : ''; })()}
       <div class="prog"><i id="pg" style="width:0"></i></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -1588,7 +1596,7 @@
       <div class="small">${esc(m.text)}</div>
       ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
         <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
-      ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button></div>` : ''}
+      ${m.type === 'job' && m.data ? (m.data.closed ? (m.data.result ? `<div class="small muted">${esc(m.data.result)}</div>` : '') : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>`) : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
     s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
@@ -1597,6 +1605,12 @@
       toast(esc(G.counterOffer(+b.dataset.haggle, v)), 4000); save(); render();
     });
     main.querySelectorAll('[data-dec]').forEach((b) => b.onclick = () => { G.answerOffer(+b.dataset.dec, false); save(); render(); });
+    main.querySelectorAll('[data-jobno]').forEach((b) => b.onclick = () => {
+      const m = s.inbox.find((x) => x.id === +b.dataset.jobno);
+      if (m && m.data) { m.data.closed = true; m.data.result = 'Вы отказались'; }
+      toast('Вы остаётесь в клубе.');
+      save(); render();
+    });
     main.querySelectorAll('[data-job]').forEach((b) => b.onclick = () => {
       const m = s.inbox.find((x) => x.id === +b.dataset.job);
       m.data.closed = true;

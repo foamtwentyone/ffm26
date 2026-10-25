@@ -358,8 +358,9 @@
       d = FM.nextWeekday(`${year + 1}-${L.spring.from}`, L.weekday);
       while (dates.length < all.length) { dates.push(d); d = FM.addDays(d, 7); }
       // Суперлига играет двойными турами: два матча с одним соперником на одной площадке в соседние дни
-      if (L.double) return all.map((round, ri) => round.flatMap(([h, a]) => [0, 1].map((k) => this.addMatch({ comp: L.id, round: ri + 1, date: FM.addDays(dates[ri], k), h, a }))));
-      return all.map((round, ri) => round.map(([h, a]) => this.addMatch({ comp: L.id, round: ri + 1, date: dates[ri], h, a })));
+      // матчи тура разнесены по соседним дням (например, пт/сб/вс вокруг игрового дня лиги), спаренные — пт+сб или сб+вс
+      if (L.double) return all.map((round, ri) => round.flatMap(([h, a]) => { const o = FM.pick([0, 0, 1]); return [0, 1].map((k) => this.addMatch({ comp: L.id, round: ri + 1, date: FM.addDays(dates[ri], o + k), h, a })); }));
+      return all.map((round, ri) => round.map(([h, a]) => this.addMatch({ comp: L.id, round: ri + 1, date: FM.addDays(dates[ri], FM.pick([-1, 0, 0, 1])), h, a })));
     }
 
     addMatch(m) {
@@ -1370,6 +1371,29 @@
       return new FM.Match(this, this.teams[m.h], this.teams[m.a], opts);
     }
 
+    // Подпись к «ответному» матчу: счёт серии плей-офф или первого матча спаренного тура с тем же соперником
+    matchContext(m) {
+      const s = this.s;
+      const N = (id) => this.teams[id].name;
+      if (m.comp === 'po' && s.playoff) {
+        for (const B of Object.values(s.playoff)) {
+          for (const R of (B && B.rounds) || []) {
+            const t = R.ties.find((x) => x.games.includes(m.id));
+            if (!t || R.best === 1) continue;
+            const prev = t.games.filter((id) => id !== m.id && s.matches[id].played).map((id) => s.matches[id]);
+            const w = (id) => prev.filter((x) => x.winner === id).length;
+            return `${t.games.indexOf(m.id) + 1}-й матч серии до ${(R.best + 1) / 2} побед · в серии ${N(t.hi)} ${w(t.hi)}:${w(t.lo)} ${N(t.lo)}`;
+          }
+        }
+      }
+      if (s.leagues[m.comp]) {
+        const f = Object.values(s.matches).find((x) => x.id !== m.id && x.comp === m.comp && x.round === m.round && x.played
+          && ((x.h === m.h && x.a === m.a) || (x.h === m.a && x.a === m.h)));
+        if (f) return `Первый матч: ${N(f.h)} ${f.hg}:${f.ag}${f.pens ? ` (пен. ${f.pens[0]}:${f.pens[1]})` : ''} ${N(f.a)}`;
+      }
+      return '';
+    }
+
     playMatch(m) {
       const sim = this.createMatch(m, false).runToEnd();
       this.applyMatch(m, sim);
@@ -1505,9 +1529,29 @@
       this.progressPlayoff();
     }
 
+    // Изредка матч чемпионата переносится (погода, перелёт, занятая арена) на будний день через 2–4 недели —
+    // так у клубов появляются игры в запасе. Новая дата — когда у обеих команд нет матчей за день до и после.
+    postponeToday() {
+      const s = this.s;
+      const busy = (team, d) => Object.values(s.matches).some((x) => (x.h === team || x.a === team) && Math.abs(Date.parse(x.date) - Date.parse(d)) <= 864e5);
+      for (const m of this.todayMatches()) {
+        if (!s.leagues[m.comp] || m.moved || Math.random() > 0.012) continue;
+        const last = this.lastDate([m.comp]);
+        for (const add of [16, 23, 30]) {
+          const d = FM.nextWeekday(FM.addDays(m.date, add), 3);
+          if (d > last || busy(m.h, d) || busy(m.a, d)) continue;
+          m.date = d;
+          m.moved = true;
+          if (m.h === s.user || m.a === s.user) this.msg('Матч перенесён', `Матч «${this.teams[m.h].name}» — «${this.teams[m.a].name}» перенесён на ${FM.fmtDate(d)}.`, 'squad');
+          break;
+        }
+      }
+    }
+
     nextDay() {
       const s = this.s;
       s.date = FM.addDays(s.date, 1);
+      this.postponeToday();
       const monday = FM.weekday(s.date) === 1;
       for (const id in this.players) {
         const p = this.players[id];
