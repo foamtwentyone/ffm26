@@ -541,7 +541,7 @@
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
-    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (G.isRussian(u) && c) cupRows.push(`<div class="kvl"><span>Кубок России</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? (c.stage === 1 || c.stage === 2 ? (c.byes.includes(u.id) ? 'старт с 1/8 финала' : `${c.stage}-й этап`) : esc(c.rounds[c.cur].name)) : c.stage && !c.byes.includes(u.id) && !c.groups.some((gr) => gr.teams.includes(u.id)) ? 'не участвуем' : 'выбыли'}</b></div>`);
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
@@ -794,14 +794,19 @@
   }
 
   function cupView() {
-    const G = g(), s = G.s, c = s.cup;
-    return `<div class="grid">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
-      ${R.matches.length ? R.matches.map((id) => {
-        const m = s.matches[id];
-        const h = T(m.h), a = T(m.a);
-        return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(h.name)}</span><span class="score">–:–</span><span class="grow">${esc(a.name)}</span></div>`;
-      }).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
+    const G = g(), s = G.s, c = s.cup, u = G.userTeam();
+    const game = (id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
+    // группа этапа: таблица и матчи; adv — сколько клубов выходит дальше
+    const group = (gr, adv) => `<div class="card tight"><h3>Группа ${esc(gr.name)}</h3><div class="tbl-wrap"><table><tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">ВП</th><th class="num">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
+      ${G.tableFrom(gr.teams, gr.mids).map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= adv ? 'up' : ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${esc(s.leagues[T(r.id).league].short)}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>
+      <div style="padding:8px 12px">${gr.mids.map(game).join('')}</div></div>`;
+    const stage = (title, note, gs, adv) => (gs && gs.length ? `<h2>${title}</h2><div class="small muted" style="margin:-6px 0 12px">${note}</div><div class="grid" style="margin-bottom:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))">${gs.map((gr) => group(gr, adv)).join('')}</div>` : '');
+    const ko = `<div class="grid">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
+      ${R.matches.length ? R.matches.map(game).join('') : `<div class="muted small">${i === 0 && c.stage ? `Жеребьёвка после 2-го этапа: 4 клуба из групп и клубы Суперлиги (${c.byes.map((id) => esc(T(id).name)).join(', ')})` : 'Жеребьёвка после предыдущего раунда'}</div>`}
       ${i === c.rounds.length - 1 && c.winner ? `<div class="note">🏆 ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
+    return stage('1-й этап', 'Клубы Высшей лиги (без дублей) и Первой лиги, по 4 группы на Западе и Востоке. Турнир в один круг, дальше проходит победитель группы.', c.groups, 1)
+      + stage('2-й этап', 'Победители групп 1-го этапа: группы «Запад» и «Восток», в 1/8 финала выходят по два клуба.', c.groups2, 2)
+      + (c.stage ? '<h2>Финальный этап</h2>' : '') + ko;
   }
 
   function euroView(id) {

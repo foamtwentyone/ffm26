@@ -4,10 +4,9 @@
   const SLOT_ORDER = ['GK', 'FW', 'DF', 'UN'];
   const MAX_SQUAD = 24;
   const MIN_SQUAD = 16;
+  // плей-офф Кубка (3-й этап) — по вторникам; групповые этапы — со вторника на четверг в начале сентября и в конце октября
   const CUP_ROUNDS = [
-    { name: '1/32 финала', date: '09-01', y: 0 },
-    { name: '1/16 финала', date: '09-22', y: 0 },
-    { name: '1/8 финала', date: '10-20', y: 0 },
+    { name: '1/8 финала', date: '11-17', y: 0 },
     { name: '1/4 финала', date: '12-08', y: 0 },
     { name: '1/2 финала', date: '02-23', y: 1 },
     { name: 'Финал', date: '03-24', y: 1 },
@@ -436,21 +435,46 @@
     }
 
     // ================== кубок России ==================
+    // 1-й этап: 8 групп по 4 (4 на Западе, 4 на Востоке) — все клубы Высшей лиги, кроме дублей, и сильнейшие клубы
+    // Первой лиги; группа играет турниром в один круг, дальше проходит победитель. 2-й этап: две группы по 4
+    // (Запад и Восток), выходят по двое. 3-й этап: эти 4 клуба и все 12 клубов Суперлиги, жеребьёвка — 1/8, 1/4, 1/2, финал.
     setupCup() {
       const s = this.s;
       const y = s.season;
-      const teams = Object.values(this.teams).filter((t) => !t.reserveOf && this.isRussian(t))
-        .sort((a, b) => this.tierOf(a) - this.tierOf(b) || b.rep - a.rep).map((t) => t.id);
-      let size = 2;
-      while (size < teams.length) size *= 2;
-      const target = size / 2;
-      const byes = Math.max(0, size - teams.length);
-      const rounds = CUP_ROUNDS.slice(CUP_ROUNDS.length - Math.log2(size));
+      const elig = Object.values(this.teams).filter((t) => !t.reserveOf && this.isRussian(t));
+      const top = elig.filter((t) => this.tierOf(t) === 1).map((t) => t.id);
+      const lower = elig.filter((t) => this.tierOf(t) > 1).sort((a, b) => this.tierOf(a) - this.tierOf(b) || b.rep - a.rep);
+      // по 16 клубов на Запад и Восток; если на одной стороне клубов не хватает, места добирают с другой
+      const W = [], E = [];
+      for (const t of lower) { const L = s.leagues[t.league].conf === 'E' ? E : W; if (L.length < 16) L.push(t); }
+      for (const t of lower) if (!W.includes(t) && !E.includes(t)) { if (W.length < 16) W.push(t); else if (E.length < 16) E.push(t); }
+      const start = FM.nextWeekday(`${y}-09-01`, 2);
+      const groups = [];
+      [W, E].forEach((list, si) => {
+        list.sort((a, b) => this.tierOf(a) - this.tierOf(b) || b.rep - a.rep);
+        // посев «змейкой»: клубы Высшей лиги разводятся по разным группам
+        const g4 = [[], [], [], []];
+        list.forEach((t, i) => { const r = Math.floor(i / 4), k = i % 4; g4[r % 2 ? 3 - k : k].push(t.id); });
+        g4.forEach((g, gi) => groups.push(this.cupGroup('ABCDEFGH'[si * 4 + gi], g, start, '1-й этап')));
+      });
       s.cup = {
-        rounds: rounds.map((r) => ({ name: r.name, date: `${y + r.y}-${r.date}`, matches: [] })),
-        cur: 0, byes: teams.slice(0, byes), alive: teams.slice(), winner: null, target,
+        stage: 1, groups, groups2: [],
+        rounds: CUP_ROUNDS.map((r) => ({ name: r.name, date: FM.nextWeekday(`${y + r.y}-${r.date}`, 2), matches: [] })),
+        cur: 0, byes: top, alive: W.concat(E).map((t) => t.id).concat(top), winner: null,
       };
-      this.drawCup(teams.slice(byes), 0);
+    }
+
+    // группа Кубка: турнир в один круг на одной площадке, три дня подряд; ничья — серия 6-метровых
+    cupGroup(name, teams, start, stage) {
+      const s = this.s;
+      const days = [[[0, 3], [1, 2]], [[0, 2], [3, 1]], [[0, 1], [2, 3]]];
+      const mids = [];
+      days.forEach((pairs, di) => pairs.forEach(([x, y]) => {
+        if (teams[x] == null || teams[y] == null) return;
+        mids.push(this.addMatch({ comp: 'cup', label: `${stage}, группа ${name}`, date: FM.addDays(start, di), h: teams[x], a: teams[y], neutral: true, shootout: true }));
+      }));
+      if (teams.includes(s.user)) this.msg(`Кубок России: ${stage}`, `Группа ${name}: ${teams.filter((id) => id !== s.user).map((id) => `«${this.teams[id].name}»`).join(', ')}. Турнир в один круг, начало ${FM.fmtDate(start)}.`, 'cup');
+      return { name, teams, mids };
     }
 
     drawCup(teamIds, ri) {
@@ -478,6 +502,35 @@
       const s = this.s;
       const c = s.cup;
       if (!c || c.winner) return;
+      const done = (gs) => gs.every((g) => g.mids.every((id) => s.matches[id].played));
+      const table = (g) => this.tableFrom(g.teams, g.mids).map((r) => r.id);
+      const outMsg = (gs, n, stage) => {
+        for (const g of gs) {
+          const pos = table(g).indexOf(s.user);
+          if (pos >= n) this.msg('Вылет из Кубка', `Команда заняла ${pos + 1}-е место в группе ${g.name} (${stage}) и выбыла из Кубка России.`, 'cup');
+        }
+      };
+      if (c.stage === 1) {
+        if (!done(c.groups)) return;
+        outMsg(c.groups, 1, '1-й этап');
+        const win = c.groups.map((g) => table(g)[0]);
+        const start = FM.nextWeekday(`${s.season}-10-20`, 2);
+        c.groups2 = [this.cupGroup('Запад', win.slice(0, 4), start, '2-й этап'), this.cupGroup('Восток', win.slice(4), start, '2-й этап')];
+        c.alive = win.concat(c.byes);
+        c.stage = 2;
+        this.news(`Кубок России: 1-й этап завершён, во 2-й этап вышли ${win.map((id) => `«${this.teams[id].name}»`).join(', ')}.`);
+        return;
+      }
+      if (c.stage === 2) {
+        if (!done(c.groups2)) return;
+        outMsg(c.groups2, 2, '2-й этап');
+        const adv = c.groups2.flatMap((g) => table(g).slice(0, 2));
+        c.alive = adv.concat(c.byes);
+        c.stage = 3;
+        this.news(`Кубок России: к клубам Суперлиги присоединяются ${adv.map((id) => `«${this.teams[id].name}»`).join(', ')}. Жеребьёвка 1/8 финала.`);
+        this.drawCup(c.alive, 0);
+        return;
+      }
       const R = c.rounds[c.cur];
       if (!R.matches.length || !R.matches.every((id) => s.matches[id].played)) return;
       const winners = R.matches.map((id) => s.matches[id].winner);
@@ -488,14 +541,14 @@
         if (c.winner === s.user) {
           this.msg('Кубок России наш!', 'Команда выиграла Кубок России! Руководство в восторге.', 'board');
           s.board.conf = Math.min(100, s.board.conf + 20);
-          this.userTeam().money += 1500;
+          this.userTeam().money += 1200;
         }
         return;
       }
       const losers = R.matches.map((id) => { const m = s.matches[id]; return m.winner === m.h ? m.a : m.h; });
       if (losers.includes(s.user)) this.msg('Вылет из Кубка', `Команда выбыла из Кубка России (${R.name}).`, 'cup');
       let next = winners;
-      if (c.cur === 0) next = winners.concat(c.byes);
+      if (c.cur === 0 && !c.stage) next = winners.concat(c.byes); // сохранения со старым форматом Кубка
       c.alive = next;
       c.cur++;
       this.drawCup(next, c.cur);
