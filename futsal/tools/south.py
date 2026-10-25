@@ -87,6 +87,10 @@ for f in sorted(glob.glob(CACHE + '/saved/south/*.html')):
     elif 'data-troster-pane="0"' in a: players, nostats = roster(a), False
     else: players, nostats = application(a), False
     # у ingame-sports в «играх» нули — роль игрока в команде неизвестна
-    out.append({'league': 'south', 'team_id': tid, 'nostats': nostats, 'players': players})
+    # эмблема join.sport: в сохранённой странице — локальная копия «<хэш>_173x173.jpg», оригинал лежит на st.joinsport.io
+    img = re.search(r'(?:team-promo|blk-tteams__promo)-?_?_?img"? src="[^"]*_files/([0-9a-f]{13}_173x173\.\w+)"', a)
+    jid = re.search(r'team/(\d+)/application|team_id=(\d+)', a)
+    logo = img and jid and f"https://st.joinsport.io/team/{jid.group(1) or jid.group(2)}/logo/{img.group(1)}"
+    out.append({'league': 'south', 'team_id': tid, 'nostats': nostats, 'logo': logo, 'players': players})
     print(tid, len(players), 'без статистики' if nostats else '')
 json.dump(out, open(CACHE + '/south.json', 'w', encoding='utf8'), ensure_ascii=False, indent=1)
