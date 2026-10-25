@@ -74,9 +74,10 @@ META = {
 # «Золотое кольцо», «Северо-Запад», «Юг» и Московская область в игре объединены с соседними или не представлены.
 # Зона клуба без указанного города определена по группе Кубка, в которой он играл. Цвета — по эмблемам.
 # Зоны: (название, сторона — конференция Высшей лиги, куда выходят клубы зоны, мест во Всероссийском финале)
-PL_ZONES = {'pl1': ('Москва и Московская область', 'W', 3), 'pl2': ('Приволжье', 'W', 3), 'pl3': ('Урал — Западная Сибирь', 'E', 3),
+PL_ZONES = {'pl1': ('Москва и Московская область', 'W', 2), 'pl2': ('Приволжье', 'W', 3), 'pl3': ('Урал — Западная Сибирь', 'E', 3),
             'pl4': ('Сибирь — Дальний Восток', 'E', 2), 'pl5': ('Санкт-Петербург', 'W', 2), 'pl6': ('Золотое кольцо', 'W', 1),
-            'pl7': ('Северо-Запад', 'W', 1), 'pl8': ('Юг и Северный Кавказ', 'W', 1)}
+            'pl7': ('Северо-Запад', 'W', 1), 'pl8': ('Юг и Северный Кавказ', 'W', 1),
+            'pl9': ('Центр', 'W', 1)}
 # название: (id, зона, город, площадка, цвета, уровень игроков)
 PL = {
     'СВОК': ('svok', 'pl1', 'Чехов', '—', ['#1d5fa8', '#ffffff'], 48),
@@ -167,6 +168,11 @@ PL = {
     'Собер': ('sober', 'pl8', 'Северская', '—', ['#d71920', '#1d1d1b'], 44),
     'Юнити': ('unity', 'pl8', 'Абинск', '—', ['#6a1b9a', '#ffffff'], 44),
     'Авиатор': ('aviator', 'pl8', 'Ростов-на-Дону', '—', ['#1d9bd7', '#ffffff'], 44),
+    # «Центр» — первая лига СФФ «Центр» 2025/26 (junior.uffc.ru, страницы сохранены вручную — tools/nagradion.py)
+    'Конфеста': ('konfesta', 'pl9', 'Касимов', '—', ['#1d5fa8', '#ffffff'], 46),
+    'Конфеста-2': ('konfesta2', 'pl9', 'Касимов', '—', ['#1d5fa8', '#ffffff'], 43),
+    'Хлебороб': ('khleborob', 'pl9', 'Хохольский', '—', ['#f5c400', '#3fae49'], 44),
+    'Энергетик': ('energetik_kur', 'pl9', 'Курчатов', '—', ['#1d9bd7', '#f39200'], 43),
 }
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
@@ -185,7 +191,14 @@ EDITS = {
 # текущие составы с sefl.ru (tools/sefl.py): игроки, которых нет в заявке Кубка, добавляются в клуб
 sefl = {t['team_id']: t['players'] for t in json.load(open(D + '/sefl.json', encoding='utf8'))} if os.path.exists(D + '/sefl.json') else {}
 
-RESERVE = {'kristall_m': 'kristall', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
+# домашняя зона Первой лиги для клубов Суперлиги и Высшей лиги — по городу (туда клуб уходит при вылете)
+HOME_ZONE = {'kprf': 'pl1', 'kprf2': 'pl1', 'kristall': 'pl5', 'newgen': 'pl7', 'newgen2': 'pl7', 'ukhta': 'pl7', 'vodnik': 'pl7',
+             'tzms': 'pl9', 'tzms2': 'pl9', 'torpedo': 'pl2', 'volga': 'pl2', 'saratov': 'pl2', 'progress': 'pl2', 'metallurg': 'pl2',
+             'zarya': 'pl8', 'gazprom': 'pl3', 'gazprom2': 'pl3', 'surgut': 'pl3', 'surgut2': 'pl3', 'tyumen': 'pl3', 'tyumen2': 'pl3',
+             'sofia': 'pl3', 'sinara': 'pl3', 'sinara2': 'pl3', 'optimum': 'pl3', 'yuzhural': 'pl3', 'fakel_yamal': 'pl3',
+             'iraero': 'pl4', 'norilsk': 'pl4', 'norilsk2': 'pl4', 'sibiryak': 'pl4'}
+
+RESERVE = {'kristall_m': 'kristall', 'konfesta2': 'konfesta', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
            'surgut2': 'surgut', 'newgen2': 'newgen', 'norilsk2': 'norilsk'}
 WEST = {'Водник', 'Волга Ульяновск', 'Газпром-Югра-2', 'Заря Луганск', 'КПРФ-2', 'Металлург', 'Саратов-Волга', 'ТЗМС-2', 'Ухта', 'Факел ЯМАЛ'}
 
@@ -204,6 +217,7 @@ nagr = json.load(open(D + '/nagradion.json', encoding='utf8')) if os.path.exists
 for t in nagr:
     # дубль суперлигового «Кристалла» в чемпионате Санкт-Петербурга называется просто «Кристалл»
     if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
+    if t['name'] == 'Конфеста_2': t['name'] = 'Конфеста-2'
 # зона «Золотое кольцо» (tools/goldring.py): амплуа, матчи и голы — из протоколов турнира
 zk = json.load(open(D + '/goldring.json', encoding='utf8')) if os.path.exists(D + '/goldring.json') else []
 # зона «Северо-Запад» (tools/nwfutsal.py): составы, амплуа и голы — из протоколов чемпионата СЗФО 2024/25
@@ -289,7 +303,7 @@ for t in teams:
     rows.sort(key=lambda r: (['GK', 'DF', 'UN', 'FW'].index(r[0]), r[1]))
     if t['name'] in PL: lg = PL[t['name']][1]
     else: lg = 'sl' if t['league'] == 'sl' else ('vlw' if t['name'] in WEST else 'vle')
-    extra = f", reserveOf: '{RESERVE[tid]}'" if tid in RESERVE else ''
+    extra = (f", reserveOf: '{RESERVE[tid]}'" if tid in RESERVE else '') + (f", zone: '{HOME_ZONE[tid]}'" if tid in HOME_ZONE else '')
     leagues[lg].append(f"    {{ id: '{tid}', name: '{t['name']}', city: '{city}', stadium: '{stadium}', cap: {cap}, colors: ['{colors[0]}', '{colors[1]}'], rep: {rep}, money: {money}{extra}, players: `\n" + '\n'.join(r[2] for r in rows) + '` },\n')
     print(t['name'], len(rows), file=sys.stderr)
 
@@ -317,7 +331,8 @@ for z, (zname, side, quota) in PL_ZONES.items():
     rounds = 2 * (n - 1 + n % 2)
     src = {'pl6': 'составы — Межрегиональная мини-футбольная лига 2025/26 АМФ «Золотое кольцо» (mini-football76.ru)',
            'pl7': 'составы — протоколы чемпионата СЗФО по футзалу 2024/25 (nwfootball.ru)',
-           'pl8': 'составы — заявки на Чемпионат ЮФО и СКФО (ingame-sports.ru) и сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru)'}.get(
+           'pl8': 'составы — заявки на Чемпионат ЮФО и СКФО (ingame-sports.ru) и сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru)',
+           'pl9': 'составы — первая лига СФФ «Центр» 2025/26 (junior.uffc.ru)'}.get(
            z, 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
     HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; {src}.\n"
                f"// Два круга в зоне; {'победитель зоны играет' if quota == 1 else f'{quota} лучших команды зоны играют'} во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"

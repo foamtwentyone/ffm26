@@ -5,7 +5,7 @@ FM.addLeague({
   autumn: { from: '09-05', rounds: 12 }, spring: { from: '02-06', rounds: 6 },
   ticket: 1.5, prize: [80, 60, 45, 35, 30, 25, 20, 15, 12],
   teams: [
-    { id: 'newgen2', name: 'Новая генерация-2', city: 'Сыктывкар', stadium: 'СК «Орбита»', cap: 500, colors: ['#00a651', '#ffffff'], rep: 44, money: 40, reserveOf: 'newgen', players: `
+    { id: 'newgen2', name: 'Новая генерация-2', city: 'Сыктывкар', stadium: 'СК «Орбита»', cap: 500, colors: ['#00a651', '#ffffff'], rep: 44, money: 40, reserveOf: 'newgen', zone: 'pl7', players: `
 Егор Тарабукин|GK|19|0|RUS|54
 Макар Колегов|GK|23|0|RUS|47
 Савелий Рудый|DF|19|0|RUS|56
@@ -20,7 +20,7 @@ FM.addLeague({
 Сергей Аккордов|FW|23|0|RUS|53
 Егор Шилов|FW|17|0|RUS|52` },
 
-    { id: 'norilsk2', name: 'Норильск-2', city: 'Норильск', stadium: 'МСК «Сопка» (Красноярск)', cap: 500, colors: ['#f39200', '#1d1d1b'], rep: 44, money: 40, reserveOf: 'norilsk', players: `
+    { id: 'norilsk2', name: 'Норильск-2', city: 'Норильск', stadium: 'МСК «Сопка» (Красноярск)', cap: 500, colors: ['#f39200', '#1d1d1b'], rep: 44, money: 40, reserveOf: 'norilsk', zone: 'pl4', players: `
 Максим Колмыков|GK|20|0|RUS|57
 Дмитрий Шаповалов|GK|22|0|RUS|48
 Дмитрий Сильчин|DF|23|0|RUS|57
@@ -36,7 +36,7 @@ FM.addLeague({
 Андрей Жижов|UN|21|0|RUS|46
 Александр Нистеренко|FW|22|0|RUS|55` },
 
-    { id: 'optimum', name: 'Оптимум', city: 'Первоуральск', stadium: 'Манеж «ВИЗ-Синара» (Екатеринбург)', cap: 500, colors: ['#6a1b9a', '#ffffff'], rep: 44, money: 50, players: `
+    { id: 'optimum', name: 'Оптимум', city: 'Первоуральск', stadium: 'Манеж «ВИЗ-Синара» (Екатеринбург)', cap: 500, colors: ['#6a1b9a', '#ffffff'], rep: 44, money: 50, zone: 'pl3', players: `
 Данил Усов|GK|20|0|RUS|58
 Никита Новоселов|GK|22|0|RUS|56
 Алексей Савичев|GK|23|0|RUS|53
@@ -56,7 +56,7 @@ FM.addLeague({
 Семен Фокин|FW|22|0|RUS|55
 Артем Богданов|FW|20|0|RUS|53` },
 
-    { id: 'progress', name: 'Прогресс', city: 'Глазов', stadium: 'ФОК «Прогресс»', cap: 1000, colors: ['#00843d', '#ffffff'], rep: 48, money: 80, players: `
+    { id: 'progress', name: 'Прогресс', city: 'Глазов', stadium: 'ФОК «Прогресс»', cap: 1000, colors: ['#00843d', '#ffffff'], rep: 48, money: 80, zone: 'pl2', players: `
 Сергей Поздеев|GK|32|0|RUS|61
 Карим Халиков|GK|18|0|RUS|56
 Андрей Кельдышев|DF|19|0|RUS|59
@@ -80,7 +80,7 @@ FM.addLeague({
 Всеволод Рудаков|FW|18|0|RUS|51
 Амир Хузятов|FW|23|0|RUS|49` },
 
-    { id: 'sinara2', name: 'Синара-2', city: 'Екатеринбург', stadium: 'Манеж «ВИЗ-Синара»', cap: 500, colors: ['#e30613', '#ffffff'], rep: 50, money: 60, reserveOf: 'sinara', players: `
+    { id: 'sinara2', name: 'Синара-2', city: 'Екатеринбург', stadium: 'Манеж «ВИЗ-Синара»', cap: 500, colors: ['#e30613', '#ffffff'], rep: 50, money: 60, reserveOf: 'sinara', zone: 'pl3', players: `
 Константин Измайлов|GK|18|0|RUS|58
 Алексей Рямов|GK|19|0|RUS|56
 Андрей Паньков|GK|19|0|RUS|53
@@ -106,7 +106,7 @@ FM.addLeague({
 Егор Гостев|FW|17|0|RUS|51
 Константин Цыганов|FW|18|0|RUS|50` },
 
-    { id: 'sofia', name: 'София', city: 'Тюмень', stadium: 'СК «Софи-Лэнд»', cap: 500, colors: ['#c2185b', '#ffffff'], rep: 42, money: 50, players: `
+    { id: 'sofia', name: 'София', city: 'Тюмень', stadium: 'СК «Софи-Лэнд»', cap: 500, colors: ['#c2185b', '#ffffff'], rep: 42, money: 50, zone: 'pl3', players: `
 Егор Белозеров|GK|20|0|RUS|52
 Давид Арвеладзе|GK|20|0|RUS|51
 Валентин Демчур|GK|19|0|RUS|46
@@ -134,7 +134,7 @@ FM.addLeague({
 Кирилл Деребенко|FW|18|0|RUS|46
 Артем Завалин|FW|17|0|RUS|42` },
 
-    { id: 'surgut2', name: 'Сургут-ЮКИОР', city: 'Ханты-Мансийск', stadium: 'УСК-1', cap: 500, colors: ['#ff6600', '#003399'], rep: 46, money: 50, reserveOf: 'surgut', players: `
+    { id: 'surgut2', name: 'Сургут-ЮКИОР', city: 'Ханты-Мансийск', stadium: 'УСК-1', cap: 500, colors: ['#ff6600', '#003399'], rep: 46, money: 50, reserveOf: 'surgut', zone: 'pl3', players: `
 Максим Шульга|GK|19|0|RUS|59
 Никита Митрофанов|GK|19|0|RUS|58
 Матвей Кожевников|GK|19|0|RUS|56
@@ -152,7 +152,7 @@ FM.addLeague({
 Артем Азаров|FW|18|0|RUS|56
 Матвей Кудрявцев|FW|18|0|RUS|46` },
 
-    { id: 'tyumen2', name: 'Тюмень-д', city: 'Тюмень', stadium: 'ДС «Партиком»', cap: 500, colors: ['#0d4ea1', '#ffffff'], rep: 50, money: 60, reserveOf: 'tyumen', players: `
+    { id: 'tyumen2', name: 'Тюмень-д', city: 'Тюмень', stadium: 'ДС «Партиком»', cap: 500, colors: ['#0d4ea1', '#ffffff'], rep: 50, money: 60, reserveOf: 'tyumen', zone: 'pl3', players: `
 Вячеслав Антуфьев|GK|17|0|RUS|57
 Степан Масловский|GK|18|0|RUS|56
 Егор Родин|GK|18|0|RUS|53
@@ -172,7 +172,7 @@ FM.addLeague({
 Олег Субботин|FW|17|0|RUS|57
 Кирилл Ращупкин|FW|16|0|RUS|56` },
 
-    { id: 'yuzhural', name: 'Южный Урал', city: 'Челябинск', stadium: 'СК «Метар-Спорт»', cap: 800, colors: ['#ffcc00', '#0033a0'], rep: 46, money: 70, players: `
+    { id: 'yuzhural', name: 'Южный Урал', city: 'Челябинск', stadium: 'СК «Метар-Спорт»', cap: 800, colors: ['#ffcc00', '#0033a0'], rep: 46, money: 70, zone: 'pl3', players: `
 Евгений Беляев|GK|21|0|RUS|59
 Владимир Кузьминых|GK|19|0|RUS|54
 Сергей Жабин|GK|16|0|RUS|47

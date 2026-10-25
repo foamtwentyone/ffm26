@@ -7,7 +7,7 @@ FM.addLeague({
   playoff: { size: 8, playIn: true },
   ticket: 4, prize: [600, 400, 300, 220, 180, 150, 120, 100, 90, 80, 70, 60],
   teams: [
-    { id: 'gazprom', name: 'Газпром-Югра', city: 'Югорск', stadium: 'КСК «Норд»', cap: 2500, colors: ['#0057a8', '#ffffff'], rep: 82, money: 900, players: `
+    { id: 'gazprom', name: 'Газпром-Югра', city: 'Югорск', stadium: 'КСК «Норд»', cap: 2500, colors: ['#0057a8', '#ffffff'], rep: 82, money: 900, zone: 'pl3', players: `
 Кирилл Щурок|GK|29|0|RUS|80
 Зураб Калмахелидзе|GK|35|0|RUS|79
 Андрей Максимовских|GK|21|0|RUS|72
@@ -23,7 +23,7 @@ FM.addLeague({
 Андрей Павлов|FW|29|0|RUS|77
 Дмитрий Прудников|FW|38|0|RUS|76` },
 
-    { id: 'iraero', name: 'ИрАэро', city: 'Иркутск', stadium: 'ДС «Труд»', cap: 2000, colors: ['#003f87', '#e30613'], rep: 70, money: 400, players: `
+    { id: 'iraero', name: 'ИрАэро', city: 'Иркутск', stadium: 'ДС «Труд»', cap: 2000, colors: ['#003f87', '#e30613'], rep: 70, money: 400, zone: 'pl4', players: `
 Александр Антонов|GK|26|0|RUS|72
 Георгий Пашин|GK|26|0|RUS|70
 Александр Захаров|GK|22|0|RUS|65
@@ -45,7 +45,7 @@ FM.addLeague({
 Александр Ситников|FW|28|0|RUS|74
 Денис Родин|FW|28|0|RUS|70` },
 
-    { id: 'kprf', name: 'КПРФ', city: 'Москва', stadium: 'СК «Юность» (Климовск)', cap: 1000, colors: ['#d71920', '#ffffff'], rep: 76, money: 600, players: `
+    { id: 'kprf', name: 'КПРФ', city: 'Москва', stadium: 'СК «Юность» (Климовск)', cap: 1000, colors: ['#d71920', '#ffffff'], rep: 76, money: 600, zone: 'pl1', players: `
 Булат Гайнатуллин|GK|26|0|RUS|75
 Дмитрий Путилов|GK|31|0|RUS|73
 Артём Салахов|GK|34|0|RUS|72
@@ -71,7 +71,7 @@ FM.addLeague({
 Дмитрий Шведко|FW|26|0|BLR|75
 Никита Анисимов|FW|30|0|RUS|68` },
 
-    { id: 'kristall', name: 'Кристалл', city: 'Санкт-Петербург', stadium: 'Nova Arena', cap: 3000, colors: ['#1b75bb', '#ffffff'], rep: 66, money: 300, players: `
+    { id: 'kristall', name: 'Кристалл', city: 'Санкт-Петербург', stadium: 'Nova Arena', cap: 3000, colors: ['#1b75bb', '#ffffff'], rep: 66, money: 300, zone: 'pl5', players: `
 Денис Касимчук|GK|25|0|RUS|71
 Илья Шумилов|GK|24|0|RUS|67
 Иван Поддубный|GK|40|0|RUS|61
@@ -89,7 +89,7 @@ FM.addLeague({
 Максим Герасимов|FW|31|0|RUS|71
 Андрей Алькин|FW|27|0|RUS|70` },
 
-    { id: 'newgen', name: 'Новая генерация', city: 'Сыктывкар', stadium: 'СК «Орбита»', cap: 1000, colors: ['#00a651', '#ffffff'], rep: 64, money: 250, players: `
+    { id: 'newgen', name: 'Новая генерация', city: 'Сыктывкар', stadium: 'СК «Орбита»', cap: 1000, colors: ['#00a651', '#ffffff'], rep: 64, money: 250, zone: 'pl7', players: `
 Александр Кригер|GK|34|0|RUS|70
 Александр Баклагин|GK|21|0|RUS|65
 Глеб Петров|GK|28|0|RUS|64
@@ -109,7 +109,7 @@ FM.addLeague({
 Андрей Пакель|FW|30|0|RUS|67
 Роман Иванин|FW|23|0|RUS|66` },
 
-    { id: 'norilsk', name: 'Норильск', city: 'Норильск', stadium: 'Спорт-холл «Айка»', cap: 1200, colors: ['#f39200', '#1d1d1b'], rep: 72, money: 450, players: `
+    { id: 'norilsk', name: 'Норильск', city: 'Норильск', stadium: 'Спорт-холл «Айка»', cap: 1200, colors: ['#f39200', '#1d1d1b'], rep: 72, money: 450, zone: 'pl4', players: `
 Николай Балашов|GK|29|0|RUS|74
 Виллиан Дорн|GK|31|0|BRA|71
 Александр Крюков|GK|21|0|RUS|65
@@ -128,7 +128,7 @@ FM.addLeague({
 Ренат Шакиров|FW|36|0|RUS|73
 Фелипе Парадински|FW|32|0|BRA|73` },
 
-    { id: 'sibiryak', name: 'Сибиряк', city: 'Новосибирск', stadium: 'ФСК «Сибиряк»', cap: 1000, colors: ['#e30613', '#ffffff'], rep: 66, money: 250, players: `
+    { id: 'sibiryak', name: 'Сибиряк', city: 'Новосибирск', stadium: 'ФСК «Сибиряк»', cap: 1000, colors: ['#e30613', '#ffffff'], rep: 66, money: 250, zone: 'pl4', players: `
 Дмитрий Юдин|GK|23|0|RUS|72
 Артём Алегин|GK|26|0|RUS|67
 Владислав Конюхов|GK|21|0|RUS|60
@@ -147,7 +147,7 @@ FM.addLeague({
 Иван Тузюк|FW|20|0|RUS|70
 Данил Сивцов|FW|24|0|RUS|68` },
 
-    { id: 'sinara', name: 'Синара', city: 'Екатеринбург', stadium: 'ДИВС', cap: 5000, colors: ['#e30613', '#ffffff'], rep: 76, money: 500, players: `
+    { id: 'sinara', name: 'Синара', city: 'Екатеринбург', stadium: 'ДИВС', cap: 5000, colors: ['#e30613', '#ffffff'], rep: 76, money: 500, zone: 'pl3', players: `
 Владислав Швецов|GK|22|0|RUS|73
 Кирилл Яруллин|GK|25|0|RUS|73
 Никита Фахрутдинов|DF|33|0|RUS|76
@@ -165,7 +165,7 @@ FM.addLeague({
 Егор Шишкин|FW|22|0|RUS|72
 Валерий Дёмин|FW|31|0|RUS|68` },
 
-    { id: 'surgut', name: 'Сургут', city: 'Сургут', stadium: 'СОК «Энергетик»', cap: 1200, colors: ['#ff6600', '#003399'], rep: 68, money: 350, players: `
+    { id: 'surgut', name: 'Сургут', city: 'Сургут', stadium: 'СОК «Энергетик»', cap: 1200, colors: ['#ff6600', '#003399'], rep: 68, money: 350, zone: 'pl3', players: `
 Сергей Рябинин|GK|29|0|RUS|72
 Александр Бойцов|GK|28|0|RUS|69
 Максим Емельянов|DF|28|0|RUS|74
@@ -184,7 +184,7 @@ FM.addLeague({
 Данил Карпюк|FW|26|0|RUS|69
 Денис Кузнецов|FW|23|0|RUS|64` },
 
-    { id: 'tzms', name: 'ТЗМС', city: 'Тула', stadium: 'МСК «Тулица»', cap: 2000, colors: ['#f5c400', '#003c71'], rep: 66, money: 300, players: `
+    { id: 'tzms', name: 'ТЗМС', city: 'Тула', stadium: 'МСК «Тулица»', cap: 2000, colors: ['#f5c400', '#003c71'], rep: 66, money: 300, zone: 'pl9', players: `
 Илья Беспалый|GK|33|0|RUS|71
 Альберт Агаджанов|GK|32|0|RUS|69
 Родион Залалетдинов|GK|37|0|RUS|60
@@ -205,7 +205,7 @@ FM.addLeague({
 Максим Коновалов|FW|25|0|RUS|70
 Дмитрий Катанэ|FW|33|0|RUS|65` },
 
-    { id: 'torpedo', name: 'Торпедо', city: 'Нижний Новгород', stadium: 'ФОК «Мещерский»', cap: 1000, colors: ['#111111', '#ffffff'], rep: 68, money: 350, players: `
+    { id: 'torpedo', name: 'Торпедо', city: 'Нижний Новгород', stadium: 'ФОК «Мещерский»', cap: 1000, colors: ['#111111', '#ffffff'], rep: 68, money: 350, zone: 'pl2', players: `
 Александр Костромин|GK|30|0|RUS|72
 Алексей Кряжевских|GK|24|0|RUS|70
 Богдан Незаметдинов|GK|18|0|RUS|59
@@ -225,7 +225,7 @@ FM.addLeague({
 Максим Мухин|UN|19|0|RUS|66
 Шохрух Махмадаминов|FW|28|0|RUS|69` },
 
-    { id: 'tyumen', name: 'Тюмень', city: 'Тюмень', stadium: 'СК «Центральный»', cap: 3000, colors: ['#0d4ea1', '#ffffff'], rep: 77, money: 600, players: `
+    { id: 'tyumen', name: 'Тюмень', city: 'Тюмень', stadium: 'СК «Центральный»', cap: 3000, colors: ['#0d4ea1', '#ffffff'], rep: 77, money: 600, zone: 'pl3', players: `
 Кирилл Суханов|GK|23|0|RUS|75
 Денис Субботин|GK|24|0|RUS|72
 Владлен Абдуразаков|GK|19|0|RUS|71

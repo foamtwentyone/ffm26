@@ -23,7 +23,8 @@ for f in sorted(glob.glob(CACHE + '/saved/*.html')):
     name = re.search(r'<t[hd][^>]*>\s*Название\s*</t[hd]>\s*<td[^>]*>(.*?)</td>', t, re.S)
     city = re.search(r'<t[hd][^>]*>\s*Город\s*</t[hd]>\s*<td[^>]*>(.*?)</td>', t, re.S)
     players = []
-    for row in re.findall(r'<div id="request_view_row_\d+"(.*?)ID РФС', t, re.S):
+    # строка игрока — до следующей строки или конца списка (на junior.uffc.ru строки «ID РФС» нет)
+    for row in re.split(r'<div id="request_view_row_\d+"', t)[1:]:
         last = re.search(r'title="Страница профиля">(.*?)</a>', row, re.S)
         rest = re.search(r'</strong><br>(.*?)<br>(.*?)</div>', row, re.S)
         pid = re.search(r'/player/(\d+)', row)

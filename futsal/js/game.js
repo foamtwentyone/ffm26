@@ -99,7 +99,7 @@
         for (const T of L.teams) {
           const team = {
             id: T.id, name: T.name, city: T.city, stadium: T.stadium, cap: T.cap, colors: T.colors,
-            rep: T.rep || 50, money: T.money, league: L.id, zone: L.tier === 3 ? L.id : null, reserveOf: T.reserveOf || null, logoData: T.logoData || undefined,
+            rep: T.rep || 50, money: T.money, league: L.id, zone: L.tier === 3 ? L.id : T.zone || null, reserveOf: T.reserveOf || null, logoData: T.logoData || undefined,
             players: [], formation: '1-2-1', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 },
             form: [], sponsor: 0, fin: { income: 0, expense: 0, log: [] },
           };
@@ -1031,9 +1031,9 @@
           if (!vl) continue;
           const last = this.table(vl).slice().reverse().find((r) => !moves.some(([m]) => m === r.id));
           if (!last) continue;
-          // клуб, поднимавшийся из Первой лиги, возвращается в свою зону; остальные — в зону своей стороны, где меньше клубов
+          // клуб уходит в свою зону (откуда поднимался или по городу); без неё — в зону своей стороны, где меньше клубов
           const home = this.teams[last.id].zone;
-          const zone = home && s.leagues[home] && s.leagues[home].conf === side ? home
+          const zone = home && s.leagues[home] && s.leagues[home].tier === 3 ? home
             : this.thirdLeagues().filter((lid) => s.leagues[lid].conf === side).sort((a, b) => size(a) - size(b))[0] || this.teams[id].league;
           moves.push([id, vl], [last.id, zone]);
         }

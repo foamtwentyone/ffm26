@@ -5,7 +5,7 @@ FM.addLeague({
   autumn: { from: '09-05', rounds: 12 }, spring: { from: '02-06', rounds: 6 },
   ticket: 1.5, prize: [80, 60, 45, 35, 30, 25, 20, 15, 12, 10],
   teams: [
-    { id: 'vodnik', name: 'Водник', city: 'Архангельск', stadium: 'ЦРС «Норд Арена»', cap: 1000, colors: ['#0072ce', '#ffffff'], rep: 42, money: 40, players: `
+    { id: 'vodnik', name: 'Водник', city: 'Архангельск', stadium: 'ЦРС «Норд Арена»', cap: 1000, colors: ['#0072ce', '#ffffff'], rep: 42, money: 40, zone: 'pl7', players: `
 Алексей Рацкевич|GK|25|0|RUS|54
 Кирилл Шухтин|GK|18|0|RUS|52
 Тимофей Марков|GK|16|0|RUS|42
@@ -27,7 +27,7 @@ FM.addLeague({
 Андрей Заволокин|FW|22|0|RUS|45
 Ярослав Артемьев|FW|15|0|RUS|42` },
 
-    { id: 'volga', name: 'Волга Ульяновск', city: 'Ульяновск', stadium: 'УСК «Новое поколение»', cap: 1000, colors: ['#005bab', '#ffffff'], rep: 48, money: 80, players: `
+    { id: 'volga', name: 'Волга Ульяновск', city: 'Ульяновск', stadium: 'УСК «Новое поколение»', cap: 1000, colors: ['#005bab', '#ffffff'], rep: 48, money: 80, zone: 'pl2', players: `
 Игорь Трушкин|GK|32|0|RUS|60
 Давид Савлохов|GK|41|0|RUS|51
 Даниил Козлов|GK|21|0|RUS|50
@@ -45,7 +45,7 @@ FM.addLeague({
 Иван Савинов|FW|25|0|RUS|49
 Даниил Агафонов|FW|18|0|RUS|48` },
 
-    { id: 'gazprom2', name: 'Газпром-Югра-2', city: 'Югорск', stadium: 'ДС «Триумф» (Люберцы)', cap: 500, colors: ['#0057a8', '#ffffff'], rep: 50, money: 60, reserveOf: 'gazprom', players: `
+    { id: 'gazprom2', name: 'Газпром-Югра-2', city: 'Югорск', stadium: 'ДС «Триумф» (Люберцы)', cap: 500, colors: ['#0057a8', '#ffffff'], rep: 50, money: 60, reserveOf: 'gazprom', zone: 'pl3', players: `
 Владимир Цуриков|GK|16|0|RUS|56
 Адил Куватбек|GK|19|0|KGZ|52
 Константин Гладунов|GK|18|0|RUS|49
@@ -66,7 +66,7 @@ FM.addLeague({
 Азизбек Даутов|FW|20|0|RUS|58
 Денис Бурделя|FW|16|0|RUS|47` },
 
-    { id: 'zarya', name: 'Заря Луганск', city: 'Ростов-на-Дону', stadium: 'СШОР № 13 (Таганрог)', cap: 800, colors: ['#000000', '#f7d117'], rep: 45, money: 60, players: `
+    { id: 'zarya', name: 'Заря Луганск', city: 'Ростов-на-Дону', stadium: 'СШОР № 13 (Таганрог)', cap: 800, colors: ['#000000', '#f7d117'], rep: 45, money: 60, zone: 'pl8', players: `
 Андрей Марков|GK|20|0|RUS|58
 Георгий Дрёмов|GK|19|0|RUS|52
 Вячеслав Кобец|GK|49|0|RUS|43
@@ -82,7 +82,7 @@ FM.addLeague({
 Владимир Рыдман|UN|23|0|RUS|50
 Александр Кравец|FW|21|0|RUS|54` },
 
-    { id: 'kprf2', name: 'КПРФ-2', city: 'Москва', stadium: 'СК «Старт» (Реутов)', cap: 500, colors: ['#d71920', '#ffffff'], rep: 50, money: 60, reserveOf: 'kprf', players: `
+    { id: 'kprf2', name: 'КПРФ-2', city: 'Москва', stadium: 'СК «Старт» (Реутов)', cap: 500, colors: ['#d71920', '#ffffff'], rep: 50, money: 60, reserveOf: 'kprf', zone: 'pl1', players: `
 Захар Буслаев|GK|23|0|RUS|63
 Евгений Тронин|GK|19|0|RUS|62
 Сергей Карпов|GK|18|0|RUS|48
@@ -97,7 +97,7 @@ FM.addLeague({
 Максим Михайлов|UN|17|0|RUS|52
 Денис Исаков|FW|25|0|RUS|63` },
 
-    { id: 'metallurg', name: 'Металлург', city: 'Медногорск', stadium: 'ФОК «Сокол»', cap: 800, colors: ['#1c3f94', '#f7a600'], rep: 50, money: 80, players: `
+    { id: 'metallurg', name: 'Металлург', city: 'Медногорск', stadium: 'ФОК «Сокол»', cap: 800, colors: ['#1c3f94', '#f7a600'], rep: 50, money: 80, zone: 'pl2', players: `
 Ярослав Плево|GK|25|0|RUS|61
 Алексей Семенов|GK|20|0|RUS|60
 Владислав Дедов|GK|22|0|RUS|54
@@ -117,7 +117,7 @@ FM.addLeague({
 Кирилл Старостин|FW|26|0|RUS|60
 Алексей Григорьев|FW|20|0|RUS|50` },
 
-    { id: 'saratov', name: 'Саратов-Волга', city: 'Саратов', stadium: 'ФОК «Юбилейный»', cap: 800, colors: ['#0b4ea2', '#ffffff'], rep: 48, money: 80, players: `
+    { id: 'saratov', name: 'Саратов-Волга', city: 'Саратов', stadium: 'ФОК «Юбилейный»', cap: 800, colors: ['#0b4ea2', '#ffffff'], rep: 48, money: 80, zone: 'pl2', players: `
 Кирилл Ермаков|GK|26|0|RUS|61
 Артем Либерцев|GK|19|0|RUS|59
 Иван Артёмов|GK|18|0|RUS|46
@@ -139,7 +139,7 @@ FM.addLeague({
 Никита Федосеев|FW|18|0|RUS|51
 Денис Олиниченко|FW|20|0|RUS|49` },
 
-    { id: 'tzms2', name: 'ТЗМС-2', city: 'Тула', stadium: 'УСК «Новое поколение»', cap: 500, colors: ['#f5c400', '#003c71'], rep: 44, money: 40, reserveOf: 'tzms', players: `
+    { id: 'tzms2', name: 'ТЗМС-2', city: 'Тула', stadium: 'УСК «Новое поколение»', cap: 500, colors: ['#f5c400', '#003c71'], rep: 44, money: 40, reserveOf: 'tzms', zone: 'pl9', players: `
 Герман Валуев|GK|21|0|RUS|55
 Илья Дегтярев|GK|17|0|RUS|53
 Валерий Дёмин|GK|17|0|RUS|48
@@ -160,7 +160,7 @@ FM.addLeague({
 Дмитрий Газетников|FW|20|0|RUS|48
 Иван Воленко|FW|18|0|RUS|46` },
 
-    { id: 'ukhta', name: 'Ухта', city: 'Ухта', stadium: 'УСК «Ухта»', cap: 1500, colors: ['#0a3d91', '#ffffff'], rep: 54, money: 80, players: `
+    { id: 'ukhta', name: 'Ухта', city: 'Ухта', stadium: 'УСК «Ухта»', cap: 1500, colors: ['#0a3d91', '#ffffff'], rep: 54, money: 80, zone: 'pl7', players: `
 Никита Кречетов|GK|20|0|RUS|61
 Наиль Ханнанов|GK|22|0|RUS|59
 Артем Сиротин|GK|19|0|RUS|51
@@ -180,7 +180,7 @@ FM.addLeague({
 Артем Антышев|FW|17|0|RUS|55
 Юрий Рочев|FW|18|0|RUS|49` },
 
-    { id: 'fakel_yamal', name: 'Факел ЯМАЛ', city: 'Новый Уренгой', stadium: '«Факел Арена»', cap: 1000, colors: ['#0072bc', '#ffffff'], rep: 52, money: 120, players: `
+    { id: 'fakel_yamal', name: 'Факел ЯМАЛ', city: 'Новый Уренгой', stadium: '«Факел Арена»', cap: 1000, colors: ['#0072bc', '#ffffff'], rep: 52, money: 120, zone: 'pl3', players: `
 Ахмед Цокаев|GK|22|0|RUS|63
 Алексей Егин|GK|25|0|RUS|61
 Максим Крючков|GK|16|0|RUS|46
