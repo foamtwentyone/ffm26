@@ -132,7 +132,7 @@ FM.addLeague({
 Денис Савельев|FW|22|0|RUS|40
 Даниил Голубев|FW|22|0|RUS|39` },
 
-    { id: 'kamchatka_dyussh', name: 'ДЮСШ Камчатка', city: 'Петропавловск-Камчатский', stadium: '—', cap: 300, colors: ['#f39200', '#ffffff'], rep: 34, money: 15, players: `
+    { id: 'kamchatka_dyussh', name: 'ДЮСШ Камчатка', city: 'Петропавловск-Камчатский', stadium: '—', cap: 300, colors: ['#f39200', '#ffffff'], rep: 34, money: 15, reserveOf: 'kamchatka', players: `
 Кирилл Титов|GK|18|0|RUS|38
 Евгений Зуев|GK|16|0|RUS|35
 Виктор Киселёв|DF|19|0|RUS|41

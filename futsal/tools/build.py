@@ -239,7 +239,7 @@ HOME_ZONE = {'kprf': 'pl1', 'kprf2': 'pl1', 'kristall': 'pl5', 'newgen': 'pl7', 
              'sofia': 'pl3', 'sinara': 'pl3', 'sinara2': 'pl3', 'optimum': 'pl3', 'yuzhural': 'pl3', 'fakel_yamal': 'pl3',
              'iraero': 'pl4', 'norilsk': 'pl4', 'norilsk2': 'pl4', 'sibiryak': 'pl4'}
 
-RESERVE = {'kristall_m': 'kristall', 'konfesta2': 'konfesta', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
+RESERVE = {'kristall_m': 'kristall', 'konfesta2': 'konfesta', 'kamchatka_dyussh': 'kamchatka', 'kprf2': 'kprf', 'gazprom2': 'gazprom', 'tzms2': 'tzms', 'sinara2': 'sinara', 'tyumen2': 'tyumen',
            'surgut2': 'surgut', 'newgen2': 'newgen', 'norilsk2': 'norilsk'}
 WEST = {'Водник', 'Волга Ульяновск', 'Газпром-Югра-2', 'Заря Луганск', 'КПРФ-2', 'Металлург', 'Саратов-Волга', 'ТЗМС-2', 'Ухта', 'Факел ЯМАЛ'}
 
