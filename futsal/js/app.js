@@ -546,8 +546,8 @@
       const e = s.euro[euroMine.id];
       let st;
       if (e.winner) st = e.winner === u.id ? '🏆 победа!' : `победил ${esc(T(e.winner).name)}`;
-      else if (e.phase === 'league') st = `${G.euroTable(euroMine.id).find((r) => r.id === u.id).pos}-е место`;
-      else { const R = e.ko[e.ko.length - 1]; st = e.final ? 'финал' : R ? esc(R.name) : ''; }
+      else if (!e.sf.length) { const r = G.euroTable(euroMine.id).find((x) => x.id === u.id); st = `группа ${r.group}, ${r.pos}-е место`; }
+      else st = [...e.sf, e.final, e.third].some((mid) => mid && [s.matches[mid].h, s.matches[mid].a].includes(u.id)) ? 'Финал четырёх' : 'выбыли';
       cupRows.push(`<div class="kvl"><span>${esc(euroMine.name)}</span><b>${st}</b></div>`);
     }
     main.innerHTML = `<div class="dash dash-simple">
@@ -774,7 +774,7 @@
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num" title="Победы в серии 6-метровых">ВП</th><th class="num" title="Поражения в серии 6-метровых">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', L.tier === 1 ? '1/4 финала плей-офф' : L.tier === 2 ? 'плей-офф' : 'Всероссийский финал (финалисты выходят в Высшую лигу)'], ['po', 'стыковой турнир за 1/4 финала'], ['down', L.tier === 1 ? 'вылет (меняется с победителем Высшей лиги)' : 'вылет (меняется с финалистом Первой лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['up', G.countryOf(L.id) !== 'RUS' ? (FM.EURO[0] && FM.EURO[0].quota[G.countryOf(L.id)] ? 'Лига чемпионов УЕФА' : 'чемпион') : L.tier === 1 ? '1/4 финала плей-офф' : L.tier === 2 ? 'плей-офф' : 'Всероссийский финал (финалисты выходят в Высшую лигу)'], ['po', 'стыковой турнир за 1/4 финала'], ['down', L.tier === 1 ? 'вылет (меняется с победителем Высшей лиги)' : 'вылет (меняется с финалистом Первой лиги)']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()} · победа — 3 очка, победа по 6-метровым — 2, поражение по 6-метровым — 1${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
@@ -812,24 +812,15 @@
   function euroView(id) {
     const G = g(), s = G.s, u = G.userTeam();
     const E = euroOf(id), e = s.euro[id];
-    const tab = G.euroTable(id);
-    const zone = (pos) => (pos <= 4 ? 'up' : pos <= 12 ? 'po' : '');
-    const mdCount = e.md.length;
-    let cur = UI.euroMd && UI.euroMd[id];
-    if (!cur) cur = (e.md.findIndex((md) => md.some((mid) => !s.matches[mid].played)) + 1) || mdCount;
-    UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
-    const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
-    const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
-    const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">🏆 ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
-    return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
-      <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
-        <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
-        ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${zone(r.pos)}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${esc(s.leagues[T(r.id).league].short)}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}
-      </table></div><div class="small muted" style="padding:10px 16px"><span class="zone up"></span>сразу в 1/4 финала &nbsp; <span class="zone po"></span>стыки за 1/4 финала</div></div>
-      <div style="display:grid;gap:16px;align-content:start">
-        <div class="card"><div class="row" style="margin:14px 0 8px"><button class="btn sm" id="ep">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[e.md[cur - 1][0]].date)}</b><button class="btn sm" id="en">›</button></div>${e.md[cur - 1].map(line).join('')}</div>
-        ${ko}${fin}
-      </div></div>`;
+    const game = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
+    const country = (t) => esc(s.leagues[t.league].short);
+    const group = (gr) => `<div class="card tight"><h3>Группа ${gr.name}</h3><div class="tbl-wrap"><table><tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">ВП</th><th class="num">ПП</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
+      ${G.tableFrom(gr.teams, gr.mids).map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${r.pos === 1 ? 'up' : ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${country(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.ow}</td><td class="num">${r.ol}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>
+      <div style="padding:8px 12px">${gr.mids.map(game).join('')}</div></div>`;
+    const f4 = e.sf.length ? `<div class="card"><h3>Финал четырёх</h3>${e.sf.map(game).join('')}${e.third ? `<div class="small muted" style="margin-top:8px">Матч за 3-е место</div>${game(e.third)}` : ''}${e.final ? `<div class="small muted" style="margin-top:8px">Финал</div>${game(e.final)}` : ''}${e.winner ? `<div class="note">🏆 ${esc(T(e.winner).name)}</div>` : ''}</div>`
+      : '<div class="card"><h3>Финал четырёх</h3><div class="small muted">Победители групп сыграют в конце мая на нейтральной площадке: 1/2 финала, матч за 3-е место и финал.</div></div>';
+    return `<h2>${esc(E.name)}</h2><div class="small muted" style="margin:-6px 0 12px">16 клубов, 4 группы — турнир в один круг на одной площадке (ничья — серия 6-метровых), в Финал четырёх выходят победители групп.</div>
+      <div class="grid" style="margin-bottom:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))">${e.groups.map(group).join('')}</div>${f4}`;
   }
 
   function playoffView() {

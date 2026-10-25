@@ -11,9 +11,10 @@ os.makedirs(CACHE + '/logos', exist_ok=True)
 
 # id клубов в игре — из файлов лиг: название → id
 ids = {}
-for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5', 'pl6', 'pl7', 'pl8', 'pl9', 'pl10', 'pl11'):
+for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5', 'pl6', 'pl7', 'pl8', 'pl9', 'pl10', 'pl11', 'esp', 'por', 'ita', 'bra'):
+    if not os.path.exists(f'{HERE}/../js/data/{f}.js'): continue
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
-        ids[m.group(2)] = m.group(1)
+        ids.setdefault(m.group(2), m.group(1))  # при совпадении названий приоритет у российских клубов
 
 def pack(raw):
     im = Image.open(raw).convert('RGBA')
@@ -50,6 +51,11 @@ if os.path.exists(CACHE + '/nagradion.json'):
 # зоны «Золотое кольцо» (goldfootball.ru) и «Северо-Запад» (st.joinsport.io) — ссылки собирают goldring.py и nwfutsal.py
 for f in ('goldring.json', 'nwfutsal.json', 'south.json'):
     if os.path.exists(f'{CACHE}/{f}'): teams += json.load(open(f'{CACHE}/{f}', encoding='utf8'))
+# иностранные клубы (onefutsal.com, tools/foreign.py): id клуба — «<лига>_<адрес страницы клуба>»
+if os.path.exists(CACHE + '/onefutsal.json'):
+    for c in json.load(open(CACHE + '/onefutsal.json', encoding='utf8')):
+        sl = re.sub(r'[^a-z0-9]+', '_', c['url'].rstrip('/').rsplit('/', 1)[1].lower()).strip('_')[:24]
+        teams.append({'league': 'of', 'team_id': f"{c['league']}_{sl}", 'logo': c['logo']})
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']) if 'name' in t else t['team_id'], t.get('logo')  # в south.json вместо названия — id клуба
