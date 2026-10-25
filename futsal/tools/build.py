@@ -234,7 +234,7 @@ sefl = {t['team_id']: t['players'] for t in json.load(open(D + '/sefl.json', enc
 
 # домашняя зона Первой лиги для клубов Суперлиги и Высшей лиги — по городу (туда клуб уходит при вылете)
 HOME_ZONE = {'kprf': 'pl1', 'kprf2': 'pl1', 'kristall': 'pl5', 'newgen': 'pl7', 'newgen2': 'pl7', 'ukhta': 'pl7', 'vodnik': 'pl7',
-             'tzms': 'pl9', 'tzms2': 'pl9', 'torpedo': 'pl2', 'volga': 'pl2', 'saratov': 'pl2', 'progress': 'pl2', 'metallurg': 'pl2',
+             'tzms': 'pl9', 'tzms2': 'pl9', 'torpedo': 'pl2', 'volga': 'pl2', 'saratov': 'pl2', 'progress': 'pl3', 'metallurg': 'pl2',
              'zarya': 'pl8', 'gazprom': 'pl3', 'gazprom2': 'pl3', 'surgut': 'pl3', 'surgut2': 'pl3', 'tyumen': 'pl3', 'tyumen2': 'pl3',
              'sofia': 'pl3', 'sinara': 'pl3', 'sinara2': 'pl3', 'optimum': 'pl3', 'yuzhural': 'pl3', 'fakel_yamal': 'pl3',
              'iraero': 'pl4', 'norilsk': 'pl4', 'norilsk2': 'pl4', 'sibiryak': 'pl4'}

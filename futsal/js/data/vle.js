@@ -56,7 +56,7 @@ FM.addLeague({
 Семен Фокин|FW|22|0|RUS|55
 Артем Богданов|FW|20|0|RUS|53` },
 
-    { id: 'progress', name: 'Прогресс', city: 'Глазов', stadium: 'ФОК «Прогресс»', cap: 1000, colors: ['#00843d', '#ffffff'], rep: 48, money: 80, zone: 'pl2', players: `
+    { id: 'progress', name: 'Прогресс', city: 'Глазов', stadium: 'ФОК «Прогресс»', cap: 1000, colors: ['#00843d', '#ffffff'], rep: 48, money: 80, zone: 'pl3', players: `
 Сергей Поздеев|GK|32|0|RUS|61
 Карим Халиков|GK|18|0|RUS|56
 Андрей Кельдышев|DF|19|0|RUS|59
