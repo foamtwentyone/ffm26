@@ -351,6 +351,8 @@ tr.sel td { background: rgba(255, 201, 60, .14) !important; }
 .board .sc { position: relative; font-family: var(--f-display); font-size: 60px; font-weight: 400; font-variant-numeric: tabular-nums; text-align: center; line-height: 1; padding: 10px 24px; border-radius: 18px; background: rgba(2, 4, 16, .65); border: 1px solid var(--stroke); text-shadow: 0 0 30px rgba(255,255,255,.35); }
 .board .min { position: relative; text-align: center; color: var(--gold); font-family: var(--f-display); font-size: 18px; margin-top: 8px; }
 .board .min.live::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-right: 8px; vertical-align: middle; animation: live 1.2s infinite; }
+.board .agg { position: relative; text-align: center; margin-top: 8px; font-size: 14px; color: var(--muted); }
+.board .agg b { color: var(--text); font-variant-numeric: tabular-nums; }
 @keyframes live { 50% { opacity: .2; } }
 .board .scorers { font-family: var(--f-body); font-size: 12px; color: var(--muted); }
 .prog { height: 4px; background: rgba(255,255,255,.08); border-radius: 3px; margin-top: 12px; overflow: hidden; }

@@ -1317,7 +1317,7 @@
     const h = sim.home.team, a = sim.away.team;
     root.innerHTML = `<div class="inner">
       <div class="board"><div class="tm">${badge(h, 'lg')}<b>${esc(h.name)}</b><div class="scorers" id="sh"></div></div>
-        <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div><div id="so" class="so hidden"></div></div>
+        <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div>${m.firstLeg ? '<div class="agg" id="agg"></div>' : ''}<div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -1330,6 +1330,12 @@
     const feed = [];
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
+      if (m.firstLeg) {
+        // ответный матч: счёт первой игры и сумма двух матчей
+        const f = G.s.matches[m.firstLeg];
+        const fh = f.h === m.h ? f.hg : f.ag, fa = f.h === m.h ? f.ag : f.hg;
+        $('#agg').innerHTML = `1-й матч: ${esc(T(f.h).name)} <b>${f.hg}:${f.ag}</b> ${esc(T(f.a).name)} · по сумме <b>${sim.home.goals + fh}:${sim.away.goals + fa}</b>`;
+      }
       const soLive = so && soQueue.length;
       $('#mn').textContent = so ? `пен. ${so.h}:${so.a}${soLive ? '' : ''}` : sim.done ? 'Конец' : `${sim.minuteLabel()}'`;
       $('#mn').classList.toggle('live', !sim.done || !!soLive);
