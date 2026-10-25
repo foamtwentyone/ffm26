@@ -75,8 +75,8 @@ META = {
 # Зона клуба без указанного города определена по группе Кубка, в которой он играл. Цвета — по эмблемам.
 # Зоны: (название, сторона — конференция Высшей лиги, куда выходят клубы зоны, мест во Всероссийском финале)
 PL_ZONES = {'pl1': ('Москва и Московская область', 'W', 3), 'pl2': ('Приволжье', 'W', 3), 'pl3': ('Урал — Западная Сибирь', 'E', 3),
-            'pl4': ('Сибирь — Дальний Восток', 'E', 2), 'pl5': ('Санкт-Петербург', 'W', 2), 'pl6': ('Золотое кольцо', 'W', 2),
-            'pl7': ('Северо-Запад', 'W', 1)}
+            'pl4': ('Сибирь — Дальний Восток', 'E', 2), 'pl5': ('Санкт-Петербург', 'W', 2), 'pl6': ('Золотое кольцо', 'W', 1),
+            'pl7': ('Северо-Запад', 'W', 1), 'pl8': ('Юг и Северный Кавказ', 'W', 1)}
 # название: (id, зона, город, площадка, цвета, уровень игроков)
 PL = {
     'СВОК': ('svok', 'pl1', 'Чехов', '—', ['#1d5fa8', '#ffffff'], 48),
@@ -156,6 +156,17 @@ PL = {
     'Альянс': ('alyans_ptz', 'pl7', 'Петрозаводск', '—', ['#3fae49', '#ffffff'], 45),
     'Интер': ('inter_nw', 'pl7', 'Псков', '—', ['#1d1d1b', '#1d5fa8'], 44),
     'ФК Сиверский-СГМО': ('siversky', 'pl7', 'Сиверский', '—', ['#f5c400', '#1d5fa8'], 43),
+    # «Юг и Северный Кавказ» — участники Чемпионата ЮФО и СКФО; составы со страниц, сохранённых вручную (tools/south.py)
+    'Гвардеец': ('gvardeets', 'pl8', 'Донецк', '—', ['#1d5fa8', '#d71920'], 47),
+    'Альфа': ('alfa', 'pl8', 'Краснодар', '—', ['#1d5fa8', '#ffffff'], 46),
+    'РСШ': ('rsh', 'pl8', 'Грозный', '—', ['#3fae49', '#d71920'], 46),
+    'Шахтёр Донбасс': ('shakhter', 'pl8', 'Донецк', '—', ['#f39200', '#1d1d1b'], 45),
+    'Капитан': ('kapitan', 'pl8', 'Севастополь', '—', ['#1d3f8f', '#ffffff'], 45),
+    'Спортинг': ('sporting', 'pl8', 'Ростов-на-Дону', '—', ['#3fae49', '#ffffff'], 45),
+    'Гагаринг': ('gagaring', 'pl8', 'Краснодар', '—', ['#1d1d1b', '#c9a24b'], 45),
+    'Собер': ('sober', 'pl8', 'Северская', '—', ['#d71920', '#1d1d1b'], 44),
+    'Юнити': ('unity', 'pl8', 'Абинск', '—', ['#6a1b9a', '#ffffff'], 44),
+    'Авиатор': ('aviator', 'pl8', 'Абинск', '—', ['#1d9bd7', '#ffffff'], 44),
 }
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
@@ -197,7 +208,11 @@ for t in nagr:
 zk = json.load(open(D + '/goldring.json', encoding='utf8')) if os.path.exists(D + '/goldring.json') else []
 # зона «Северо-Запад» (tools/nwfutsal.py): составы, амплуа и голы — из протоколов чемпионата СЗФО 2024/25
 nwf = json.load(open(D + '/nwfutsal.json', encoding='utf8')) if os.path.exists(D + '/nwfutsal.json') else []
-all_teams = all_teams + mosff + nagr + zk + nwf
+# зона «Юг и Северный Кавказ» (tools/south.py): название клуба — по id файла
+south = json.load(open(D + '/south.json', encoding='utf8')) if os.path.exists(D + '/south.json') else []
+by_id = {v[0]: k for k, v in PL.items()}
+for t in south: t['name'] = by_id[t['team_id']]
+all_teams = all_teams + mosff + nagr + zk + nwf + south
 # приоритет источников: заявка Кубка 2026/27, затем московская зона, затем Кубок 2025/26
 cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
 mos = {t['name'] for t in mosff}
@@ -205,7 +220,7 @@ teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 
          or (t['league'] == 'mosff' and t['name'] in PL and t['name'] not in cup26)
          or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26 | mos)
          or (t['league'] == 'nagr' and t['name'] in PL and t['name'] not in cup26 | mos | {x['name'] for x in all_teams if x['league'] == 'cup25'})
-         or (t['league'] in ('zk', 'nwf') and t['name'] in PL)]
+         or (t['league'] in ('zk', 'nwf', 'south') and t['name'] in PL)]
 missing = set(PL) - {t['name'] for t in teams}
 if missing: sys.exit(f'нет заявок: {missing}')
 
@@ -218,7 +233,7 @@ for t in teams:
         main = t['league'] == 'sl' or t['name'] in ('Ухта',)
         cur = seen.get(key)
         # заявки текущего сезона важнее прошлогодних (Кубок 2025/26)
-        old = t['league'] in ('cup25', 'nagr', 'zk', 'nwf')  # mosff — тоже текущий сезон
+        old = t['league'] in ('cup25', 'nagr', 'zk', 'nwf', 'south')  # mosff — тоже текущий сезон
         if cur is None or (cur[3] and not old) or (cur[3] == old and (g > cur[0] or (g == cur[0] and main and not cur[2]))):
             seen[key] = (g, t['team_id'], main, old)
 
@@ -239,12 +254,12 @@ for t in teams:
         cg = max(info.get('games', 0), g)
         share = min(1, g / gm)
         exp = min(1, math.log10(1 + cg) / math.log10(250))
-        if t['league'] == 'nagr': share, exp = 0.6, 0.4  # на «Наградионе» нет статистики — средняя роль в команде
+        if t['league'] == 'nagr' or t.get('nostats'): share, exp = 0.6, 0.4  # статистики нет — средняя роль в команде
         if pos == 'GK':
             adj = -10 + 9 * share + 7 * exp
         else:
             prod = min(1, (gs / max(g, 1)) / 0.7) * min(1, g / 4)
-            if t['league'] == 'nagr': prod = 0.3
+            if t['league'] == 'nagr' or t.get('nostats'): prod = 0.3
             adj = -10 + 7 * share + 6 * exp + 3 * prod
         if age < 20: adj -= (20 - age) * 1.2
         if age > 33: adj -= (age - 33) * 0.8
@@ -301,7 +316,8 @@ for z, (zname, side, quota) in PL_ZONES.items():
     n = len(leagues[z])
     rounds = 2 * (n - 1 + n % 2)
     src = {'pl6': 'составы — Межрегиональная мини-футбольная лига 2025/26 АМФ «Золотое кольцо» (mini-football76.ru)',
-           'pl7': 'составы — протоколы чемпионата СЗФО по футзалу 2024/25 (nwfootball.ru)'}.get(
+           'pl7': 'составы — протоколы чемпионата СЗФО по футзалу 2024/25 (nwfootball.ru)',
+           'pl8': 'составы — сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru, nml.su, ingame-sports.ru) и ВКонтакте'}.get(
            z, 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
     HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; {src}.\n"
                f"// Два круга в зоне; {'победитель зоны играет' if quota == 1 else f'{quota} лучших команды зоны играют'} во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"
