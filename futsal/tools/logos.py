@@ -56,6 +56,11 @@ if os.path.exists(CACHE + '/onefutsal.json'):
     for c in json.load(open(CACHE + '/onefutsal.json', encoding='utf8')):
         sl = re.sub(r'[^a-z0-9]+', '_', c['url'].rstrip('/').rsplit('/', 1)[1].lower()).strip('_')[:24]
         teams.append({'league': 'of', 'team_id': f"{c['league']}_{sl}", 'logo': c['logo']})
+# Беларусь (mini-football.by, tools/abff.py): id клуба — по названию в js/data/blr.js (без учёта регистра)
+if os.path.exists(CACHE + '/abff.json'):
+    by = {n.lower(): i for i, n in re.findall(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/blr.js', encoding='utf8').read())}
+    for t in json.load(open(CACHE + '/abff.json', encoding='utf8')):
+        if t['name'].lower() in by: teams.append({'league': 'abff', 'team_id': by[t['name'].lower()], 'logo': t['logo']})
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']) if 'name' in t else t['team_id'], t.get('logo')  # в south.json вместо названия — id клуба

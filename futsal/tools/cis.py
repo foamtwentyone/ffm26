@@ -6,10 +6,15 @@
 #   Узбекистан, Кыргызстан — клубы последних сезонов (у Кыргызстана — участники 2022 года).
 # Недостающих игроков игра создаёт сама (с местными именами) по репутации клуба.
 # Рейтинг реального игрока — от уровня клуба с поправкой на возраст и статус (легионеры, игроки сборной).
+# Беларусь: составы — заявки на чемпионат 2026/27 с mini-football.by (tools/abff.py, .cache/abff.json).
+# Казахстан: участники — таблица чемпионата 2026/27 (bet24.kz); Кыргызстан — список участников Суперлиги 2026/27
+# (Sport АКИpress). Составов этих лиг в открытом доступе нет, кроме двух клубов Казахстана из Википедии.
 # Пишет js/data/kaz.js, blr.js, uzb.js, kgz.js. Запуск: python3 tools/cis.py
-import os, zlib
+import json, math, os, zlib
 
-OUT = os.path.dirname(os.path.abspath(__file__)) + '/../js/data'
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUT = HERE + '/../js/data'
+CACHE = HERE + '/.cache'
 YEAR = 2026
 
 # состав: «Имя|Поз|год рождения[|гражданство][|+бонус]»
@@ -74,14 +79,14 @@ LEAGUES = {
         ('kz_kairat', 'Кайрат', 'Алматы', 'СК «Балуан Шолак»', 5000, ['#f5c400', '#111111'], 80, KAIRAT),
         ('kz_semey', 'Семей', 'Семей', '«Абай Арена»', 2500, ['#0b5cad', '#ffffff'], 76, ''),
         ('kz_aktobe', 'Актобе', 'Актобе', '—', 1500, ['#c8102e', '#ffffff'], 70, ''),
-        ('kz_atyrau', 'Атырау', 'Атырау', '—', 1500, ['#0a3d91', '#f2c200'], 67, ATYRAU),
-        ('kz_ayat', 'Аят', 'Рудный', '—', 1200, ['#1e7b34', '#ffffff'], 62, ''),
+        ('kz_atyrau', 'Атырау', 'Атырау', '—', 1500, ['#0a3d91', '#f2c200'], 68, ATYRAU),
+        ('kz_ayat', 'Аят', 'Рудный', '—', 1200, ['#1e7b34', '#ffffff'], 66, ''),
         ('kz_tulpar', 'Тулпар', 'Караганда', '—', 1200, ['#1d2f6f', '#e2b13c'], 60, ''),
         ('kz_kaspiy', 'Каспий', 'Актау', '—', 1000, ['#0091c8', '#ffffff'], 58, ''),
-        ('kz_ushkyn', 'Ушкын-Искра', 'Астана', 'СК «Алатау»', 500, ['#2a4d8f', '#d32f2f'], 56, ''),
-        ('kz_zhetysu', 'Жетысу', 'Талдыкорган', '—', 1000, ['#e4002b', '#ffd200'], 54, ''),
-        ('kz_munayshy', 'Мунайшы', 'Жанаозен', 'СК «Энергетик»', 800, ['#ffffff', '#dd0000'], 54, ''),
-        ('kz_sayran', 'Сайран', 'Астана', '—', 600, ['#00a3e0', '#ffffff'], 52, ''),
+        ('kz_elorda', 'Елорда', 'Астана', '—', 1000, ['#00a3e0', '#f2c200'], 58, ''),
+        ('kz_bayterek', 'Байтерек', 'Астана', '—', 1000, ['#1f3f8f', '#d4af37'], 57, ''),
+        ('kz_shymkent', 'Шымкент', 'Шымкент', '—', 1000, ['#e4002b', '#ffffff'], 54, ''),
+        ('kz_okzhetpes', 'Окжетпес', 'Кокшетау', '«Кокше Арена»', 2000, ['#1b6e3a', '#ffffff'], 54, ''),
     ]},
     'blr': {'name': 'Чемпионат Беларуси', 'short': 'Беларусь', 'country': 'BLR', 'weekday': 6, 'ticket': 1, 'teams': [
         ('by_stolitsa', 'Столица', 'Минск', 'Дворец спорта «Уручье»', 3000, ['#1a3d8f', '#ffffff'], 70, STOLITSA),
@@ -109,17 +114,19 @@ LEAGUES = {
         ('uz_umid', 'Умид', 'Наманган', '—', 800, ['#0277bd', '#ffeb3b'], 48, ''),
         ('uz_madaminov', 'Рузмат Мадаминов', 'Хива', '—', 800, ['#c62828', '#ffffff'], 48, ''),
     ]},
-    'kgz': {'name': 'Чемпионат Кыргызстана', 'short': 'Кыргызстан', 'country': 'KGZ', 'weekday': 0, 'ticket': 1, 'teams': [
-        ('kg_dordoy', 'Дордой', 'Бишкек', '—', 1000, ['#1e88e5', '#ffffff'], 56, ''),
-        ('kg_steelex', 'Стилекс', 'Бишкек', '—', 800, ['#455a64', '#ffffff'], 54, ''),
-        ('kg_dastan', 'Дастан', 'Бишкек', '—', 800, ['#c62828', '#ffd600'], 52, ''),
-        ('kg_toptogolok', 'Топ-Тоголок', 'Бишкек', '—', 600, ['#2e7d32', '#ffffff'], 50, ''),
-        ('kg_alay', 'Алай', 'Бишкек', '—', 600, ['#ef6c00', '#ffffff'], 50, ''),
-        ('kg_farvater', 'Фарватер-Аман', 'Бишкек', '—', 600, ['#0d47a1', '#90caf9'], 48, ''),
-        ('kg_zarya', 'Заря', 'Чуй', '—', 500, ['#f9a825', '#1b1b1b'], 46, ''),
-        ('kg_tenirtoo', 'Тенир-Тоо', 'Нарын', '—', 500, ['#00695c', '#ffffff'], 46, ''),
-        ('kg_agrostyle', '777-Агростайл', 'Кара-Суу', '—', 500, ['#558b2f', '#ffffff'], 46, ''),
-        ('kg_shavkat', 'Шавкат', 'Ош', '—', 500, ['#ad1457', '#ffffff'], 44, ''),
+    'kgz': {'name': 'Суперлига Кыргызстана', 'short': 'Кыргызстан', 'country': 'KGZ', 'weekday': 0, 'ticket': 1, 'teams': [
+        ('kg_dsgroup', 'ДС Групп', 'Нарын', '—', 800, ['#0d47a1', '#ffffff'], 56, ''),
+        ('kg_dostuk', 'Достук', 'Бишкек', '—', 800, ['#c62828', '#ffd600'], 55, ''),
+        ('kg_toptogolok', 'Топ-Тоголок', 'Бишкек', '—', 600, ['#2e7d32', '#ffffff'], 52, ''),
+        ('kg_vivat', 'Виват', 'Бишкек', '—', 600, ['#6a1b9a', '#ffffff'], 51, ''),
+        ('kg_muras', 'Мурас Юнайтед', 'Бишкек', '—', 600, ['#ef6c00', '#1b1b1b'], 51, ''),
+        ('kg_cska', 'ЦСКА МО КР', 'Бишкек', '—', 600, ['#b71c1c', '#1a237e'], 50, ''),
+        ('kg_naryn', 'Нарын', 'Нарын', '—', 500, ['#00695c', '#ffffff'], 49, ''),
+        ('kg_artblast', 'Артбласт Групп', 'Бишкек', '—', 500, ['#455a64', '#ffffff'], 48, ''),
+        ('kg_kant', 'Кант', 'Кант', '—', 500, ['#f9a825', '#1b1b1b'], 47, ''),
+        ('kg_alga', 'Алга', 'Бишкек', '—', 500, ['#1e88e5', '#ffffff'], 47, ''),
+        ('kg_lider', 'Лидер', 'Бишкек', '—', 500, ['#ad1457', '#ffffff'], 46, ''),
+        ('kg_zhashmuun', 'Жаш Муун', 'Бишкек', '—', 500, ['#558b2f', '#ffffff'], 45, ''),
     ]},
 }
 
@@ -140,15 +147,45 @@ def players(text, rep, country):
     return '\n'.join(r[1] for r in sorted(rows, key=lambda r: r[0]))
 
 
+def from_abff(t, rep):
+    """Заявка с mini-football.by (tools/abff.py): рейтинг — как у российских игроков в build.py, от уровня клуба,
+    доли сыгранных матчей сезона, опыта (матчи за карьеру на сайте) и результативности."""
+    level = rep - 6
+    gm = max([p['games'] for p in t['players']] + [1])
+    rows = []
+    for p in t['players']:
+        if not p['age']: continue
+        pos = 'GK' if p['gk'] else 'UN'
+        share = min(1, p['games'] / gm)
+        exp = min(1, math.log10(1 + max(p['career'], p['games'])) / math.log10(250))
+        if pos == 'GK': adj = -10 + 9 * share + 7 * exp
+        else: adj = -10 + 7 * share + 6 * exp + 3 * min(1, (p['goals'] / max(p['games'], 1)) / 0.7) * min(1, p['games'] / 4)
+        if p['age'] < 20: adj -= (20 - p['age']) * 1.2
+        if p['age'] > 33: adj -= (p['age'] - 33) * 0.8
+        last, first = p['name'].split(' ', 1)
+        ovr = max(35, min(90, round(level + adj)))
+        rows.append((pos != 'GK', -ovr, f"{first} {last}|{pos}|{p['age']}|0|{p.get('born') or 'BLR'}|{ovr}"))
+    return '\n'.join(r[2] for r in sorted(rows))
+
+
+SRC = {'kaz': 'Участники — таблица чемпионата, составы «Кайрата» и «Атырау» — Википедия',
+       'blr': 'Составы — заявки на mini-football.by (амплуа указано только у вратарей), рейтинг — по роли в команде' if os.path.exists(CACHE + '/abff.json') else 'Клубы и составы — Википедия',
+       'uzb': 'Клубы последних сезонов (Википедия), составов в открытом доступе нет',
+       'kgz': 'Участники — Sport АКИpress, составов в открытом доступе нет'}
+# составы Беларуси с сайта БАМФ, если они скачаны, заменяют составы из Википедии
+abff = {t['name'].lower(): t for t in json.load(open(CACHE + '/abff.json', encoding='utf8'))} if os.path.exists(CACHE + '/abff.json') else {}
+
 for lid, L in LEAGUES.items():
     n = len(L['teams'])
     rounds = 2 * (n - 1 + n % 2)
     items = []
     for tid, name, city, arena, cap, col, rep, squad in L['teams']:
-        p = players(squad, rep, L['country'])
+        real = abff.get(name.lower()) if lid == 'blr' else None
+        p = from_abff(real, rep) if real else players(squad, rep, L['country'])
+        if lid == 'blr' and not real: print('нет заявки на mini-football.by:', name)
         items.append(f"    {{ id: '{tid}', name: '{name}', city: '{city}', stadium: '{arena}', cap: {cap}, colors: ['{col[0]}', '{col[1]}'], "
                      f"rep: {rep}, money: {max(80, (rep - 40) * 12)}, players: `" + (f'\n{p}' if p else '') + '` },')
-    head = (f"// {L['name']}, сезон 2026/27. Клубы и составы — Википедия (сайты федераций недоступны); у клубов без состава\n"
+    head = (f"// {L['name']}, сезон 2026/27. {SRC[lid]}; у клубов без состава\n"
             "// игроков создаёт игра. Строка игрока: Имя|Позиция|Возраст|0|Гражданство|Рейтинг. Без плей-офф.\n"
             f"FM.addLeague({{\n  id: '{lid}', name: '{L['name']}', short: '{L['short']}', country: '{L['country']}', tier: 1, weekday: {L['weekday']},\n"
             f"  autumn: {{ from: '09-12', rounds: {round(rounds * 0.55)} }}, spring: {{ from: '01-16', rounds: {rounds - round(rounds * 0.55)} }},\n"
