@@ -33,7 +33,7 @@ for f in sorted(glob.glob(CACHE + '/saved/*.html')):
         num = re.search(r'Номер игрока:\s*(\d+)', row)
         players.append({'pid': f'n{pid.group(1)}', 'name': f'{txt(last.group(1))} {txt(rest.group(1))}', 'amp': 'Ун..',
                         'birth': f'—, {age.group(1)} лет' if age else '', 'num': num and num.group(1), 'stats': ['0', '0']})
-    clean = re.sub(r'^(МБУ ДО\s+)?(МФК|ФК|МФС)?\s*', '', txt(name.group(1)).strip('«»" ')) if name else team
+    clean = re.sub(r'^(МБУ ДО\s+)?(МФК|ФК|МФС)?\s*', '', txt(name.group(1)).strip('«»" ')).strip('«»" ') if name else team
     # эмблема: img.nagradion.ru тоже недоступен, поэтому берётся из папки «…_files», сохранённой вместе со страницей,
     # — файл кладётся в .cache/saved/shields под своим именем
     shield = re.search(r'img\.nagradion\.ru/images/bf300x500/shields/([A-Za-z0-9]+\.png)', t)
