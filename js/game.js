@@ -744,6 +744,21 @@
       return !po || !!s.playoff;
     }
 
+    // Основа клуба: 8 лучших полевых игроков и 2 лучших вратаря
+    coreOf(t) {
+      const sq = this.squad(t).filter((p) => !p.loan);
+      const by = (a, b) => b.ovr - a.ovr;
+      return new Set(sq.filter((p) => p.pos !== 'GK').sort(by).slice(0, 8).concat(sq.filter((p) => p.pos === 'GK').sort(by).slice(0, 2)).map((p) => p.id));
+    }
+
+    // Клубы ИИ продлевают истекающие контракты: основу младше 33 лет — всегда,
+    // ветеранов от 35 — в половине случаев, остальных — с вероятностью 75%.
+    renewChance(p, core) {
+      if (p.age >= 35) return 0.5;
+      if (core && core.has(p.id) && p.age < 33) return 1;
+      return 0.75;
+    }
+
     // Повышения и вылеты по итоговым таблицам и стыкам: [teamId, новая лига]
     seasonMoves() {
       const s = this.s, moves = [];
@@ -885,6 +900,7 @@
       this.returnLoans();
       for (const tid in this.teams) {
         const t = this.teams[tid];
+        const core = tid === s.user ? null : this.coreOf(t);
         for (const pid of t.players.slice()) {
           const p = this.players[pid];
           const retire = p.age >= 34 && Math.random() < (p.age - 33) * 0.22;
@@ -907,8 +923,8 @@
               s.freeAgents.push(p.id);
               p.listed = false;
               this.msg('Контракт истёк', `${p.name} покидает клуб свободным агентом.`, 'squad');
-            } else if (Math.random() < 0.8) {
-              p.contract = y + FM.ri(1, 3);
+            } else if (FM.chance(this.renewChance(p, core))) {
+              p.contract = y + (p.age >= 33 ? 1 : FM.ri(1, 3));
             } else {
               this.removeFromTeam(p);
               s.freeAgents.push(p.id);
