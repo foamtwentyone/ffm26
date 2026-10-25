@@ -5,7 +5,7 @@ FM.addLeague({
   autumn: { from: '09-12', rounds: 12 }, spring: { from: '01-16', rounds: 10 },
   ticket: 1, prize: [200, 140, 100, 80, 60, 50, 40, 35, 30, 25, 20, 20],
   teams: [
-    { id: 'by_stolitsa', name: 'Столица', city: 'Минск', stadium: 'Дворец спорта «Уручье»', cap: 3000, colors: ['#1a3d8f', '#ffffff'], rep: 70, money: 360, players: `
+    { id: 'by_stolitsa', name: 'Столица', city: 'Минск', stadium: 'Дворец спорта «Уручье»', cap: 3000, colors: ['#1e8f3a', '#ffffff'], rep: 70, money: 360, players: `
 Виталий Хвесько|GK|21|0|BLR|68
 Никита Кирдей|GK|22|0|BLR|67
 Алексей Лукша|GK|34|0|BLR|62
@@ -23,7 +23,7 @@ FM.addLeague({
 Дмитрий Шимановский|UN|32|0|BLR|63
 Янник Сомплей|UN|31|0|BLR|61
 Артем Козел|UN|32|0|BLR|60` },
-    { id: 'by_viten', name: 'Витэн', city: 'Орша', stadium: 'СК «Олимпиец»', cap: 250, colors: ['#0f6b3a', '#ffffff'], rep: 66, money: 312, players: `
+    { id: 'by_viten', name: 'Витэн', city: 'Орша', stadium: 'СК «Олимпиец»', cap: 250, colors: ['#c8102e', '#ffffff'], rep: 66, money: 312, players: `
 Евгений Змысля|GK|33|0|UKR|66
 Сергей Давидович|GK|31|0|BLR|66
 Алексей Савченко|GK|18|0|BLR|53
@@ -42,7 +42,7 @@ FM.addLeague({
 Владимир Жигалко|UN|36|0|BLR|60
 Лев Демянов|UN|22|0|BLR|60
 Матвей Вдовиченко|UN|18|0|BLR|54` },
-    { id: 'by_vrz', name: 'ВРЗ', city: 'Гомель', stadium: 'Универсальный зал игровых видов спорта', cap: 750, colors: ['#c8102e', '#ffffff'], rep: 64, money: 288, players: `
+    { id: 'by_vrz', name: 'ВРЗ', city: 'Гомель', stadium: 'Универсальный зал игровых видов спорта', cap: 750, colors: ['#1b1b1b', '#c8102e'], rep: 64, money: 288, players: `
 Юрий Дегтяренко|GK|36|0|UKR|62
 Владимир Стремилов|GK|35|0|BLR|61
 Владислав Селюк|UN|32|0|BLR|64
@@ -59,7 +59,7 @@ FM.addLeague({
 Артем Золотухин|UN|38|0|BLR|57
 Александр Метлушко|UN|27|0|BLR|54
 Юрий Березовский|UN|27|0|BLR|54` },
-    { id: 'by_minsk', name: 'Минск', city: 'Минск', stadium: 'Спорткомплекс МАПИД', cap: 500, colors: ['#e30613', '#1b3c8c'], rep: 62, money: 264, players: `
+    { id: 'by_minsk', name: 'Минск', city: 'Минск', stadium: 'Спорткомплекс МАПИД', cap: 500, colors: ['#1b2f8f', '#e30613'], rep: 62, money: 264, players: `
 Александр Базылевич|GK|21|0|BLR|61
 Вячеслав Быковский|GK|38|0|BLR|56
 Олег Лукин|GK|22|0|BLR|54
@@ -81,7 +81,7 @@ FM.addLeague({
 Никита Виршуло|UN|21|0|BLR|52
 Александр Ольшевский|UN|43|0|BLR|51
 Руслан Лазюк|UN|38|0|BLR|47` },
-    { id: 'by_borisov', name: 'Борисов-900', city: 'Борисов', stadium: 'Физкультурно-оздоровительный центр', cap: 400, colors: ['#f39200', '#1b1b1b'], rep: 58, money: 216, players: `
+    { id: 'by_borisov', name: 'Борисов-900', city: 'Борисов', stadium: 'Физкультурно-оздоровительный центр', cap: 400, colors: ['#1e6b34', '#ffffff'], rep: 58, money: 216, players: `
 Андрей Напорко|GK|31|0|BLR|57
 Ян Патраков|GK|27|0|BLR|57
 Артем Никитенко|GK|20|0|BLR|47
@@ -102,7 +102,7 @@ FM.addLeague({
 Глеб Баско|UN|22|0|BLR|48
 Павел Дыдышко|UN|21|0|BLR|48
 Денис Горовец|UN|20|0|BLR|46` },
-    { id: 'by_bch', name: 'БЧ', city: 'Гомель', stadium: 'СК «Локомотив»', cap: 750, colors: ['#005baa', '#ffffff'], rep: 56, money: 192, players: `
+    { id: 'by_bch', name: 'БЧ', city: 'Гомель', stadium: 'СК «Локомотив»', cap: 750, colors: ['#1f4fa3', '#f07010'], rep: 56, money: 192, players: `
 Егор Чипулис|GK|32|0|BLR|55
 Артем Петухов|GK|26|0|BLR|53
 Матвей Захаренко|GK|19|0|BLR|50
@@ -119,7 +119,7 @@ FM.addLeague({
 Юрий Рабыко|UN|39|0|BLR|49
 Евгений Клочко|UN|37|0|UKR|48
 Дмитрий Лось|UN|40|0|BLR|47` },
-    { id: 'by_dorozhnik', name: 'Дорожник', city: 'Минск', stadium: 'Спорткомплекс МАПИД', cap: 500, colors: ['#ffd200', '#0b3a82'], rep: 56, money: 192, players: `
+    { id: 'by_dorozhnik', name: 'Дорожник', city: 'Минск', stadium: 'Спорткомплекс МАПИД', cap: 500, colors: ['#1e8f3a', '#e83a1a'], rep: 56, money: 192, players: `
 Михаил Зрубович|GK|32|0|BLR|56
 Кирилл Подобед|GK|23|0|BLR|51
 Михаил Рабейкин|GK|17|0|BLR|41
@@ -140,7 +140,7 @@ FM.addLeague({
 Максим Евтух|UN|26|0|BLR|44
 Максим Миронович|UN|20|0|BLR|44
 Валерий Ивашко|UN|41|0|BLR|41` },
-    { id: 'by_merkury', name: 'Меркурий-ГТК', city: 'Брест', stadium: 'СК «Виктория»', cap: 3740, colors: ['#00843d', '#ffffff'], rep: 55, money: 180, players: `
+    { id: 'by_merkury', name: 'Меркурий-ГТК', city: 'Брест', stadium: 'СК «Виктория»', cap: 3740, colors: ['#3f9c9c', '#ffffff'], rep: 55, money: 180, players: `
 Мирослав Эльяшевич|GK|25|0|BLR|55
 Максим Трофимович|GK|27|0|BLR|53
 Артём Чабурко|GK|19|0|BLR|44
@@ -188,7 +188,7 @@ FM.addLeague({
 Станислав Фоминых|UN|38|0|BLR|40
 Даниил Катусов|UN|23|0|BLR|38
 Дмитрий Метелица|UN|49|0|BLR|35` },
-    { id: 'by_uvd', name: 'УВД-Динамо', city: 'Гродно', stadium: 'Спорткомплекс «Виктория»', cap: 300, colors: ['#123f8c', '#e8e8e8'], rep: 52, money: 144, players: `
+    { id: 'by_uvd', name: 'УВД-Динамо', city: 'Гродно', stadium: 'Спорткомплекс «Виктория»', cap: 300, colors: ['#1f5fbf', '#ffffff'], rep: 52, money: 144, players: `
 Максим Цивинский|GK|33|0|BLR|51
 Вадим Сидорович|GK|28|0|BLR|49
 Никита Сидорович|GK|19|0|BLR|49
@@ -207,7 +207,7 @@ FM.addLeague({
 Алексей Пилипчик|UN|27|0|BLR|42
 Данил Ананко|UN|21|0|BLR|42
 Александр Маркевич|UN|18|0|BLR|41` },
-    { id: 'by_lida', name: 'Лида-БутикАвто', city: 'Лида', stadium: 'СОК «Олимпия»', cap: 680, colors: ['#d71920', '#ffffff'], rep: 52, money: 144, players: `
+    { id: 'by_lida', name: 'Лида-БутикАвто', city: 'Лида', stadium: 'СОК «Олимпия»', cap: 680, colors: ['#1b1b1b', '#c8102e'], rep: 52, money: 144, players: `
 Никита Канашиц|GK|24|0|BLR|51
 Леон Геджуа|GK|29|0|BLR|49
 Даниил Давидович|GK|19|0|BLR|47
@@ -226,7 +226,7 @@ FM.addLeague({
 Максим Воронин|UN|43|0|UKR|41
 Александр Новокунский|UN|25|0|BLR|40
 Александр Версоцкий|UN|49|0|BLR|35` },
-    { id: 'by_ckk', name: 'ЦКК', city: 'Светлогорск', stadium: 'СК «Олимп»', cap: 500, colors: ['#2e7d32', '#f5f5f5'], rep: 50, money: 120, players: `
+    { id: 'by_ckk', name: 'ЦКК', city: 'Светлогорск', stadium: 'СК «Олимп»', cap: 500, colors: ['#f2d21b', '#1e8f4e'], rep: 50, money: 120, players: `
 Владислав Бобруйко|GK|28|0|BLR|48
 Евгений Кирушев|GK|20|0|BLR|42
 Дмитрий Тарасов|GK|42|0|BLR|35

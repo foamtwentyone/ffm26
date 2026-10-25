@@ -76,31 +76,31 @@ VITEN = '''Мирослав Эльяшевич|GK|2001
 # (id, название, город, арена, вместимость, цвета, репутация, состав)
 LEAGUES = {
     'kaz': {'name': 'Чемпионат Казахстана', 'short': 'Казахстан', 'country': 'KAZ', 'weekday': 6, 'ticket': 2, 'teams': [
-        ('kz_kairat', 'Кайрат', 'Алматы', 'СК «Балуан Шолак»', 5000, ['#f5c400', '#111111'], 80, KAIRAT),
-        ('kz_semey', 'Семей', 'Семей', '«Абай Арена»', 2500, ['#0b5cad', '#ffffff'], 76, ''),
-        ('kz_aktobe', 'Актобе', 'Актобе', '—', 1500, ['#c8102e', '#ffffff'], 70, ''),
-        ('kz_atyrau', 'Атырау', 'Атырау', '—', 1500, ['#0a3d91', '#f2c200'], 68, ATYRAU),
-        ('kz_ayat', 'Аят', 'Рудный', '—', 1200, ['#1e7b34', '#ffffff'], 66, ''),
-        ('kz_tulpar', 'Тулпар', 'Караганда', '—', 1200, ['#1d2f6f', '#e2b13c'], 60, ''),
-        ('kz_kaspiy', 'Каспий', 'Актау', '—', 1000, ['#0091c8', '#ffffff'], 58, ''),
-        ('kz_elorda', 'Елорда', 'Астана', '—', 1000, ['#00a3e0', '#f2c200'], 58, ''),
-        ('kz_bayterek', 'Байтерек', 'Астана', '—', 1000, ['#1f3f8f', '#d4af37'], 57, ''),
-        ('kz_shymkent', 'Шымкент', 'Шымкент', '—', 1000, ['#e4002b', '#ffffff'], 54, ''),
-        ('kz_okzhetpes', 'Окжетпес', 'Кокшетау', '«Кокше Арена»', 2000, ['#1b6e3a', '#ffffff'], 54, ''),
+        ('kz_kairat', 'Кайрат', 'Алматы', 'СК «Балуан Шолак»', 5000, ['#d71920', '#f2c200'], 80, KAIRAT),
+        ('kz_semey', 'Семей', 'Семей', '«Абай Арена»', 2500, ['#5fa8d3', '#1a3d6b'], 77, ''),
+        ('kz_aktobe', 'Актобе', 'Актобе', '—', 1500, ['#c8102e', '#1d3f8f'], 70, ''),
+        ('kz_atyrau', 'Атырау', 'Атырау', '—', 1500, ['#1b1b1b', '#ffffff'], 68, ATYRAU),
+        ('kz_ayat', 'Аят', 'Рудный', '—', 1200, ['#d71920', '#1b1b1b'], 69, ''),
+        ('kz_tulpar', 'Тулпар', 'Караганда', '—', 1200, ['#c8102e', '#f2c200'], 57, ''),
+        ('kz_kaspiy', 'Каспий', 'Актау', '—', 1000, ['#1b1b1b', '#ffffff'], 62, ''),
+        ('kz_elorda', 'Елорда', 'Астана', '—', 1000, ['#e3a72f', '#1a3d8f'], 57, ''),
+        ('kz_bayterek', 'Байтерек', 'Уральск', '—', 1000, ['#1e7b34', '#ffffff'], 59, ''),
+        ('kz_shymkent', 'Шымкент', 'Шымкент', '—', 1000, ['#d71920', '#1b1b1b'], 54, ''),
+        ('kz_okzhetpes', 'Окжетпес', 'Кокшетау', '«Кокше Арена»', 2000, ['#5fa8d3', '#12355b'], 54, ''),
     ]},
     'blr': {'name': 'Чемпионат Беларуси', 'short': 'Беларусь', 'country': 'BLR', 'weekday': 6, 'ticket': 1, 'teams': [
-        ('by_stolitsa', 'Столица', 'Минск', 'Дворец спорта «Уручье»', 3000, ['#1a3d8f', '#ffffff'], 70, STOLITSA),
-        ('by_viten', 'Витэн', 'Орша', 'СК «Олимпиец»', 250, ['#0f6b3a', '#ffffff'], 66, VITEN),
-        ('by_vrz', 'ВРЗ', 'Гомель', 'Универсальный зал игровых видов спорта', 750, ['#c8102e', '#ffffff'], 64, ''),
-        ('by_minsk', 'Минск', 'Минск', 'Спорткомплекс МАПИД', 500, ['#e30613', '#1b3c8c'], 62, ''),
-        ('by_borisov', 'Борисов-900', 'Борисов', 'Физкультурно-оздоровительный центр', 400, ['#f39200', '#1b1b1b'], 58, ''),
-        ('by_bch', 'БЧ', 'Гомель', 'СК «Локомотив»', 750, ['#005baa', '#ffffff'], 56, ''),
-        ('by_dorozhnik', 'Дорожник', 'Минск', 'Спорткомплекс МАПИД', 500, ['#ffd200', '#0b3a82'], 56, ''),
-        ('by_merkury', 'Меркурий-ГТК', 'Брест', 'СК «Виктория»', 3740, ['#00843d', '#ffffff'], 55, ''),
+        ('by_stolitsa', 'Столица', 'Минск', 'Дворец спорта «Уручье»', 3000, ['#1e8f3a', '#ffffff'], 70, STOLITSA),
+        ('by_viten', 'Витэн', 'Орша', 'СК «Олимпиец»', 250, ['#c8102e', '#ffffff'], 66, VITEN),
+        ('by_vrz', 'ВРЗ', 'Гомель', 'Универсальный зал игровых видов спорта', 750, ['#1b1b1b', '#c8102e'], 64, ''),
+        ('by_minsk', 'Минск', 'Минск', 'Спорткомплекс МАПИД', 500, ['#1b2f8f', '#e30613'], 62, ''),
+        ('by_borisov', 'Борисов-900', 'Борисов', 'Физкультурно-оздоровительный центр', 400, ['#1e6b34', '#ffffff'], 58, ''),
+        ('by_bch', 'БЧ', 'Гомель', 'СК «Локомотив»', 750, ['#1f4fa3', '#f07010'], 56, ''),
+        ('by_dorozhnik', 'Дорожник', 'Минск', 'Спорткомплекс МАПИД', 500, ['#1e8f3a', '#e83a1a'], 56, ''),
+        ('by_merkury', 'Меркурий-ГТК', 'Брест', 'СК «Виктория»', 3740, ['#3f9c9c', '#ffffff'], 55, ''),
         ('by_okhrana', 'Охрана-Динамо', 'Минск', 'Спорткомплекс МАПИД', 500, ['#1f4fa3', '#ffffff'], 54, ''),
-        ('by_uvd', 'УВД-Динамо', 'Гродно', 'Спорткомплекс «Виктория»', 300, ['#123f8c', '#e8e8e8'], 52, ''),
-        ('by_lida', 'Лида-БутикАвто', 'Лида', 'СОК «Олимпия»', 680, ['#d71920', '#ffffff'], 52, ''),
-        ('by_ckk', 'ЦКК', 'Светлогорск', 'СК «Олимп»', 500, ['#2e7d32', '#f5f5f5'], 50, ''),
+        ('by_uvd', 'УВД-Динамо', 'Гродно', 'Спорткомплекс «Виктория»', 300, ['#1f5fbf', '#ffffff'], 52, ''),
+        ('by_lida', 'Лида-БутикАвто', 'Лида', 'СОК «Олимпия»', 680, ['#1b1b1b', '#c8102e'], 52, ''),
+        ('by_ckk', 'ЦКК', 'Светлогорск', 'СК «Олимп»', 500, ['#f2d21b', '#1e8f4e'], 50, ''),
     ]},
     'uzb': {'name': 'Суперлига Узбекистана', 'short': 'Узбекистан', 'country': 'UZB', 'weekday': 5, 'ticket': 1, 'teams': [
         ('uz_almalyk', 'Алмалык', 'Алмалык', '—', 1500, ['#f2a900', '#1b1b1b'], 62, ''),
@@ -168,12 +168,56 @@ def from_abff(t, rep):
     return '\n'.join(r[2] for r in sorted(rows))
 
 
-SRC = {'kaz': 'Участники — таблица чемпионата, составы «Кайрата» и «Атырау» — Википедия',
+SRC = {'kaz': 'Клубы и составы — матч-центр sports.kz (без статистики игроков, рейтинг по уровню клуба и роли)' if os.path.exists(CACHE + '/sportskz.json') else 'Участники — таблица чемпионата, составы «Кайрата» и «Атырау» — Википедия',
        'blr': 'Составы — заявки на mini-football.by (амплуа указано только у вратарей), рейтинг — по роли в команде' if os.path.exists(CACHE + '/abff.json') else 'Клубы и составы — Википедия',
        'uzb': 'Клубы последних сезонов (Википедия), составов в открытом доступе нет',
        'kgz': 'Участники — Sport АКИpress, составов в открытом доступе нет'}
 # составы Беларуси с сайта БАМФ, если они скачаны, заменяют составы из Википедии
 abff = {t['name'].lower(): t for t in json.load(open(CACHE + '/abff.json', encoding='utf8'))} if os.path.exists(CACHE + '/abff.json') else {}
+
+# Казахстан: составы с матч-центра www.sports.kz (tools/sportskz.py). Состав клуба там копится годами, поэтому берутся
+# игроки с указанным возрастом (или известным годом рождения из Википедии), в приоритете — с указанным амплуа и игроки
+# сборной (матч Казахстан — Беларусь, 20.10.2026, kff.kz); не больше 18 на клуб. Статистики нет — рейтинг по уровню
+# клуба, возрасту, статусу легионера и сборной.
+NATIONAL = {'Игита', 'Турсагулов', 'Оразов', 'Турегазин', 'Пиялы', 'Сериков', 'Кнауб', 'Рашит', 'Дуглас', 'Эдсон', 'Карменов',
+            'Бактияров', 'Валиулин', 'Валиуллин', 'Акбаликов'}
+KZ_POS = {'Вратарь': 'GK', 'Защитник': 'DF', 'Универсал': 'UN', 'Нападающий': 'FW', 'Пивот': 'FW'}
+core = open(HERE + '/../js/core.js', encoding='utf8').read()
+NATS = {v: k for k, v in __import__('re').findall(r"(\w{3}): '([^']+)'", core[core.index('FM.NAT = {'):core.index('};', core.index('FM.NAT = {'))])}
+NATS.update({'Россия': 'RUS', 'Киргизия': 'KGZ', 'Беларусь': 'BLR'})
+WIKI_BORN = {f.split('|')[0]: int(f.split('|')[2]) for f in (KAIRAT + '\n' + ATYRAU).split('\n')}
+
+
+def national(name): return any(w in NATIONAL for w in name.split())
+
+
+def from_sportskz(t, rep):
+    level = rep - 6
+    cand, seen = [], set()
+    for p in t['players']:
+        age = p['age'] or (YEAR - WIKI_BORN[p['name']] if p['name'] in WIKI_BORN else None)
+        if not age or age > 42: continue
+        nat = NATS.get(p['nat'], 'KAZ')
+        if KZ_OWNER.get(p['name'], t['name']) != t['name'] or p['name'] in seen: continue
+        seen.add(p['name'])
+        nt = national(p['name']) and (nat == 'KAZ' or p['name'] in ('Эдсон Сантос', 'Дуглас'))
+        cand.append((-(2 * bool(p['pos']) + 3 * nt + bool(p['age'])), p['name'], KZ_POS.get(p['pos'], 'UN'), age, nat, nt))
+    cand.sort()
+    rows = []
+    for _, name, pos, age, nat, nt in cand[:18]:
+        adj = -3 + 5 * nt + 3 * (nat != 'KAZ') + (zlib.crc32(name.encode()) % 5 - 2)
+        if age < 20: adj -= (20 - age) * 1.2
+        if age > 33: adj -= (age - 33) * 0.8
+        ovr = max(40, min(88, round(level + adj)))
+        rows.append((['GK', 'DF', 'UN', 'FW'].index(pos), -ovr, f'{name}|{pos}|{age}|0|{nat}|{ovr}'))
+    return '\n'.join(r[2] for r in sorted(rows))
+
+
+sportskz = {t['name'].lower(): t for t in json.load(open(CACHE + '/sportskz.json', encoding='utf8')) if t['players'] and t['name'] != 'Астана'} if os.path.exists(CACHE + '/sportskz.json') else {}
+# игрок, записанный в составы нескольких клубов, остаётся в клубе с самым коротким списком (длинные копят ушедших)
+KZ_OWNER = {}
+for t in sorted(sportskz.values(), key=lambda t: -len(t['players'])):
+    for p in t['players']: KZ_OWNER[p['name']] = t['name']
 
 for lid, L in LEAGUES.items():
     n = len(L['teams'])
@@ -181,7 +225,8 @@ for lid, L in LEAGUES.items():
     items = []
     for tid, name, city, arena, cap, col, rep, squad in L['teams']:
         real = abff.get(name.lower()) if lid == 'blr' else None
-        p = from_abff(real, rep) if real else players(squad, rep, L['country'])
+        kz = sportskz.get(name.lower()) if lid == 'kaz' else None
+        p = from_abff(real, rep) if real else from_sportskz(kz, rep) if kz else players(squad, rep, L['country'])
         if lid == 'blr' and not real: print('нет заявки на mini-football.by:', name)
         items.append(f"    {{ id: '{tid}', name: '{name}', city: '{city}', stadium: '{arena}', cap: {cap}, colors: ['{col[0]}', '{col[1]}'], "
                      f"rep: {rep}, money: {max(80, (rep - 40) * 12)}, players: `" + (f'\n{p}' if p else '') + '` },')

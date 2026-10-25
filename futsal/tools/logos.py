@@ -61,6 +61,11 @@ if os.path.exists(CACHE + '/abff.json'):
     by = {n.lower(): i for i, n in re.findall(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/blr.js', encoding='utf8').read())}
     for t in json.load(open(CACHE + '/abff.json', encoding='utf8')):
         if t['name'].lower() in by: teams.append({'league': 'abff', 'team_id': by[t['name'].lower()], 'logo': t['logo']})
+# Казахстан (www.sports.kz, tools/sportskz.py) — так же по названию в js/data/kaz.js
+if os.path.exists(CACHE + '/sportskz.json'):
+    kz = {n.lower(): i for i, n in re.findall(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/kaz.js', encoding='utf8').read())}
+    for t in json.load(open(CACHE + '/sportskz.json', encoding='utf8')):
+        if t['name'].lower() in kz: teams.append({'league': 'skz', 'team_id': kz[t['name'].lower()], 'logo': t['logo']})
 img = {}
 for t in teams:
     tid, url = ids.get(t['name']) if 'name' in t else t['team_id'], t.get('logo')  # в south.json вместо названия — id клуба
