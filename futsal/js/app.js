@@ -251,9 +251,30 @@
     const db = customDb() || FM.leagues;
     let lid = db[0].id;
     let metas = {};
-    const draw = () => {
+    // выбор лиги перерисовывает только список лиг и клубов — страница не прыгает, имя тренера не сбрасывается
+    const drawPick = () => {
       const L = db.find((x) => x.id === lid);
+      const box = app.querySelector('#pick');
+      box.innerHTML = `${leaguePick(db, lid, 'data-l')}
+        <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
+          <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
+          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>`;
+      box.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; drawPick(); });
+      box.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
+        const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
+        ls.set('futsal26_mgr', mgr);
+        UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined);
+        UI.tab = 'home';
+        UI.tablesLid = UI.g.userTeam().league;
+        save();
+        render();
+      });
+    };
+    const draw = () => {
       const auto = metas[SAVE_AUTO];
+      // имя, которое уже начали вводить, переживает перерисовку (облачные сохранения приходят позже)
+      const typed = app.querySelector('#mgr') && app.querySelector('#mgr').value;
+      if (typed) ls.set('futsal26_mgr', typed);
       app.innerHTML = `
       <div class="hero"><h1>Футзальный менеджер <span>26</span></h1>
         <div class="muted">Сезон 2026/27: Суперлига, Высшая и Первая лиги России, чемпионаты Испании, Португалии, Италии и Бразилии, Лига чемпионов — реальные составы</div></div>
@@ -269,21 +290,9 @@
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
-        ${leaguePick(db, lid, 'data-l')}
-        <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
-          <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
-          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
+        <div id="pick"></div>
       </main>`;
-      app.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; draw(); });
-      app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
-        const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
-        ls.set('futsal26_mgr', mgr);
-        UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined);
-        UI.tab = 'home';
-        UI.tablesLid = UI.g.userTeam().league;
-        save();
-        render();
-      });
+      drawPick();
       const c = app.querySelector('#cont');
       if (c) c.onclick = () => loadSlot(SAVE_AUTO);
       app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.slot));
