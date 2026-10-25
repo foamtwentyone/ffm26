@@ -11,7 +11,7 @@ os.makedirs(CACHE + '/logos', exist_ok=True)
 
 # id клубов в игре — из файлов лиг: название → id
 ids = {}
-for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5', 'pl6', 'pl7', 'pl8', 'pl9', 'pl10', 'pl11', 'esp', 'por', 'ita', 'bra'):
+for f in ('sl', 'vlw', 'vle', 'pl1', 'pl2', 'pl3', 'pl4', 'pl5', 'pl6', 'pl7', 'pl8', 'pl9', 'pl10', 'pl11', 'esp', 'por', 'ita', 'bra', 'kaz', 'blr', 'uzb', 'kgz'):
     if not os.path.exists(f'{HERE}/../js/data/{f}.js'): continue
     for m in re.finditer(r"\{ id: '([^']+)', name: '([^']+)'", open(f'{HERE}/../js/data/{f}.js', encoding='utf8').read()):
         ids.setdefault(m.group(2), m.group(1))  # при совпадении названий приоритет у российских клубов

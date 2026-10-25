@@ -278,7 +278,7 @@
       if (typed) ls.set('futsal26_mgr', typed);
       app.innerHTML = `
       <div class="hero"><h1>Футзальный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: Суперлига, Высшая и Первая лиги России, чемпионаты Испании, Португалии, Италии и Бразилии, Лига чемпионов — реальные составы</div></div>
+        <div class="muted">Сезон 2026/27: Суперлига, Высшая и Первая лиги России, чемпионаты Испании, Португалии, Италии, Бразилии и стран СНГ, Лига чемпионов — реальные составы</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
