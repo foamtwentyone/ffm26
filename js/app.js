@@ -256,7 +256,7 @@
       const auto = metas[SAVE_AUTO];
       app.innerHTML = `
       <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: 34 лиги — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
+        <div class="muted">Сезон 2026/27: 36 лиг — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
       <main>
         ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
@@ -993,7 +993,7 @@
       <div>${club ? tname(club) : '<span class="muted">Свободный агент</span>'}</div></div><div class="center">${ovr(p.ovr)}<div class="small muted">рейтинг</div></div></div>
       <div class="kv">
         <div><span>Стоимость</span><b>${FM.money(p.value)}</b></div>
-        <div><span>Потенциал</span><b>${G.potLabel(p)}</b></div>
+        <div><span>Потенциал</span><b>${G.potLabel(p)}</b>${p.pot - p.ovr > 1 ? `<span>может вырасти до ${p.pot}</span>` : ''}</div>
         <div><span>Зарплата</span><b>${FM.money(p.wage)}/нед</b></div>
         <div><span>Контракт до</span><b>лето ${p.contract + 1}</b></div>
         <div><span>Физ. готовность</span><b>${Math.round(p.fit)}%</b></div>

@@ -22,6 +22,11 @@
       this.s = state;
       // сохранение хранит игроков без значений по умолчанию (см. packState) — восстанавливаем их
       for (const id in state.players) Game.unpackPlayer(state.players[id]);
+      // старые сохранения: потенциал старших игроков был завышен — приводим к возрастному запасу роста
+      if (!state.potV2) {
+        for (const id in state.players) { const p = state.players[id]; p.pot = FM.clamp(p.pot, p.ovr, p.ovr + FM.potRoom(p.age)); }
+        state.potV2 = true;
+      }
       this.players = state.players;
       this.teams = state.teams;
       this._tables = {};
@@ -77,6 +82,7 @@
       const s = this.s;
       for (const L of leagues) {
         s.order.push(L.id);
+        s.potV2 = true;
         s.leagues[L.id] = {
           id: L.id, name: L.name, short: L.short, tier: L.tier, weekday: L.weekday, country: L.country || 'RUS',
           autumn: L.autumn, spring: L.spring, ticket: L.ticket, prize: L.prize, single: !!L.single, teams: [],
@@ -894,7 +900,9 @@
         p.sus = 0;
         p.age++;
         if (p.age >= 31) p.ovr = Math.max(35, p.ovr - FM.ri(0, Math.min(4, p.age - 30)));
-        p.pot = Math.max(p.pot, p.ovr);
+        // запас роста не может превышать возрастной: не раскрывшийся к 24–27 годам талант уже не раскроется,
+        // а после пика потенциал снижается вместе с рейтингом
+        p.pot = FM.clamp(p.pot, p.ovr, p.ovr + FM.potRoom(p.age));
         this.revalue(p);
       }
       this.returnLoans();
@@ -971,6 +979,7 @@
 
     potLabel(p) {
       const d = p.pot;
+      if (d - p.ovr <= 1) return p.age >= 31 ? 'на спаде' : p.age >= 26 ? 'на пике' : 'раскрыт';
       if (d >= 85) return 'звёздный';
       if (d >= 78) return 'очень высокий';
       if (d >= 72) return 'высокий';
@@ -1474,9 +1483,10 @@
       }
       for (const id in this.players) {
         const p = this.players[id];
-        const young = p.age <= 23 && p.ovr < p.pot;
+        // рост к потенциалу: быстрее у самых молодых и у тех, кто играет; к 24–27 годам — понемногу
+        const young = p.age <= 27 && p.ovr < p.pot;
         const playing = p.st.mins + p.cst.mins > 0;
-        if (young && Math.random() < (playing ? 0.09 : 0.045) * (p.age <= 20 ? 1.3 : 1)) { p.ovr++; this.revalue(p); }
+        if (young && Math.random() < (playing ? 0.09 : 0.045) * (p.age <= 20 ? 1.3 : p.age >= 24 ? 0.5 : 1)) { p.ovr++; this.revalue(p); }
         else if (p.age >= 31 && Math.random() < 0.006 * (p.age - 30)) { p.ovr--; this.revalue(p); }
         p.morale += (60 - p.morale) * 0.1;
       }
