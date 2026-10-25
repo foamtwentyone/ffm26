@@ -1,7 +1,7 @@
 # Шаг 2 из 3: собирает файлы лиг js/data/sl.js, vlw.js, vle.js, pl1–pl4.js и академии js/data/academy.js
 # из скачанных заявок РФС (scrape.py).
 # Рейтинг игрока = уровень клуба + роль в команде (доля сыгранных матчей сезона, опыт, результативность) − поправка на возраст.
-import json, math, os, sys
+import json, math, os, random, sys
 
 D = os.path.dirname(os.path.abspath(__file__)) + '/.cache'
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__)) + '/../js/data'
@@ -179,7 +179,42 @@ PL = {
     'Меркурий': ('merkuriy', 'pl11', 'Южно-Сахалинск', '—', ['#1d5fa8', '#f5c400'], 46),
     'Сахалин': ('sakhalin', 'pl11', 'Южно-Сахалинск', '—', ['#1d9bd7', '#ffffff'], 45),
     'Поронайск': ('poronaysk', 'pl11', 'Поронайск', '—', ['#d71920', '#ffffff'], 44),
+    # остальные участники Чемпионата ДФО: составов в открытом доступе нет — игроки вымышленные (FICTIONAL ниже)
+    'Волат': ('volat', 'pl11', 'Хабаровск', '—', ['#d71920', '#1d1d1b'], 46),
+    'Амур': ('amur', 'pl11', 'Хабаровск', '—', ['#1d5fa8', '#ffffff'], 45),
+    'ММК': ('mmk_vl', 'pl11', 'Владивосток', '—', ['#1d3f8f', '#ffffff'], 45),
+    'Камчатка': ('kamchatka', 'pl11', 'Петропавловск-Камчатский', '—', ['#f39200', '#1d1d1b'], 44),
+    'ДЮСШ Камчатка': ('kamchatka_dyussh', 'pl11', 'Петропавловск-Камчатский', '—', ['#f39200', '#ffffff'], 43),
+    'Маяк': ('mayak_vanino', 'pl11', 'Ванино', '—', ['#1d9bd7', '#ffffff'], 43),
+    'Анадырь': ('anadyr', 'pl11', 'Анадырь', '—', ['#ffffff', '#1d5fa8'], 43),
 }
+# Клубы без доступных составов: игроки вымышленные, но стабильные (генератор с зерном по id клуба).
+# Значение — возрастной диапазон (у спортшколы — молодёжь).
+FICTIONAL = {'volat': (19, 36), 'amur': (19, 36), 'mmk_vl': (19, 36), 'kamchatka': (19, 36), 'kamchatka_dyussh': (16, 21),
+             'mayak_vanino': (19, 38), 'anadyr': (19, 38)}
+FIRST = ('Александр Алексей Андрей Антон Артём Богдан Вадим Виктор Виталий Владимир Владислав Глеб Даниил Денис Дмитрий '
+         'Евгений Егор Иван Игорь Илья Кирилл Константин Максим Матвей Михаил Никита Николай Олег Павел Роман Руслан '
+         'Сергей Степан Тимур Фёдор Юрий Ярослав').split()
+LAST = ('Абрамов Белов Беляев Борисов Васильев Виноградов Волков Воробьёв Гаврилов Голубев Горбунов Гусев Давыдов Данилов '
+        'Дмитриев Егоров Ершов Жуков Зайцев Зуев Иванов Ильин Калинин Карпов Киселёв Ковалёв Козлов Комаров Корнилов '
+        'Крылов Кудрявцев Кузнецов Лебедев Логинов Макаров Максимов Медведев Мельников Миронов Морозов Назаров Никитин '
+        'Новиков Орлов Осипов Павлов Панов Петров Поляков Попов Романов Рябов Савельев Семёнов Сергеев Сидоров Смирнов '
+        'Соболев Соколов Соловьёв Степанов Субботин Тарасов Титов Тихонов Фёдоров Филиппов Фролов Харитонов Чернов '
+        'Шестаков Широков Щербаков Юдин Яковлев').split()
+
+
+def fictional(tid, ages):
+    rnd = random.Random(tid)
+    names, players = set(), []
+    for amp, n in (('Вр.', 2), ('Зщ.', 4), ('Ун..', 4), ('Нп.', 4)):
+        for _ in range(n):
+            name = f'{rnd.choice(LAST)} {rnd.choice(FIRST)}'
+            while name in names: name = f'{rnd.choice(LAST)} {rnd.choice(FIRST)}'
+            names.add(name)
+            g = rnd.randint(0, 12)
+            goals = 0 if amp == 'Вр.' else round(g * rnd.uniform(0, {'Зщ.': 0.3, 'Ун..': 0.5, 'Нп.': 0.9}[amp]))
+            players.append({'pid': '', 'name': name, 'amp': amp, 'birth': f'—, {rnd.randint(*ages)} лет', 'stats': [str(g), str(goals)]})
+    return players
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
 
@@ -232,7 +267,9 @@ nwf = json.load(open(D + '/nwfutsal.json', encoding='utf8')) if os.path.exists(D
 south = json.load(open(D + '/south.json', encoding='utf8')) if os.path.exists(D + '/south.json') else []
 by_id = {v[0]: k for k, v in PL.items()}
 for t in south: t['name'] = by_id[t['team_id']]
-all_teams = all_teams + mosff + nagr + zk + nwf + south
+fict = [{'league': 'fict', 'team_id': tid, 'name': next(k for k, v in PL.items() if v[0] == tid), 'players': fictional(tid, ages)}
+        for tid, ages in FICTIONAL.items()]
+all_teams = all_teams + mosff + nagr + zk + nwf + south + fict
 # приоритет источников: заявка Кубка 2026/27, затем московская зона, затем Кубок 2025/26
 cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
 mos = {t['name'] for t in mosff}
@@ -240,7 +277,7 @@ teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 
          or (t['league'] == 'mosff' and t['name'] in PL and t['name'] not in cup26)
          or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26 | mos)
          or (t['league'] == 'nagr' and t['name'] in PL and t['name'] not in cup26 | mos | {x['name'] for x in all_teams if x['league'] == 'cup25'})
-         or (t['league'] in ('zk', 'nwf', 'south') and t['name'] in PL)]
+         or (t['league'] in ('zk', 'nwf', 'south', 'fict') and t['name'] in PL)]
 missing = set(PL) - {t['name'] for t in teams}
 if missing: sys.exit(f'нет заявок: {missing}')
 
@@ -253,7 +290,7 @@ for t in teams:
         main = t['league'] == 'sl' or t['name'] in ('Ухта',)
         cur = seen.get(key)
         # заявки текущего сезона важнее прошлогодних (Кубок 2025/26)
-        old = t['league'] in ('cup25', 'nagr', 'zk', 'nwf', 'south')  # mosff — тоже текущий сезон
+        old = t['league'] in ('cup25', 'nagr', 'zk', 'nwf', 'south', 'fict')  # mosff — тоже текущий сезон
         if cur is None or (cur[3] and not old) or (cur[3] == old and (g > cur[0] or (g == cur[0] and main and not cur[2]))):
             seen[key] = (g, t['team_id'], main, old)
 
@@ -340,7 +377,8 @@ for z, (zname, side, quota) in PL_ZONES.items():
            'pl8': 'составы — заявки на Чемпионат ЮФО и СКФО (ingame-sports.ru) и сайты любительских лиг (krasnodarlfl.ru, fmfabinsk.ru)',
            'pl9': 'составы — первая лига СФФ «Центр» 2025/26 (junior.uffc.ru) и Кубок России 2025/26 (ЛКС)',
            'pl10': 'составы — первенство Московской области (ffmo.ru)',
-           'pl11': 'составы — чемпионат Сахалинской области по футзалу 2025/26 (sakhfootball.nagradion.ru)'}.get(
+           'pl11': 'составы сахалинских клубов — чемпионат Сахалинской области по футзалу 2025/26 (sakhfootball.nagradion.ru), '
+                   'у остальных клубов игроки вымышленные'}.get(
            z, 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
     HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; {src}.\n"
                f"// Два круга в зоне; {'победитель зоны играет' if quota == 1 else f'{quota} лучших команды зоны играют'} во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"
