@@ -1033,8 +1033,10 @@
       if (!up) return moves;
       const tab = this.table(top);
       const down = tab[tab.length - 1].id;
-      // вылетевший клуб попадает в конференцию, где стало на одну команду меньше
-      moves.push([up, top], [down, this.teams[up].league]);
+      // вылетевший клуб попадает в конференцию своей стороны — по его зоне Первой лиги; без зоны — туда, откуда ушёл
+      // победитель Высшей лиги
+      const dz = s.leagues[this.teams[down].zone];
+      moves.push([up, top], [down, (dz && low.find((lid) => s.leagues[lid].conf === dz.conf)) || this.teams[up].league]);
       // Первая лига: финалисты Всероссийского финала выходят в конференцию Высшей лиги своей стороны, на их место
       // опускается последняя команда этой конференции — в зону своей стороны, где после переходов меньше всего клубов
       const P = s.playoff && s.playoff.pl;
