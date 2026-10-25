@@ -49,8 +49,9 @@ def club(url):
 
 
 def nationality(purl):
+    # со страницы игрока — гражданство и дата рождения (на странице клуба её бывает нет)
     page = get(purl)
-    return purl, info(page, 'Гражданство')
+    return purl, (info(page, 'Гражданство'), info(page, 'Дата рождения'))
 
 
 out = []
@@ -64,5 +65,8 @@ for lg, slug in LEAGUES.items():
 purls = sorted({p['url'] for c in out for p in c['players']})
 with ThreadPoolExecutor(4) as ex: nat = dict(ex.map(nationality, purls))
 for c in out:
-    for p in c['players']: p['nat'] = nat.get(p['url'])
+    for p in c['players']:
+        p['nat'], born = nat.get(p['url'], (None, None))
+        d = re.search(r'(\d\d\.\d\d\.\d{4})г\.\s*\((\d+)', born or '')
+        if not p['age'] and d: p['birth'], p['age'] = d.group(1), int(d.group(2))
 json.dump(out, open(CACHE + '/onefutsal.json', 'w', encoding='utf8'), ensure_ascii=False, indent=1)

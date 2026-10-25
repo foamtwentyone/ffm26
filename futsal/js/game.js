@@ -1488,6 +1488,7 @@
     simulateToday() {
       for (const m of this.todayMatches()) this.playMatch(m);
       this.progressCup();
+      this.progressEuro();
       this.setupPlayoff();
       this.progressPlayoff();
     }
