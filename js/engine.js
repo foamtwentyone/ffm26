@@ -434,6 +434,10 @@
         const gk = opp.gkPlayer();
         const ok = Math.random() < FM.clamp(0.75 + (p.ovr - gk.ovr) / 250, 0.6, 0.88);
         res.kicks.push({ side, pid: p.id, ok });
+        const s = side === 'h' ? this.home : this.away;
+        const sc = { h: res.h + (ok && side === 'h' ? 1 : 0), a: res.a + (ok && side === 'a' ? 1 : 0) };
+        // каждый удар — отдельное событие: в живом матче серия показывается по одному удару
+        this.log('penkick', ok ? `${p.name} (${s.team.name}) забивает! ${sc.h}:${sc.a}` : `${p.name} (${s.team.name}) не забивает — ${Math.random() < 0.6 ? `${gk.name} отбивает` : 'мимо ворот'}! ${sc.h}:${sc.a}`, s, { pid: p.id, ok, ph: sc.h, pa: sc.a });
         return ok;
       };
       this.log('pens', 'Серия пенальти!');
@@ -445,9 +449,9 @@
       }
       let i = 5;
       while (res.h === res.a) {
-        const hk = kick('h', H, i, this.away), ak = kick('a', A, i, this.home);
-        if (hk) res.h++;
-        if (ak) res.a++;
+        // счёт обновляется сразу после каждого удара — он же пишется в события серии
+        if (kick('h', H, i, this.away)) res.h++;
+        if (kick('a', A, i, this.home)) res.a++;
         i++;
       }
       this.pens = res;

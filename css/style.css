@@ -677,3 +677,12 @@ table.ts td.hl { font-weight: 800; color: #fff; background: color-mix(in srgb, v
 .lvl.lv3 { color: #7df0b5; background: color-mix(in srgb, var(--good) 26%, transparent); }
 span.warn { color: var(--warn); font-weight: 700; }
 @media (max-width: 620px) { .cm-row { flex-wrap: wrap; } .cm-row .lvl { margin-left: 34px; } }
+
+/* серия пенальти по ударам */
+.so { display: grid; gap: 6px; justify-items: center; margin-top: 8px; }
+.so > div { display: flex; gap: 5px; }
+.so i { width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); display: inline-block; }
+.so i.ok { background: var(--good); border-color: var(--good); box-shadow: 0 0 8px color-mix(in srgb, var(--good) 60%, transparent); }
+.so i.no { background: var(--bad); border-color: var(--bad); }
+.ev.penkick { font-weight: 700; }
+.ev.pens { color: var(--gold); font-weight: 800; }

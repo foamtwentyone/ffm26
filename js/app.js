@@ -270,13 +270,24 @@
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
-        ${leaguePick(db, lid, 'data-l')}
+        <div id="pick-area"></div>
+      </main>`;
+      drawPick();
+      const c = app.querySelector('#cont');
+      if (c) c.onclick = () => loadSlot(SAVE_AUTO);
+      app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.slot));
+      app.querySelector('#loadfile').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
+    };
+    // смена лиги перерисовывает только выбор лиги и список клубов — без перезагрузки всего экрана и анимаций
+    const drawPick = () => {
+      const area = app.querySelector('#pick-area');
+      const L = db.find((x) => x.id === lid);
+      area.innerHTML = `${leaguePick(db, lid, 'data-l')}
         <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
-          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>
-      </main>`;
-      app.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; draw(); });
-      app.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
+          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>`;
+      area.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; drawPick(); });
+      area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
         const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
         ls.set('ffm26_mgr', mgr);
         const ruEuro = app.querySelector('#ru-euro').checked;
@@ -287,10 +298,6 @@
         save();
         render();
       });
-      const c = app.querySelector('#cont');
-      if (c) c.onclick = () => loadSlot(SAVE_AUTO);
-      app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.slot));
-      app.querySelector('#loadfile').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     };
     for (const k of [SAVE_AUTO, SAVE_SLOT + 1, SAVE_SLOT + 2, SAVE_SLOT + 3]) metas[k] = localMeta(k);
     draw();
@@ -1259,7 +1266,7 @@
   }
 
   // ================== живой матч ==================
-  const ICONS = { goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', info: '' };
+  const ICONS = { penkick: '🎯', goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', info: '' };
 
   function liveMatch(m) {
     const G = g();
@@ -1270,11 +1277,13 @@
     root.style.setProperty('--acb', glow(m.a ? T(m.a) : sim.away.team));
     document.body.appendChild(root);
     let speed = 1, timer = null, tab = 'feed', subSel = null;
+    // серия пенальти показывается по одному удару: so — показанные удары, soQueue — ещё не показанные события
+    let so = null, soQueue = [], soTimer = null;
     const delays = { 1: 650, 2: 280, 4: 90 };
     const h = sim.home.team, a = sim.away.team;
     root.innerHTML = `<div class="inner">
       <div class="board"><div class="tm">${badge(h, 'lg')}<b>${esc(h.name)}</b><div class="scorers" id="sh"></div></div>
-        <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div></div>
+        <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div><div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -1287,8 +1296,16 @@
     const feed = [];
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
-      $('#mn').textContent = sim.done ? (sim.pens ? `пен. ${sim.pens.h}:${sim.pens.a}` : 'Конец') : `${sim.minuteLabel()}'`;
-      $('#mn').classList.toggle('live', !sim.done);
+      const soLive = so && soQueue.length;
+      $('#mn').textContent = so ? `пен. ${so.h}:${so.a}${soLive ? '' : ''}` : sim.done ? 'Конец' : `${sim.minuteLabel()}'`;
+      $('#mn').classList.toggle('live', !sim.done || !!soLive);
+      const soEl = $('#so');
+      if (so) {
+        // кружки ударов: зелёный — забил, красный — нет, пустые — оставшиеся из основных пяти
+        const row = (sd) => { const k = so.kicks.filter((x) => x.side === sd); const pad = Math.max(0, 5 - k.length); return k.map((x) => `<i class="${x.ok ? 'ok' : 'no'}"></i>`).join('') + '<i></i>'.repeat(pad); };
+        soEl.innerHTML = `<div>${row('h')}</div><div>${row('a')}</div>`;
+        soEl.classList.remove('hidden');
+      }
       const total = sim.phase === 'et' ? 120 : 90;
       const cur = sim.phase === 'first' ? Math.min(sim.minute, 45) : Math.min(sim.minute, total);
       $('#pg').style.width = `${sim.done ? 100 : (cur / total) * 100}%`;
@@ -1297,7 +1314,7 @@
       $('#sa').innerHTML = gl('a');
       const body = $('#body');
       if (tab === 'feed') {
-        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type}"><span class="m">${e.min}'</span><span class="i">${ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">■</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
+        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? '⚽' : '❌') : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">■</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
       } else if (tab === 'stats') {
         const H = sim.home.stats, A = sim.away.stats;
         const tp = H.possTicks + A.possTicks || 1;
@@ -1310,8 +1327,28 @@
       }
     };
     const stop = () => { if (timer) clearInterval(timer); timer = null; };
+    // показываем удары серии по одному, с паузой «для интриги»
+    const soStep = () => {
+      const e = soQueue.shift();
+      if (!e) { soTimer = null; if (sim.done) finish(); draw(); return; }
+      feed.push(e);
+      if (e.type === 'penkick') { so.kicks.push({ side: e.side, ok: e.ok }); so.h = e.ph; so.a = e.pa; }
+      draw();
+      soTimer = setTimeout(soStep, e.type === 'penkick' ? ({ 1: 1600, 2: 1000, 4: 550 }[speed] || 1600) : 700);
+    };
     const tick = () => {
       const evs = sim.step();
+      const si = evs.findIndex((e) => e.type === 'pens');
+      if (si >= 0 && !so) {
+        // началась серия пенальти: останавливаем матч и разыгрываем её по ударам
+        feed.push(...evs.slice(0, si + 1));
+        stop();
+        so = { h: 0, a: 0, kicks: [] };
+        soQueue = evs.slice(si + 1);
+        draw();
+        soTimer = setTimeout(soStep, 1200);
+        return;
+      }
       feed.push(...evs);
       if (sim.done) { stop(); finish(); }
       else if (sim.halfTime || sim.needUserSub) {
@@ -1323,7 +1360,7 @@
     const setSpeed = (v) => {
       speed = v;
       stop();
-      if (v > 0 && !sim.done) timer = setInterval(tick, delays[v]);
+      if (v > 0 && !sim.done && !soTimer) timer = setInterval(tick, delays[v]);
       root.querySelectorAll('#spd button').forEach((b) => b.classList.toggle('on', +b.dataset.s === v));
     };
     const finish = () => {
@@ -1373,6 +1410,10 @@
     $('#mng').onclick = openMgr;
     $('#fin').onclick = () => {
       stop();
+      // идущая серия пенальти — сразу показать все удары
+      if (soTimer) { clearTimeout(soTimer); soTimer = null; }
+      for (const e of soQueue) { feed.push(e); if (e.type === 'penkick') { so.kicks.push({ side: e.side, ok: e.ok }); so.h = e.ph; so.a = e.pa; } }
+      soQueue = [];
       while (!sim.done) {
         feed.push(...sim.step());
         if (sim.needUserSub) {
@@ -1382,6 +1423,7 @@
           if (sub) sim.doSub(sd, o.p, sub); else sim.needUserSub = null;
         }
       }
+      if (sim.pens && !so) so = { h: sim.pens.h, a: sim.pens.a, kicks: sim.pens.kicks.map((k) => ({ side: k.side, ok: k.ok })) };
       finish();
       draw();
     };
