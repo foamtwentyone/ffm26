@@ -74,8 +74,9 @@ META = {
 # «Золотое кольцо», «Северо-Запад», «Юг» и Московская область в игре объединены с соседними или не представлены.
 # Зона клуба без указанного города определена по группе Кубка, в которой он играл. Цвета — по эмблемам.
 # Зоны: (название, сторона — конференция Высшей лиги, куда выходят клубы зоны, мест во Всероссийском финале)
-PL_ZONES = {'pl1': ('Москва и Московская область', 'W', 3), 'pl2': ('Приволжье', 'W', 3), 'pl3': ('Урал — Западная Сибирь', 'E', 4),
-            'pl4': ('Сибирь — Дальний Восток', 'E', 2), 'pl5': ('Санкт-Петербург', 'W', 2), 'pl6': ('Золотое кольцо', 'W', 2)}
+PL_ZONES = {'pl1': ('Москва и Московская область', 'W', 3), 'pl2': ('Приволжье', 'W', 3), 'pl3': ('Урал — Западная Сибирь', 'E', 3),
+            'pl4': ('Сибирь — Дальний Восток', 'E', 2), 'pl5': ('Санкт-Петербург', 'W', 2), 'pl6': ('Золотое кольцо', 'W', 2),
+            'pl7': ('Северо-Запад', 'W', 1)}
 # название: (id, зона, город, площадка, цвета, уровень игроков)
 PL = {
     'СВОК': ('svok', 'pl1', 'Чехов', '—', ['#1d5fa8', '#ffffff'], 48),
@@ -146,6 +147,15 @@ PL = {
     'МФК Князь Владимир': ('knyaz_vladimir', 'pl6', 'Владимир', '—', ['#c9a24b', '#d71920'], 44),
     'СШ №13': ('sh13_yar', 'pl6', 'Ярославль', '—', ['#1d5fa8', '#d71920'], 43),
     'Звезда - BigTech': ('zvezda_bigtech', 'pl6', 'Ярославль', '—', ['#1d1d1b', '#d71920'], 43),
+    # «Северо-Запад» — Чемпионат СЗФО по футзалу 2024/25 (nwfootball.ru, tools/nwfutsal.py); уровень — по итоговым местам
+    'Армида': ('armida', 'pl7', 'Архангельск', '—', ['#1d5fa8', '#ffffff'], 47),
+    'Новгородский водоканал': ('vodokanal_nov', 'pl7', 'Великий Новгород', '—', ['#1d9bd7', '#ffffff'], 47),
+    'САФУ': ('safu', 'pl7', 'Архангельск', '—', ['#1d3f8f', '#c9a24b'], 46),
+    'НПК-ГРУПП': ('npk_group', 'pl7', '—', '—', ['#e8542f', '#1d1d1b'], 45),
+    'ПетрГУ-Альфа': ('petrsu_alfa', 'pl7', 'Петрозаводск', '—', ['#1d5fa8', '#d71920'], 45),
+    'Альянс': ('alyans_ptz', 'pl7', 'Петрозаводск', '—', ['#3fae49', '#ffffff'], 45),
+    'Интер': ('inter_nw', 'pl7', '—', '—', ['#1d1d1b', '#1d5fa8'], 44),
+    'ФК Сиверский-СГМО': ('siversky', 'pl7', 'Сиверский', '—', ['#f5c400', '#1d5fa8'], 43),
 }
 for name, (tid, zone, city, arena, colors, level) in PL.items():
     META[name] = (tid, city, arena, 300, colors, 35 + (level - 44), 15, level)
@@ -185,7 +195,9 @@ for t in nagr:
     if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
 # зона «Золотое кольцо» (tools/goldring.py): амплуа, матчи и голы — из протоколов турнира
 zk = json.load(open(D + '/goldring.json', encoding='utf8')) if os.path.exists(D + '/goldring.json') else []
-all_teams = all_teams + mosff + nagr + zk
+# зона «Северо-Запад» (tools/nwfutsal.py): составы, амплуа и голы — из протоколов чемпионата СЗФО 2024/25
+nwf = json.load(open(D + '/nwfutsal.json', encoding='utf8')) if os.path.exists(D + '/nwfutsal.json') else []
+all_teams = all_teams + mosff + nagr + zk + nwf
 # приоритет источников: заявка Кубка 2026/27, затем московская зона, затем Кубок 2025/26
 cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
 mos = {t['name'] for t in mosff}
@@ -193,7 +205,7 @@ teams = [t for t in all_teams if t['league'] in ('sl', 'vl') or (t['league'] == 
          or (t['league'] == 'mosff' and t['name'] in PL and t['name'] not in cup26)
          or (t['league'] == 'cup25' and t['name'] in PL and t['name'] not in cup26 | mos)
          or (t['league'] == 'nagr' and t['name'] in PL and t['name'] not in cup26 | mos | {x['name'] for x in all_teams if x['league'] == 'cup25'})
-         or (t['league'] == 'zk' and t['name'] in PL)]
+         or (t['league'] in ('zk', 'nwf') and t['name'] in PL)]
 missing = set(PL) - {t['name'] for t in teams}
 if missing: sys.exit(f'нет заявок: {missing}')
 
@@ -206,7 +218,7 @@ for t in teams:
         main = t['league'] == 'sl' or t['name'] in ('Ухта',)
         cur = seen.get(key)
         # заявки текущего сезона важнее прошлогодних (Кубок 2025/26)
-        old = t['league'] in ('cup25', 'nagr', 'zk')  # mosff — тоже текущий сезон
+        old = t['league'] in ('cup25', 'nagr', 'zk', 'nwf')  # mosff — тоже текущий сезон
         if cur is None or (cur[3] and not old) or (cur[3] == old and (g > cur[0] or (g == cur[0] and main and not cur[2]))):
             seen[key] = (g, t['team_id'], main, old)
 
@@ -288,10 +300,11 @@ HEAD = {
 for z, (zname, side, quota) in PL_ZONES.items():
     n = len(leagues[z])
     rounds = 2 * (n - 1 + n % 2)
-    src = ('составы — Межрегиональная мини-футбольная лига 2025/26 АМФ «Золотое кольцо» (mini-football76.ru)' if z == 'pl6'
-           else 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
+    src = {'pl6': 'составы — Межрегиональная мини-футбольная лига 2025/26 АМФ «Золотое кольцо» (mini-football76.ru)',
+           'pl7': 'составы — протоколы чемпионата СЗФО по футзалу 2024/25 (nwfootball.ru)'}.get(
+           z, 'заявки — mosff.ru (Москва) и Кубок России 2026/27 или 2025/26 (futsal.rfs.ru)')
     HEAD[z] = (f"// Первая лига 2026/27, зона «{zname}». Любительские клубы; {src}.\n"
-               f"// Два круга в зоне; {quota} лучших команды зоны играют во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"
+               f"// Два круга в зоне; {'победитель зоны играет' if quota == 1 else f'{quota} лучших команды зоны играют'} во Всероссийском финале (16 команд), финалисты выходят в Высшую лигу.\n"
                f"FM.addLeague({{\n  id: '{z}', name: 'Первая лига «{zname}»', short: 'ПЛ-{z[-1]}', tier: 3, conf: '{side}', finalQuota: {quota}, weekday: 0,\n"
                f"  autumn: {{ from: '09-13', rounds: {round(rounds * 0.6)} }}, spring: {{ from: '02-07', rounds: {rounds - round(rounds * 0.6)} }},\n"
                "  ticket: 0.5, prize: [25, 18, 14, 10, 8, 6, 5, 4, 3, 2, 2, 2],\n  teams: [\n")
