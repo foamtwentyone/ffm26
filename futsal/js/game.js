@@ -1133,7 +1133,7 @@
               s.freeAgents.push(p.id);
               p.listed = false;
               this.msg('Контракт истёк', `${p.name} покидает клуб свободным агентом.`, 'squad');
-            } else if (Math.random() < 0.8) {
+            } else if (Math.random() < this.keepChance(p)) {
               p.contract = y + FM.ri(1, 3);
             } else {
               this.removeFromTeam(p);
@@ -1746,6 +1746,17 @@
       if (d >= w.from2 && d <= w.to2) return `открыто до ${FM.fmtDate(w.to2)}`;
       if (d < w.from2) return `закрыто, откроется ${FM.fmtDate(w.from2)}`;
       return 'закрыто до лета';
+    }
+
+    // клуб ИИ продлевает контракт: основу (8 лучших полевых и 2 лучших вратаря) до 33 лет — всегда,
+    // остальных — с вероятностью 75%, игроков от 35 лет — 50%
+    keepChance(p) {
+      const t = this.teams[p.club];
+      const key = p.pos === 'GK'
+        ? this.squad(t).filter((x) => x.pos === 'GK').sort((a, b) => b.ovr - a.ovr).findIndex((x) => x.id === p.id) < 2
+        : this.squadRank(p) <= 8;
+      if (key && p.age < 33) return 1;
+      return p.age >= 35 ? 0.5 : 0.75;
     }
 
     squadRank(p) {
