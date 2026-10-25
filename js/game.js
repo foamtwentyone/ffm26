@@ -343,11 +343,12 @@
       }
       // однокруговой турнир (MLS, Аргентина): каждый играет с каждым один раз
       const all = L.single ? half : half.concat(half.map((r) => r.map(([h, a]) => [a, h])));
-      const dates = [];
+      // в лигах на 24 команды (46 туров) играют и в будни — тур раз в 6 дней, чтобы плей-офф закончился до июня
+      const dates = [], step = all.length > 40 ? 6 : 7;
       let d = FM.nextWeekday(`${year}-${L.autumn.from}`, L.weekday);
-      for (let i = 0; i < L.autumn.rounds; i++) { dates.push(d); d = FM.addDays(d, 7); }
+      for (let i = 0; i < L.autumn.rounds; i++) { dates.push(d); d = FM.addDays(d, step); }
       d = FM.nextWeekday(`${year + 1}-${L.spring.from}`, L.weekday);
-      while (dates.length < all.length) { dates.push(d); d = FM.addDays(d, 7); }
+      while (dates.length < all.length) { dates.push(d); d = FM.addDays(d, step); }
       return all.map((round, ri) => round.map(([h, a]) => this.addMatch({ comp: L.id, round: ri + 1, date: dates[ri], h, a })));
     }
 
@@ -397,15 +398,16 @@
       const hasUpper = !!this.leagueAt(c, L.tier - 1);
       const z = {};
       if (L.tier === 1) { z[1] = 'champ'; }
-      // стыки есть только в России (13–14 места РПЛ против 3–4 мест ФНЛ); в других странах — прямой обмен 2 на 2
-      const ru = c === 'RUS';
       if (hasUpper) {
-        z[1] = 'up'; z[2] = 'up';
-        if (L.tier === 2) { if (ru) { z[3] = 'po'; z[4] = 'po'; } } else z[3] = 'up';
+        const r = FM.promoRule(c, L.tier - 1);
+        for (let i = 1; i <= r.up; i++) z[i] = 'up';
+        if (r.po && r.po.kind === 'semi') for (let i = r.po.from; i <= r.po.to; i++) z[i] = 'po';
+        if (r.po && r.po.kind === 'pair') for (const [, lp] of r.po.pairs) z[lp] = 'po';
       }
       if (hasLower) {
-        if (L.tier === 1) { if (ru) { z[n - 3] = 'po_down'; z[n - 2] = 'po_down'; } z[n - 1] = 'down'; z[n] = 'down'; }
-        else { z[n - 2] = 'down'; z[n - 1] = 'down'; z[n] = 'down'; }
+        const r = FM.promoRule(c, L.tier);
+        for (let i = 0; i < r.down; i++) z[n - i] = 'down';
+        if (r.po && r.po.kind === 'pair') for (const [up] of r.po.pairs) z[n + up + 1] = 'po_down';
       }
       return z;
     }
@@ -714,26 +716,69 @@
       return !t.reserveOf;
     }
 
+    // все границы между лигами, где по правилам есть стыки или плей-офф
+    playoffSlots() {
+      const s = this.s, out = [];
+      for (const lid of s.order) {
+        const L = s.leagues[lid], c = this.countryOf(lid);
+        const lower = this.leagueAt(c, L.tier + 1);
+        const r = FM.promoRule(c, L.tier);
+        if (lower && r.po) out.push({ key: c + L.tier, c, upper: lid, lower, r });
+      }
+      return out;
+    }
+
+    // Стыки и плей-офф создаются, когда обе лиги доиграны. Для «semi» финал добавляется после полуфиналов.
     setupPlayoff() {
       const s = this.s;
-      if (s.playoff) return;
-      const top = this.leagueAt('RUS', 1);
-      const second = this.leagueAt('RUS', 2);
-      if (!top || !second || !this.leagueFinished(top) || !this.leagueFinished(second)) return;
-      const t1 = this.table(top), t2 = this.table(second).filter((r) => this.eligibleUp(r.id));
-      const n = t1.length;
-      const pairs = [[t1[n - 4].id, t2[3].id], [t1[n - 3].id, t2[2].id]];
-      const d1 = FM.addDays(s.matches[s.leagues[second].rounds.at(-1)[0]].date, 4);
-      const d2 = FM.addDays(d1, 4);
-      s.playoff = { ties: pairs.map(([up, low]) => ({ up, low, legs: [this.addMatch({ comp: 'po', date: d1, h: low, a: up, leg: 1 }), this.addMatch({ comp: 'po', date: d2, h: up, a: low, leg: 2, ko: true })], winner: null })) };
-      for (const tie of s.playoff.ties) {
-        s.matches[tie.legs[1]].firstLeg = tie.legs[0];
-        if ([tie.up, tie.low].includes(s.user)) {
-          const opp = this.teams[tie.up === s.user ? tie.low : tie.up];
-          this.msg('Стыковые матчи', `Команде предстоят стыковые матчи с «${opp.name}»: ${FM.fmtDate(d1)} и ${FM.fmtDate(d2)}.`, 'board');
+      if (!s.playoff) s.playoff = { ties: [], done: {} };
+      // старые сохранения: стыки РПЛ без групп
+      if (!s.playoff.done) { s.playoff.done = s.playoff.ties.length ? { RUS1: true } : {}; s.playoff.ties.forEach((t) => { t.grp = t.grp || 'RUS1'; t.stage = t.stage || 'pair'; }); }
+      for (const sl of this.playoffSlots()) {
+        if (s.playoff.done[sl.key] || !this.leagueFinished(sl.upper) || !this.leagueFinished(sl.lower)) continue;
+        s.playoff.done[sl.key] = true;
+        const tU = this.table(sl.upper), tL = this.table(sl.lower).filter((r) => this.eligibleUp(r.id));
+        const n = tU.length;
+        const last = (lid) => s.matches[s.leagues[lid].rounds.at(-1)[0]].date;
+        const d1 = FM.addDays(last(sl.lower) > last(sl.upper) ? last(sl.lower) : last(sl.upper), 3);
+        const d2 = FM.addDays(d1, 3);
+        const pairs = sl.r.po.kind === 'pair'
+          ? sl.r.po.pairs.map(([up, lp]) => ({ stage: 'pair', hi: tU[n + up].id, lo: tL[lp - 1].id }))
+          : [0, 1].map((k) => ({ stage: 'semi', hi: tL[sl.r.po.from - 1 + k].id, lo: tL[sl.r.po.to - 1 - k].id }));
+        for (const p of pairs) {
+          const l1 = this.addMatch({ comp: 'po', grp: sl.key, label: p.stage === 'semi' ? 'полуфинал плей-офф, 1-й матч' : 'стыки, 1-й матч', date: d1, h: p.lo, a: p.hi, leg: 1 });
+          const l2 = this.addMatch({ comp: 'po', grp: sl.key, label: p.stage === 'semi' ? 'полуфинал плей-офф, ответный матч' : 'стыки, ответный матч', date: d2, h: p.hi, a: p.lo, leg: 2, ko: true, firstLeg: l1 });
+          s.playoff.ties.push({ grp: sl.key, stage: p.stage, up: p.hi, low: p.lo, legs: [l1, l2], winner: null });
+          if ([p.hi, p.lo].includes(s.user)) {
+            const opp = this.teams[p.hi === s.user ? p.lo : p.hi];
+            this.msg(p.stage === 'semi' ? 'Плей-офф за повышение' : 'Стыковые матчи', `Команде предстоит ${p.stage === 'semi' ? 'полуфинал плей-офф' : 'стыковые матчи'} с «${opp.name}»: ${FM.fmtDate(d1)} и ${FM.fmtDate(d2)}.`, 'board');
+          }
         }
+        this.news(sl.r.po.kind === 'semi' ? `Стартует плей-офф за выход в «${s.leagues[sl.upper].name}».` : `Определились участники стыковых матчей за место в «${s.leagues[sl.upper].name}».`);
       }
-      this.news('Определились участники стыковых матчей за место в РПЛ.');
+    }
+
+    // после полуфиналов — финал плей-офф на нейтральном поле
+    playoffFinal(grp) {
+      const s = this.s;
+      const semis = s.playoff.ties.filter((t) => t.grp === grp && t.stage === 'semi');
+      if (semis.length !== 2 || semis.some((t) => !t.winner) || s.playoff.ties.some((t) => t.grp === grp && t.stage === 'final')) return;
+      const date = FM.addDays(semis.map((t) => s.matches[t.legs[1]].date).sort().at(-1), 5);
+      const [a, b] = semis.map((t) => t.winner);
+      const mid = this.addMatch({ comp: 'po', grp, label: 'финал плей-офф', date, h: a, a: b, ko: true, neutral: true });
+      s.playoff.ties.push({ grp, stage: 'final', up: a, low: b, legs: [mid], winner: null });
+      if ([a, b].includes(s.user)) this.msg('Финал плей-офф', `Финал плей-офф за повышение с «${this.teams[a === s.user ? b : a].name}» — ${FM.fmtDate(date)}.`, 'board');
+    }
+
+    playoffPending() {
+      const s = this.s;
+      for (const sl of this.playoffSlots()) {
+        if (!s.playoff || !s.playoff.done || !s.playoff.done[sl.key]) return true;
+        const ties = s.playoff.ties.filter((t) => t.grp === sl.key);
+        if (ties.some((t) => !t.winner)) return true;
+        if (sl.r.po.kind === 'semi' && !ties.some((t) => t.stage === 'final')) return true;
+      }
+      return false;
     }
 
     seasonEndDate() {
@@ -746,8 +791,7 @@
     allDone() {
       const s = this.s;
       for (const id in s.matches) if (!s.matches[id].played) return false;
-      const po = this.leagueAt('RUS', 1) && this.leagueAt('RUS', 2);
-      return !po || !!s.playoff;
+      return !this.playoffPending();
     }
 
     // Основа клуба: 8 лучших полевых игроков и 2 лучших вратаря
@@ -769,24 +813,22 @@
     seasonMoves() {
       const s = this.s, moves = [];
       for (const lid of s.order) {
-        const L = s.leagues[lid];
-        const tab = this.table(lid);
-        const upper = this.leagueAt(this.countryOf(lid), L.tier - 1), lower = this.leagueAt(this.countryOf(lid), L.tier + 1);
-        if (upper) {
-          const elig = tab.filter((r) => this.eligibleUp(r.id));
-          const direct = L.tier === 2 ? 2 : 3;
-          for (let i = 0; i < direct && i < elig.length; i++) moves.push([elig[i].id, upper]);
-        }
-        if (lower) {
-          const n = tab.length;
-          const down = L.tier === 1 ? 2 : 3;
-          for (let i = 0; i < down; i++) moves.push([tab[n - 1 - i].id, lower]);
-        }
+        const L = s.leagues[lid], c = this.countryOf(lid);
+        const lower = this.leagueAt(c, L.tier + 1);
+        if (!lower) continue;
+        const r = FM.promoRule(c, L.tier);
+        const tU = this.table(lid), tL = this.table(lower).filter((x) => this.eligibleUp(x.id));
+        for (let i = 0; i < r.down; i++) moves.push([tU[tU.length - 1 - i].id, lower]);
+        for (let i = 0; i < r.up && i < tL.length; i++) moves.push([tL[i].id, lid]);
       }
-      if (s.playoff) {
-        for (const tie of s.playoff.ties) {
-          if (tie.winner === tie.low) moves.push([tie.low, this.leagueAt('RUS', 1)], [tie.up, this.leagueAt('RUS', 2)]);
-        }
+      for (const tie of (s.playoff && s.playoff.ties) || []) {
+        if (!tie.winner) continue;
+        const grp = tie.grp || 'RUS1';
+        const c = grp.replace(/\d+$/, ''), tier = +grp.match(/\d+$/)[0];
+        const upper = this.leagueAt(c, tier), lower = this.leagueAt(c, tier + 1);
+        if (!upper || !lower) continue;
+        if ((tie.stage || 'pair') === 'pair' && tie.winner === tie.low) moves.push([tie.low, upper], [tie.up, lower]);
+        if (tie.stage === 'final') moves.push([tie.winner, upper]);
       }
       return moves;
     }
@@ -1264,9 +1306,12 @@
         s.board.conf = FM.clamp(s.board.conf + d, 0, 100);
       }
 
-      if (m.comp === 'po' && m.leg === 2) {
-        const tie = s.playoff.ties.find((t) => t.legs[1] === m.id);
-        tie.winner = m.winner;
+      if (m.comp === 'po' && m.ko) {
+        const tie = s.playoff.ties.find((t) => t.legs[t.legs.length - 1] === m.id);
+        if (tie) {
+          tie.winner = m.winner;
+          if (tie.stage === 'semi') this.playoffFinal(tie.grp);
+        }
       }
       this._tables = {};
     }

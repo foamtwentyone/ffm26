@@ -82,8 +82,8 @@
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">✚${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">▮${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? '<span class="ico warn" title="Контракт истекает летом">✎</span>' : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
-  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Стыковые матчи' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
-  const compShort = (c) => (c === 'cup' ? 'Кубок' : c === 'po' ? 'Стыки' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
+  const compName = (c) => (c === 'cup' ? 'Кубок России' : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compShort = (c) => (c === 'cup' ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : m.comp === 'cup' && g().s.cup.rounds[m.round - 1] ? g().s.cup.rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
@@ -759,7 +759,7 @@
   function viewTables(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const lid = UI.tablesLid || u.league;
-    if (UI.tablesView === 'po' && !s.playoff) UI.tablesView = 'table';
+    if (UI.tablesView === 'po' && !(s.playoff && s.playoff.ties.length)) UI.tablesView = 'table';
     const view = UI.tablesView;
     const L = s.leagues[lid];
     let body = '';
@@ -780,13 +780,13 @@
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['champ', 'чемпион'], ['up', 'повышение'], ['po', 'стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); return [['champ', 'чемпион'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; '); })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[L.rounds[cur - 1][0]].date)}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
-      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Стыки</button>` : ''}
+      <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок России</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
       ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
@@ -835,9 +835,25 @@
 
   function playoffView() {
     const G = g(), s = G.s;
-    return `<div class="grid">${s.playoff.ties.map((tie) => `<div class="card"><h3>${esc(T(tie.up).name)} — ${esc(T(tie.low).name)}</h3>
+    const card = (tie) => `<div class="card"><h3>${esc(T(tie.up).name)} — ${esc(T(tie.low).name)}</h3>
+      <div class="small muted" style="margin-bottom:6px">${tie.stage === 'final' ? 'Финал (нейтральное поле)' : tie.stage === 'semi' ? 'Полуфинал' : 'Стыковые матчи'}</div>
       ${tie.legs.map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}
-      ${tie.winner ? `<div class="note">Победитель: ${esc(T(tie.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
+      ${tie.winner ? `<div class="note">${tie.stage === 'semi' ? 'В финале' : tie.stage === 'final' ? 'Повышение' : 'Победитель'}: ${esc(T(tie.winner).name)}</div>` : ''}</div>`;
+    const groups = [];
+    for (const tie of s.playoff.ties) {
+      const key = tie.grp || 'RUS1';
+      let gr = groups.find((x) => x.key === key);
+      if (!gr) {
+        const c = key.replace(/\d+$/, ''), tier = +key.match(/\d+$/)[0];
+        const up = G.leagueAt(c, tier), lo = G.leagueAt(c, tier + 1);
+        gr = { key, title: up && lo ? `${s.leagues[lo].name} → ${s.leagues[up].name}` : key, ties: [] };
+        groups.push(gr);
+      }
+      gr.ties.push(tie);
+    }
+    const mine = (gr) => gr.ties.some((t) => t.up === s.user || t.low === s.user);
+    groups.sort((a, b) => mine(b) - mine(a));
+    return groups.map((gr) => `<h3 style="margin:14px 0 8px">${esc(gr.title)}</h3><div class="grid">${gr.ties.map(card).join('')}</div>`).join('');
   }
 
   // ================== статистика ==================
@@ -1504,7 +1520,7 @@
       const base = c.label || 'стыки';
       if (!c.ko) return `${base} · в борьбе`;
       if (c.won && c.final) return '<b class="win">🏆 Победа</b>';
-      if (c.won) return `${base} · ${comp === 'po' ? 'выиграли' : 'прошли дальше'}`;
+      if (c.won) return `${base} · ${comp === 'po' && !/полуфинал/.test(base) ? 'выиграли' : 'прошли дальше'}`;
       return `<span class="bad">вылет · ${base}</span>`;
     };
     const card = (e) => {

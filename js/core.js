@@ -120,6 +120,22 @@ FM.retrainWeeks = (p, to) => {
   return Math.round(base * (p.age >= 31 ? 1.5 : p.age <= 23 ? 0.8 : 1));
 };
 
+// Повышение и вылет между уровнем tier и tier+1 одной страны (сезон 2026/27):
+//   down — сколько клубов напрямую вылетает из верхней лиги, up — сколько напрямую поднимается из нижней;
+//   po.kind 'pair' — стыки «место в верхней лиге» (с конца таблицы: -3 = 16-е из 18) против «места в нижней», два матча;
+//   po.kind 'semi' — плей-офф нижней лиги за одну путёвку: полуфиналы (from против to, from+1 против to-1) в двух матчах
+//   и финал на нейтральном поле. Без правила — прямой обмен 2 на 2.
+FM.PROMO = {
+  RUS: { 1: { down: 2, up: 2, po: { kind: 'pair', pairs: [[-4, 4], [-3, 3]] } }, 2: { down: 3, up: 3 } },
+  ENG: { 1: { down: 3, up: 2, po: { kind: 'semi', from: 3, to: 6 } }, 2: { down: 3, up: 2, po: { kind: 'semi', from: 3, to: 6 } },
+    3: { down: 4, up: 3, po: { kind: 'semi', from: 4, to: 7 } } },
+  ESP: { 1: { down: 3, up: 2, po: { kind: 'semi', from: 3, to: 6 } } },
+  ITA: { 1: { down: 3, up: 2, po: { kind: 'semi', from: 3, to: 6 } } },
+  GER: { 1: { down: 2, up: 2, po: { kind: 'pair', pairs: [[-3, 3]] } } },
+  FRA: { 1: { down: 2, up: 2, po: { kind: 'pair', pairs: [[-3, 3]] } } },
+};
+FM.promoRule = (country, tier) => (FM.PROMO[country] && FM.PROMO[country][tier]) || { down: 2, up: 2 };
+
 // Линия позиции в конкретной схеме определяется её высотой на поле: вингеры в 4-2-3-1 и 4-4-2 —
 // полузащита, в 4-3-3 и 3-4-3 — атака; крайние защитники в 3-5-2 — полузащита. 'G' | 'D' | 'M' | 'F'.
 FM.lineOf = (slot, formation) => {

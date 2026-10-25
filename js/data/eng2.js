@@ -2,7 +2,7 @@
 // Имена игроков в оригинальном написании; репутация и бюджет клуба считаются игрой по стоимости состава.
 FM.addLeague({
   id: 'eng2', name: 'Чемпионшип', short: 'Чемпионшип', country: 'ENG', tier: 2, weekday: 6,
-  autumn: { from: '08-01', rounds: 23 }, spring: { from: '01-09', rounds: 23 },
+  autumn: { from: '08-01', rounds: 23 }, spring: { from: '01-02', rounds: 23 },
   ticket: 25, prize: [8000, 7750, 7500, 7300, 7050, 6800, 6550, 6350, 6100, 5850, 5600, 5350, 5150, 4900, 4650, 4400, 4150, 3950, 3700, 3450, 3200, 3000, 2750, 2500],
   teams: [
     { id: 'middlesbrough', name: 'Мидлсбро', city: 'Мидлсбро', stadium: 'Riverside Stadium', cap: 34988, colors: ['#e11b22', '#ffffff'], players: `
