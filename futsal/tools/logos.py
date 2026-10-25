@@ -45,6 +45,7 @@ if os.path.exists(CACHE + '/mosff.json'): teams += json.load(open(CACHE + '/mosf
 if os.path.exists(CACHE + '/nagradion.json'):
     for t in json.load(open(CACHE + '/nagradion.json', encoding='utf8')):
         if t['name'] == 'Кристалл' and t['host'] == 'stat.ffspb.org': t['name'] = 'Кристалл-М'
+        if t['name'] == 'Конфеста_2': t['name'] = 'Конфеста-2'
         if t.get('logo') and os.path.exists(f"{CACHE}/saved/{t['logo']}"): teams.append(dict(t, logo='file:' + t['logo']))
 # зоны «Золотое кольцо» (goldfootball.ru) и «Северо-Запад» (st.joinsport.io) — ссылки собирают goldring.py и nwfutsal.py
 for f in ('goldring.json', 'nwfutsal.json', 'south.json'):
