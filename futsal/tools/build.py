@@ -180,7 +180,7 @@ PL = {
     'Сахалин': ('sakhalin', 'pl11', 'Южно-Сахалинск', '—', ['#1d9bd7', '#ffffff'], 45),
     'Поронайск': ('poronaysk', 'pl11', 'Поронайск', '—', ['#d71920', '#ffffff'], 44),
     # остальные участники Чемпионата ДФО: составов в открытом доступе нет — игроки вымышленные (FICTIONAL ниже)
-    'Волат': ('volat', 'pl11', 'Хабаровск', '—', ['#d71920', '#1d1d1b'], 46),
+    'Волат': ('volat', 'pl11', 'Хабаровск', '—', ['#d71920', '#1d1d1b'], 46),  # состав — ГорЛига АМФР, Хабаровск (amfr.ru)
     'Амур': ('amur', 'pl11', 'Хабаровск', '—', ['#1d5fa8', '#ffffff'], 45),
     'ММК': ('mmk_vl', 'pl11', 'Владивосток', '—', ['#1d3f8f', '#ffffff'], 45),
     'Камчатка': ('kamchatka', 'pl11', 'Петропавловск-Камчатский', '—', ['#f39200', '#1d1d1b'], 44),
@@ -267,8 +267,9 @@ nwf = json.load(open(D + '/nwfutsal.json', encoding='utf8')) if os.path.exists(D
 south = json.load(open(D + '/south.json', encoding='utf8')) if os.path.exists(D + '/south.json') else []
 by_id = {v[0]: k for k, v in PL.items()}
 for t in south: t['name'] = by_id[t['team_id']]
+# вымышленный состав — только пока нет настоящего (сохранённая страница в .cache/saved/south, tools/south.py)
 fict = [{'league': 'fict', 'team_id': tid, 'name': next(k for k, v in PL.items() if v[0] == tid), 'players': fictional(tid, ages)}
-        for tid, ages in FICTIONAL.items()]
+        for tid, ages in FICTIONAL.items() if tid not in {t['team_id'] for t in south}]
 all_teams = all_teams + mosff + nagr + zk + nwf + south + fict
 # приоритет источников: заявка Кубка 2026/27, затем московская зона, затем Кубок 2025/26
 cup26 = {t['name'] for t in all_teams if t['league'] == 'cup'}
