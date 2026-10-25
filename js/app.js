@@ -771,9 +771,13 @@
       const tab = G.table(lid);
       const z = G.zones(lid);
       const rounds = L.rounds.length;
-      let cur = UI.round;
+      // по умолчанию — последний сыгранный тур; ручной выбор держится, пока не сдвинулась дата
+      const pin = UI.roundPin && UI.roundPin.lid === lid && UI.roundPin.date === s.date ? UI.roundPin.round : 0;
+      let cur = pin;
       if (!cur || cur > rounds) {
-        cur = L.rounds.findIndex((r) => r.some((id) => !s.matches[id].played)) + 1 || rounds;
+        let last = 0;
+        L.rounds.forEach((r, i) => { if (r.some((id) => s.matches[id].played)) last = i + 1; });
+        cur = last || 1;
       }
       body = `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><div class="tbl-wrap"><table>
@@ -792,11 +796,11 @@
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
-    if (rp) rp.onclick = () => { UI.round = Math.max(1, UI.round - 1); render(); };
-    if (rn) rn.onclick = () => { UI.round = Math.min(L.rounds.length, UI.round + 1); render(); };
+    if (rp) rp.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.max(1, UI.round - 1) }; render(); };
+    if (rn) rn.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.min(L.rounds.length, UI.round + 1) }; render(); };
     const ep = main.querySelector('#ep'), en = main.querySelector('#en');
-    if (ep) ep.onclick = () => { UI.euroMd[view] = Math.max(1, UI.euroMd[view] - 1); render(); };
-    if (en) en.onclick = () => { UI.euroMd[view] = Math.min(8, UI.euroMd[view] + 1); render(); };
+    if (ep) ep.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.max(1, UI.euroMd[view] - 1) } }); render(); };
+    if (en) en.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.min(8, UI.euroMd[view] + 1) } }); render(); };
   }
 
   function cupView() {
@@ -816,8 +820,9 @@
     const tab = G.euroTable(id);
     const zone = (pos) => (pos <= 4 ? 'up' : pos <= 12 ? 'po' : '');
     const mdCount = e.md.length;
-    let cur = UI.euroMd && UI.euroMd[id];
-    if (!cur) cur = (e.md.findIndex((md) => md.some((mid) => !s.matches[mid].played)) + 1) || mdCount;
+    const pin = UI.euroPin && UI.euroPin[id] && UI.euroPin[id].date === s.date ? UI.euroPin[id].md : 0;
+    let cur = pin;
+    if (!cur) { cur = 1; e.md.forEach((md, i) => { if (md.some((mid) => s.matches[mid].played)) cur = i + 1; }); }
     UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
     const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted">${FM.fmtDate(m.date)}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
     const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
@@ -1603,7 +1608,8 @@
       <div class="small">${esc(m.text)}</div>
       ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
         <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
-      ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button></div>` : ''}
+      ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>` : ''}
+      ${m.type === 'job' && m.data && m.data.closed && m.data.result ? `<div class="small muted">${esc(m.data.result)}</div>` : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
     s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
@@ -1612,6 +1618,7 @@
       toast(esc(G.counterOffer(+b.dataset.haggle, v)), 4000); save(); render();
     });
     main.querySelectorAll('[data-dec]').forEach((b) => b.onclick = () => { G.answerOffer(+b.dataset.dec, false); save(); render(); });
+    main.querySelectorAll('[data-jobno]').forEach((b) => b.onclick = () => { toast(esc(G.declineJob(+b.dataset.jobno))); save(); render(); });
     main.querySelectorAll('[data-job]').forEach((b) => b.onclick = () => {
       const m = s.inbox.find((x) => x.id === +b.dataset.job);
       m.data.closed = true;

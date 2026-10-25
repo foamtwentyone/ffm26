@@ -1133,10 +1133,24 @@
       const s = this.s, u = this.userTeam();
       if (s.sacked || s.seasonOver || !FM.chance(0.04)) return;
       if (s.inbox.some((m) => m.type === 'job' && m.data && !m.data.closed)) return;
-      const c = this.coachMarket().filter((x) => x.vacancy && x.level >= 2 && x.rep >= u.rep - 2);
+      const c = this.coachMarket().filter((x) => x.vacancy && x.level >= 2 && x.rep >= u.rep - 2 && (s.jobDeclined || {})[x.id] !== s.season);
       if (!c.length) return;
       const t = this.teams[FM.pick(c.slice(0, 5)).id];
       this.msg(`Предложение от «${t.name}»`, `«${t.name}» (${s.leagues[t.league].name}) недоволен результатами и предлагает вам возглавить команду. Решение за вами — можно остаться.`, 'job', { team: t.id });
+    }
+
+    // отказ от предложения клуба: клуб больше не зовёт до конца сезона, руководство ценит лояльность
+    declineJob(msgId) {
+      const s = this.s, m = s.inbox.find((x) => x.id === msgId);
+      if (!m || !m.data || m.data.closed) return 'Предложение уже закрыто.';
+      const t = this.teams[m.data.team];
+      m.data.closed = true;
+      m.data.result = 'Вы отказались от предложения.';
+      s.jobDeclined = s.jobDeclined || {};
+      s.jobDeclined[t.id] = s.season;
+      s.board.conf = FM.clamp(s.board.conf + 3, 0, 100);
+      this.news(`${s.manager} отказал «${t.name}» и остаётся в «${this.userTeam().name}».`);
+      return `Вы отказали «${t.name}». Руководство «${this.userTeam().name}» ценит вашу верность.`;
     }
 
     // репутация по итогам сезона
