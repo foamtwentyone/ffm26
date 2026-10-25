@@ -224,11 +224,12 @@ FM.roundValue = (v) => {
   if (v >= 100) return Math.round(v / 25) * 25;
   return Math.max(10, Math.round(v / 5) * 5);
 };
+// Потенциал — ожидаемый пик рейтинга. В футзале игроки растут примерно до 26 лет, пик — 26–30.
 FM.potFor = (ovr, age) => {
   let g = 0;
-  if (age <= 18) g = FM.ri(10, 20);
-  else if (age <= 20) g = FM.ri(7, 15);
-  else if (age <= 23) g = FM.ri(3, 9);
+  if (age <= 18) g = FM.ri(8, 20);
+  else if (age <= 20) g = FM.ri(5, 14);
+  else if (age <= 23) g = FM.ri(2, 9);
   else if (age <= 26) g = FM.ri(0, 4);
   return Math.min(94, ovr + g);
 };

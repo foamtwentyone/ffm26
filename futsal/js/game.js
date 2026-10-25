@@ -1098,6 +1098,12 @@
       // игроки: возраст, развитие, контракты, завершение карьеры
       for (const id in this.players) {
         const p = this.players[id];
+        // потенциал молодых меняется по итогам сезона: хорошая игра поднимает его, сезон без практики — снижает
+        if (p.age <= 23) {
+          const apps = p.st.apps + p.cst.apps, avg = apps ? (p.st.rsum + p.cst.rsum) / apps : 0;
+          const drift = apps < 6 ? FM.ri(-2, 0) : avg >= 7.2 ? FM.ri(1, 3) : avg < 6.3 ? FM.ri(-2, 0) : FM.ri(-1, 1);
+          p.pot = FM.clamp(p.pot + drift, p.ovr, 94);
+        }
         p.car.apps += p.st.apps + p.cst.apps; p.car.g += p.st.g + p.cst.g; p.car.a += p.st.a + p.cst.a;
         p.st = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
         p.cst = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
@@ -1105,7 +1111,8 @@
         p.sus = 0;
         p.age++;
         if (p.age >= 31) p.ovr = Math.max(35, p.ovr - FM.ri(0, Math.min(4, p.age - 30)));
-        p.pot = Math.max(p.pot, p.ovr);
+        // после 26 лет расти уже некуда: потенциал совпадает с текущим уровнем и снижается вместе с ним
+        p.pot = p.age >= 27 ? p.ovr : Math.max(p.pot, p.ovr);
         this.revalue(p);
       }
       this.returnLoans();
@@ -1189,7 +1196,11 @@
       p.club = null;
     }
 
+    // Потенциал показывается с учётом возраста: у ветеранов и игроков на пике — их нынешнее состояние, а не былые ожидания
     potLabel(p) {
+      if (p.age >= 31) return 'ветеран';
+      if (p.age >= 27) return 'на пике';
+      if (p.pot - p.ovr <= 1) return 'раскрыт';  // молодой, но уже дошёл до своего потолка (сильный сезон может поднять его)
       const d = p.pot;
       if (d >= 85) return 'звёздный';
       if (d >= 78) return 'очень высокий';
@@ -1691,9 +1702,11 @@
       }
       for (const id in this.players) {
         const p = this.players[id];
-        const young = p.age <= 23 && p.ovr < p.pot;
+        // рост до 26 лет: чем моложе и чем дальше до потенциала, тем быстрее; без игровой практики — вдвое медленнее
+        const gap = p.pot - p.ovr;
         const playing = p.st.mins + p.cst.mins > 0;
-        if (young && Math.random() < (playing ? 0.09 : 0.045) * (p.age <= 20 ? 1.3 : 1)) { p.ovr++; this.revalue(p); }
+        const base = p.age <= 20 ? 0.13 : p.age <= 23 ? 0.1 : p.age <= 26 ? 0.06 : 0;
+        if (gap > 0 && Math.random() < base * (playing ? 1 : 0.5) * Math.min(1, 0.25 + gap / 8)) { p.ovr++; this.revalue(p); }
         else if (p.age >= 31 && Math.random() < 0.006 * (p.age - 30)) { p.ovr--; this.revalue(p); }
         p.morale += (60 - p.morale) * 0.1;
       }
