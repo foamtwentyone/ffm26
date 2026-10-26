@@ -585,11 +585,42 @@
       return z;
     }
 
+    // сила состава для оценки клуба: средний рейтинг 14 лучших игроков
+    squadStrength(t) {
+      const o = this.squad(t).map((p) => p.ovr).sort((a, b) => b - a).slice(0, 14);
+      return o.length ? o.reduce((a, b) => a + b, 0) / o.length : 50;
+    }
+
+    // «Ожидаемая» репутация по силе состава внутри лиги: средний уровень лиги сохраняется, клубы
+    // расставляются по реальной силе (1 пункт среднего рейтинга ≈ 1,6 пункта репутации)
+    strengthRep(lid) {
+      const ids = this.s.leagues[lid].teams;
+      const str = {}, n = ids.length;
+      let mr = 0, ms = 0;
+      for (const id of ids) { str[id] = this.squadStrength(this.teams[id]); mr += this.teams[id].rep; ms += str[id]; }
+      mr /= n; ms /= n;
+      const out = {};
+      for (const id of ids) out[id] = FM.clamp(mr + (str[id] - ms) * 1.6, 35, 99);
+      return out;
+    }
+
+    // задача руководства: место клуба в лиге по статусу и реальной силе состава поровну
     setExpectation() {
       const t = this.userTeam();
       const L = this.s.leagues[t.league];
-      const byRep = L.teams.slice().sort((a, b) => this.teams[b].rep - this.teams[a].rep);
-      this.s.board.expect = byRep.indexOf(t.id) + 1;
+      const sr = this.strengthRep(t.league);
+      const score = (id) => this.teams[id].rep * 0.5 + sr[id] * 0.5;
+      const order = L.teams.slice().sort((a, b) => score(b) - score(a));
+      this.s.board.expect = order.indexOf(t.id) + 1;
+    }
+
+    // после закрытия летнего окна руководство пересматривает задачу, если состав заметно изменился
+    reviewExpectation() {
+      const s = this.s, old = s.board.expect;
+      this.setExpectation();
+      if (Math.abs(s.board.expect - old) >= 2) {
+        this.msg('Задача на сезон скорректирована', `После трансферного окна руководство оценило состав и ${s.board.expect < old ? 'повысило' : 'снизило'} планку: ${this.expectText()}.`, 'board');
+      } else s.board.expect = old;
     }
 
     expectText() {
@@ -1292,6 +1323,12 @@
       for (const id of s.freeAgents) if (this.players[id] && this.players[id].age >= 36) delete this.players[id];
       s.freeAgents = pool.slice(0, 300).map((p) => p.id);
 
+      // репутация клубов за межсезонье на треть подтягивается к реальной силе состава
+      for (const lid of s.order) {
+        const sr = this.strengthRep(lid);
+        for (const id in sr) { const t = this.teams[id]; t.rep = Math.round(FM.clamp(t.rep + (sr[id] - t.rep) / 3, 35, 99)); }
+      }
+
       s.season++;
       s.date = `${s.season}-06-20`;
       const added = this.addMissingLeagues();
@@ -1324,7 +1361,10 @@
     // smooth — пересчёт в межсезонье: за год стоимость меняется не больше чем в 1,5 раза вверх и на 40% вниз
     revalue(p, smooth = false) {
       const base = FM.baseValue(p.ovr, p.age, p.pot);
-      let v = Math.min(FM.VALUE_CAP, base * (p.vmul || 1));
+      let v = base * (p.vmul || 1);
+      // выше 150 млн цена растёт втрое медленнее — до потолка доходят единицы
+      if (v > 150000) v = 150000 + (v - 150000) * 0.35;
+      v = Math.min(FM.VALUE_CAP, v);
       if (smooth && p.value) {
         const lim = FM.clamp(v, p.value * 0.6, p.value * 1.5);
         if (lim !== v) { p.vmul = FM.clamp(lim / base, 0.2, 5); v = lim; }
@@ -1670,6 +1710,7 @@
         s.payments = s.payments.filter((x) => x.date > s.date);
       }
       if (this.inWindow()) this.transferDay();
+      if (s.date === FM.addDays(s.window.to, 1)) this.reviewExpectation();
       this.expireOffers();
       if (s.date.endsWith('-03-01')) this.contractReminder();
     }
@@ -1708,7 +1749,8 @@
         if (to.id === this.s.user) this.finLog(to, `Аренда: ${p.name}`, -terms.fee);
         if (from.id === this.s.user) this.finLog(from, `Аренда: ${p.name}`, terms.fee);
       }
-      this.news(`${p.name} отправляется в аренду: «${from.name}» → «${to.name}» до конца сезона.`);
+      if (from.id === this.s.user || to.id === this.s.user || p.ovr >= 72) this.news(`${p.name} отправляется в аренду: «${from.name}» → «${to.name}» до конца сезона.`);
+      this.s.seasonLog.unshift({ date: this.s.date, pid: p.id, name: p.name, from: from.id, to: to.id, fee: 0, loan: true });
     }
 
     // Что клуб-владелец хочет за аренду своего игрока
@@ -2183,6 +2225,7 @@
         if (to.id === s.user) this.finLog(to, `Агент и подъёмные: ${p.name}`, -extra);
       }
       p.sellOn = opts.sellOn && from ? { club: from.id, pct: opts.sellOn } : null;
+      p.joined = s.date;
       p.role = opts.role || null;
       p.release = opts.release || 0;
       p.pre = null;
@@ -2198,7 +2241,7 @@
       const txt = from ? `${p.name}: «${from.name}» → «${to.name}» за ${fee ? FM.money(fee) : 'бесплатно'}` : `${p.name} подписал контракт с «${to.name}» как свободный агент`;
       this.news(txt);
       s.seasonLog.unshift({ date: s.date, pid: p.id, name: p.name, from: from ? from.id : null, to: to.id, fee });
-      if (s.seasonLog.length > 200) s.seasonLog.length = 200;
+      if (s.seasonLog.length > 600) s.seasonLog.length = 600;
       if (to.id !== s.user && (!from || from.id !== s.user)) return;
       if (to.id === s.user) this.msg('Трансфер завершён', `${p.name} — игрок «${to.name}». ${fee ? 'Сумма: ' + FM.money(fee) + '.' : ''} Зарплата ${FM.money(p.wage)}/нед.`, 'transfer');
       // пользователь сам выбирает состав: если в старте была дыра, не трогаем
@@ -2261,13 +2304,14 @@
         this.msg('Отступные активированы', `«${b.name}» выплатил отступные ${FM.money(p.release)} — ${p.name} уходит из клуба.`, 'transfer');
         this.transfer(p, b, p.release, null, FM.ri(3, 5));
       }
-      // трансферы между клубами ИИ
+      // трансферы между клубами ИИ: летом рынок активнее, чем зимой; топ-клубы иногда охотятся за звёздами,
+      // молодёжь больших клубов уходит в аренду туда, где будет играть
       const ai = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf);
-      for (let k = 0; k < 3; k++) {
-        if (!FM.chance(0.6)) continue;
-        const buyer = FM.pick(ai);
-        this.aiBuy(buyer);
-      }
+      const summer = s.date >= s.window.from && s.date <= s.window.to;
+      const cache = {};
+      for (let k = 0; k < (summer ? 12 : 6); k++) this.aiBuy(FM.pick(ai), cache);
+      if (FM.chance(summer ? 0.3 : 0.08)) this.aiMarquee(ai, cache);
+      for (let k = 0; k < (summer ? 3 : 1); k++) this.aiLoan(ai);
       // подписание свободных агентов и разгрузка составов
       for (const t of ai) {
         if (t.players.length > 29) {
@@ -2278,7 +2322,31 @@
       }
     }
 
-    aiBuy(buyer) {
+    // Готов ли клуб продать игрока и за сколько: ключевых игроков (8 лучших полевых и 2 вратаря) не отдают
+    // клубам ниже уровнем и продают только с наценкой; позицию не оголяют.
+    sellTerms(p, buyer, cache) {
+      const seller = this.teams[p.club];
+      if (!seller || seller.id === this.s.user || seller.reserveOf === buyer.id) return null;
+      // только что купленного игрока клуб не перепродаёт (полгода)
+      if (p.joined && FM.parseDate(this.s.date) - FM.parseDate(p.joined) < 180 * 864e5) return null;
+      const c = cache[seller.id] = cache[seller.id] || { core: this.coreOf(seller), pos: {} };
+      if (c.pos[p.pos] == null) c.pos[p.pos] = seller.players.filter((id) => this.players[id] && this.players[id].pos === p.pos).length;
+      if (c.pos[p.pos] <= Math.max(1, (SQUAD_NEED[p.pos] || 2) - 1) || seller.players.length <= 20) return null;
+      let fee = this.askingPrice(p);
+      if (c.core.has(p.id)) {
+        if (buyer.rep < seller.rep - 2 || p.contract > this.s.season + 2 && FM.chance(0.5)) return null;
+        // элитные клубы почти никогда не продают своих звёзд
+        if (seller.rep >= 82 && !FM.chance(0.12)) return null;
+        fee = fee * 1.3;
+      }
+      // не дороже полутора стоимостей и рекорда рынка
+      fee = FM.roundValue(Math.min(fee, p.value * 1.5, FM.VALUE_CAP * 1.1));
+      return { fee, core: c.core.has(p.id) };
+    }
+
+    // Клуб ИИ закрывает самое слабое место основы: игрок должен быть заметно сильнее нынешнего, по карману
+    // (трансфер + полгода зарплаты) и согласен на переход (не идёт в клуб сильно ниже уровнем).
+    aiBuy(buyer, cache = {}) {
       const s = this.s;
       if (buyer.players.length >= MAX_SQUAD - 2) return;
       const r = this.autoPick(buyer, buyer.formation, { ignoreFitness: true });
@@ -2290,28 +2358,91 @@
       });
       if (weakest < 0) return;
       const pos = slots[weakest][0];
-      const budget = buyer.money * 0.45;
+      const budget = buyer.money * 0.5;
       const cands = [];
       for (const tid in this.teams) {
         const t = this.teams[tid];
         if (t.id === buyer.id || t.id === s.user || t.reserveOf === buyer.id || t.players.length <= 20) continue;
-        if (t.rep > buyer.rep + 3) continue;
+        if (t.rep > buyer.rep + 12) continue;
         for (const pid of t.players) {
           const p = this.players[pid];
-          if (p.pos !== pos || p.ovr < wv + 2 || p.inj || p.pre || p.loan) continue;
-          const fee = this.askingPrice(p);
-          if (fee > budget) continue;
-          cands.push([p, fee]);
+          if (p.pos !== pos || p.ovr < wv + 2 || p.ovr > wv + 12 || p.inj || p.pre || p.loan) continue;
+          if (t.rep > buyer.rep + 3 && p.age < 30 && p.ovr >= this.teamBaseOvr(t)) continue; // в клубе выше уровнем игрок основы не уйдёт вниз
+          cands.push(p);
         }
       }
       for (const pid of s.freeAgents) {
         const p = this.players[pid];
-        if (p && p.pos === pos && p.ovr >= wv + 2) cands.push([p, 0]);
+        if (p && p.pos === pos && p.ovr >= wv + 2) cands.push(p);
       }
       if (!cands.length) return;
-      cands.sort((a, b) => b[0].ovr - a[0].ovr);
-      const [p, fee] = FM.pick(cands.slice(0, 4));
-      this.transfer(p, buyer, fee, null, FM.ri(2, 4));
+      cands.sort((a, b) => b.ovr - a.ovr);
+      for (const p of cands.slice(0, 6)) {
+        const terms = p.club ? this.sellTerms(p, buyer, cache) : { fee: 0 };
+        if (!terms) continue;
+        const wage = this.wageDemand(p, buyer);
+        if (terms.fee > budget || terms.fee + wage * 26 > buyer.money) continue;
+        const from = p.club ? this.teams[p.club] : null;
+        this.transfer(p, buyer, terms.fee, wage, p.age >= 31 ? FM.ri(1, 2) : FM.ri(2, 5));
+        if (terms.fee >= 25000) this.news(`${p.name} переходит из «${from.name}» в «${buyer.name}» за ${FM.money(terms.fee)}.`);
+        return;
+      }
+    }
+
+    // Громкий трансфер: богатый топ-клуб покупает звезду, которая сразу станет игроком основы
+    aiMarquee(ai, cache = {}) {
+      // не больше трёх громких сделок за окно
+      const s = this.s, key = s.date < s.window.from2 ? `${s.season}s` : `${s.season}w`;
+      s.marquee = s.marquee && s.marquee.key === key ? s.marquee : { key, n: 0 };
+      if (s.marquee.n >= 3) return;
+      const rich = ai.filter((t) => t.rep >= 80 && t.money >= 40000 && t.players.length < MAX_SQUAD - 2);
+      if (!rich.length) return;
+      const buyer = FM.pick(rich.sort((a, b) => b.money - a.money).slice(0, 12));
+      const r = this.autoPick(buyer, buyer.formation, { ignoreFitness: true });
+      const slots = FM.FORMATIONS[buyer.formation];
+      const need = {};
+      r.lineup.forEach((pid, i) => { const sp = slots[i][0]; const v = pid ? this.players[pid].ovr : 0; need[sp] = Math.min(need[sp] ?? 999, v); });
+      const cands = [];
+      for (const id in this.players) {
+        const p = this.players[id];
+        if (!p.club || p.club === buyer.id || p.club === this.s.user || p.loan || p.pre || p.inj || p.age > 30 || p.ovr < 82) continue;
+        const cur = need[p.pos];
+        if (cur == null || p.ovr < cur + 3) continue;
+        const seller = this.teams[p.club];
+        if (seller.rep > buyer.rep + 2) continue;
+        cands.push(p);
+      }
+      cands.sort((a, b) => b.ovr - a.ovr);
+      for (const p of cands.slice(0, 5)) {
+        const terms = this.sellTerms(p, buyer, cache);
+        if (!terms) continue;
+        const wage = this.wageDemand(p, buyer);
+        if (terms.fee > buyer.money * 0.85 || terms.fee + wage * 26 > buyer.money) continue;
+        const from = this.teams[p.club];
+        this.transfer(p, buyer, terms.fee, wage, FM.ri(4, 5));
+        this.news(`Громкий трансфер: ${p.name} переходит из «${from.name}» в «${buyer.name}» за ${FM.money(terms.fee)}!`);
+        s.marquee.n++;
+        return;
+      }
+    }
+
+    // Аренда молодого игрока (до 21 года) из большого клуба, где он не в числе 16 лучших, в клуб, где он будет играть
+    aiLoan(ai) {
+      const owner = FM.pick(ai.filter((t) => t.rep >= 68));
+      if (!owner) return;
+      const sq = this.squad(owner).filter((p) => !p.loan).sort((a, b) => b.ovr - a.ovr);
+      const young = sq.slice(16).filter((p) => p.age <= 21 && !p.pre && !p.inj && p.ovr >= 55);
+      if (!young.length || sq.length <= 22) return;
+      const p = FM.pick(young);
+      const opts = ai.filter((t) => t.id !== owner.id && t.rep < owner.rep - 4 && t.players.length < MAX_SQUAD - 4 && t.reserveOf !== owner.id && owner.reserveOf !== t.id);
+      let best = null, bv = -1;
+      for (const t of FM.shuffle(opts).slice(0, 80)) {
+        const same = t.players.map((id) => this.players[id]).filter((x) => x && x.pos === p.pos).map((x) => x.ovr).sort((a, b) => b - a);
+        if (p.ovr < (same[0] || 0) - 1) continue; // должен сразу бороться за место в основе
+        const v = t.rep + (this.countryOf(t.league) === this.countryOf(owner.league) ? 6 : 0) + Math.random() * 4;
+        if (v > bv) { bv = v; best = t; }
+      }
+      if (best) this.loanMove(p, best, { wagePct: 100, fee: 0, buy: 0 });
     }
 
     // ================== свободные агенты и предварительные контракты (ИИ) ==================
