@@ -1922,7 +1922,8 @@
     wageDemand(p, team) {
       const tier = this.tierOf(team);
       const cur = p.club ? this.teams[p.club] : null;
-      let w = Math.max(FM.wageFor(p.value, tier, p.age, this.countryOf(team.league)), p.wage * 1.1);
+      const market = FM.wageFor(p.value, tier, p.age, this.countryOf(team.league));
+      let w = p.club ? FM.clamp(market * 0.85, p.wage * 1.1, p.wage * 2) : market * 0.85;
       // за переход в клуб ниже уровнем игрок просит надбавку, но не больше 40%
       if (cur && team.rep < cur.rep) w *= 1 + Math.min(0.4, (cur.rep - team.rep) * 0.025);
       return Math.round(w * 10) / 10;
@@ -2064,8 +2065,13 @@
 
     playerDemand(p, team, role) {
       const it = this.playerInterest(p, team);
-      let w = Math.max(FM.wageFor(p.value, this.tierOf(team), p.age, this.countryOf(team.league)), p.wage * (p.club ? 1.15 : 0.9));
-      w *= 1 + Math.max(0, 55 - it.score) * 0.015;
+      // запрос отталкивается от нынешней зарплаты: при переходе игрок хочет прибавку (15–30%), а не зарплату «по рыночной
+      // цене» — иначе после роста стоимости запрос скачет в разы. Без клуба — ближе к рыночной ставке.
+      const market = FM.wageFor(p.value, this.tierOf(team), p.age, this.countryOf(team.league));
+      // недоплачиваемый игрок просит ближе к рынку, но не больше чем вдвое к нынешней зарплате
+      let w = p.club ? FM.clamp(market * 0.85, p.wage * 1.15, p.wage * 2) : Math.max(market * 0.85, p.wage * 0.9);
+      // сомневающийся игрок просит больше, но не больше чем на 30%
+      w *= 1 + Math.min(0.3, Math.max(0, 55 - it.score) * 0.008);
       w *= { key: 0.92, starter: 1, rotation: 1.1, backup: 1.25 }[role] || 1;
       if (role === 'key' && !it.starter) w *= 1.08;
       const prefYears = p.age < 24 ? [4, 5] : p.age < 30 ? [3, 4] : p.age < 33 ? [2, 3] : [1, 2];
