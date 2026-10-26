@@ -675,6 +675,9 @@
     const G = g(), u = G.userTeam();
     const slots = FM.FORMATIONS[u.formation];
     while (u.lineup.length < slots.length) u.lineup.push(null);
+    // игрок не может быть одновременно в основе и на скамейке (и дважды в одном списке)
+    u.lineup = u.lineup.map((id, i, a) => (id && a.indexOf(id) === i ? id : null));
+    u.bench = u.bench.filter((id, i, a) => id && !u.lineup.includes(id) && a.indexOf(id) === i);
     const sq = G.squad(u).sort((a, b) => FM.POS.indexOf(a.pos) - FM.POS.indexOf(b.pos) || b.ovr - a.ovr);
     const inXI = new Set(u.lineup.filter(Boolean));
     const onBench = new Set(u.bench);
@@ -745,6 +748,9 @@
       // переносим игроков на самые подходящие позиции новой схемы
       const r = G.autoPick({ ...u, players: old.filter(Boolean).concat(u.bench) }, u.formation);
       u.lineup = r.lineup.slice(0, ns.length);
+      // скамейка — из тех, кто не попал в основу (раньше она не обновлялась, и игроки оказывались в обоих списках)
+      const xi = new Set(u.lineup.filter(Boolean));
+      u.bench = old.filter(Boolean).concat(u.bench).filter((id, i, a) => !xi.has(id) && a.indexOf(id) === i).slice(0, 9);
       UI.sel = null;
       render();
     };
