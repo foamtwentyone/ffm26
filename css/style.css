@@ -35,7 +35,8 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html { background: var(--bg1); }
+html { background: var(--bg1); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* без этого iPhone в горизонтальном положении сам увеличивает часть текста */
 body {
   margin: 0; min-height: 100vh; color: var(--text); font: 15px/1.45 var(--f-body);
   background:
@@ -759,6 +760,21 @@ span.warn { color: var(--warn); font-weight: 700; }
   .cm-row > .grow { flex: 1 1 calc(100% - 50px); min-width: 0; }
   .cm-row .lvl { margin-left: 40px; }
   .cm-row .btn { margin-left: auto; }
+  /* окна (игрок, переговоры, итоги) */
+  .modal-bg { padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px; }
+  .modal { padding: 14px; border-radius: 16px; }
+  .modal .x { width: 28px; height: 28px; font-size: 16px; right: 10px; top: 8px; }
+  .modal h2, h2 { font-size: 19px; }
+  .modal h3 { margin-top: 12px; }
+  .interest { margin-top: 8px; padding: 8px 10px; }
+  .steps { margin: 10px 0 8px; } .steps span { font-size: 11px; padding: 4px; }
+  .chat { max-height: 180px; padding: 8px; }
+  .nego-form { gap: 8px; } .nego-form label { font-size: 11px; flex-basis: 110px; }
+  .note { padding: 8px 10px; }
+  .kv { gap: 6px; margin: 10px 0; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+  .kv > div { padding: 6px 9px; border-radius: 10px; }
+  .kv span:first-child { font-size: 10px; margin-bottom: 1px; }
+  .kv b { font-size: 14px; }
 }
 
 /* телефон: весь интерфейс равномерно мельче — на экран помещается больше */

@@ -1181,7 +1181,7 @@
           <div><span>Платим сейчас</span><b class="${c.now > u.money ? 'bad' : ''}">${FM.money(c.now)}</b><span>на счёте ${FM.money(u.money)}</span></div></div>
         <div class="row"><button class="btn primary" id="n-sign">${n.precontract ? 'Подписать предварительный контракт' : 'Подписать контракт'}</button></div>`;
     }
-    const el = modal(`<div class="row">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}</h2>
+    const el = modal(`<div class="row" style="padding-right:34px">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}</h2>
         <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет · ${club ? esc(club.name) : 'свободный агент'} · стоимость ${FM.money(p.value)}</div></div>${ovr(p.ovr)}</div>
       <div class="interest"><div class="row"><span class="muted">Интерес игрока</span><b style="color:${interestColor(it.score)}">${it.label}</b></div>
         <div class="bar"><i style="width:${it.score}%;background:${interestColor(it.score)}"></i></div><div class="small muted">${it.why.map(esc).join(' · ')}</div></div>
