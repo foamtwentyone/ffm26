@@ -78,7 +78,33 @@
         seasonLog: [], records: {},
       };
       const g = new Game(s);
-      g.buildWorld(db || FM.leagues);
+      let leagues = db || FM.leagues;
+      // свой клуб занимает место выбранного клуба лиги: состав генерируется под уровень (или остаётся от заменённого)
+      const c = opts.custom;
+      if (c) {
+        const id = `my_${Date.now().toString(36)}`;
+        leagues = leagues.map((L) => (L.id !== c.league ? L : Object.assign({}, L, {
+          teams: L.teams.map((T) => (T.id !== c.replace ? T : {
+            id, name: c.name, city: c.city, stadium: c.stadium, cap: c.cap, colors: c.colors, rep: c.rep,
+            money: c.keep ? T.money : null, players: c.keep ? T.players : '', logoData: c.logoData || undefined,
+          })),
+        })));
+        teamId = id;
+        s.user = id;
+      }
+      g.buildWorld(leagues);
+      if (c && !c.keep) {
+        // новый состав — по силе клубов этой лиги: аутсайдер, середняк или лидер
+        const t = g.teams[teamId];
+        const lv = g.s.leagues[c.league].teams.filter((id) => id !== teamId && !g.teams[id].reserveOf).map((id) => g.teamBaseOvr(g.teams[id])).sort((a, b) => a - b);
+        const base = c.level === 'top' ? lv[lv.length - 1] : c.level === 'low' ? lv[0] : lv[Math.floor(lv.length / 2)];
+        for (const pid of t.players) delete g.players[pid];
+        t.players = [];
+        g.fillSquad(t, base);
+        t.money = Math.round(g.squadValue(t) * 0.12);
+        t.sponsor = Math.round(g.wageBill(t) * 0.97 * 10) / 10;
+        g.pickFormation(t);
+      }
       g.newSeason(true);
       const t = g.teams[teamId];
       g.msg('Добро пожаловать!', `Совет директоров клуба «${t.name}» утвердил вас главным тренером. Задача на сезон: ${g.expectText()}. Трансферное окно открыто до 7 сентября.`, 'board');
@@ -182,8 +208,8 @@
       return byRep;
     }
 
-    fillSquad(team) {
-      const base = this.teamBaseOvr(team);
+    fillSquad(team, baseOvr) {
+      const base = baseOvr || this.teamBaseOvr(team);
       const count = {};
       for (const id of team.players) {
         const p = this.players[id];

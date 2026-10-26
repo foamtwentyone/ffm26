@@ -833,3 +833,9 @@ span.warn { color: var(--warn); font-weight: 700; }
   .badge.xl { width: 48px; height: 48px; }
   .hm-team b { font-size: 13px; }
 }
+
+/* стартовый экран: свой клуб */
+.tp-new { border-style: dashed; }
+.tp-plus { background: var(--glass2); color: var(--text); font-size: 28px; font-weight: 300; }
+input[type="color"] { width: 46px; height: 34px; padding: 3px; flex: none; cursor: pointer; }
+.nego-form input[type="color"] { width: 46px; }

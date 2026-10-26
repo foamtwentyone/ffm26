@@ -246,6 +246,63 @@
     } catch (e) { return null; }
   }
 
+  // ================== свой клуб ==================
+  // Клуб занимает место одного из клубов лиги (число команд не меняется). Уровень задаёт силу сгенерированного
+  // состава и бюджет; можно оставить игроков заменённого клуба.
+  function createClubModal(L, onDone) {
+    const teams = L.teams.filter((t) => !t.reserveOf && !L.teams.some((x) => x.reserveOf === t.id)).slice().sort((a, b) => repOf(a) - repOf(b));
+    const reps = teams.map(repOf).sort((a, b) => a - b);
+    const lvl = { low: reps[0], mid: reps[Math.floor(reps.length / 2)], top: reps[reps.length - 1] };
+    let logo = null;
+    const el = modal(`<h2 style="margin:0 0 4px">Свой клуб</h2><div class="muted small" style="margin-bottom:12px">${flag(L.country || 'RUS')}${esc(L.name)} · клуб займёт место одного из участников лиги</div>
+      <div class="nego-form row">
+        <label>Название<input id="c-name" maxlength="28" placeholder="Например, «Метеор»"></label>
+        <label>Город<input id="c-city" maxlength="24"></label>
+        <label>Стадион<input id="c-stad" maxlength="32"></label>
+        <label>Вместимость<select id="c-cap">${[3000, 8000, 15000, 30000, 50000, 75000].map((v) => `<option value="${v}" ${v === 15000 ? 'selected' : ''}>${v.toLocaleString('ru-RU')}</option>`).join('')}</select></label>
+        <label>Цвета<span class="row" style="gap:6px"><input type="color" id="c-col1" value="#d81e3a"><input type="color" id="c-col2" value="#ffffff"></span></label>
+        <label>Эмблема<span class="row" style="gap:8px"><span id="c-badge"></span><span class="btn sm" style="position:relative">Загрузить<input id="c-logo" type="file" accept="image/*" style="position:absolute;inset:0;opacity:0"></span></span></label>
+      </div>
+      <div class="nego-form row" style="margin-top:10px">
+        <label>Уровень клуба<select id="c-lvl"><option value="low">Аутсайдер лиги</option><option value="mid" selected>Середняк</option><option value="top">Один из лидеров</option></select></label>
+        <label>Вместо клуба<select id="c-rep">${teams.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
+        <label>Состав<select id="c-keep"><option value="0">Новые игроки под уровень клуба</option><option value="1">Игроки заменённого клуба</option></select></label>
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn primary" id="c-go">Создать клуб и начать карьеру</button></div>`);
+    const $ = (q) => el.querySelector(q);
+    const preview = () => {
+      const name = $('#c-name').value.trim() || 'Мой клуб';
+      $('#c-badge').innerHTML = badge({ id: '_new', name, colors: [$('#c-col1').value, $('#c-col2').value], logoData: logo }, 'lg');
+    };
+    ['#c-name', '#c-col1', '#c-col2'].forEach((q) => $(q).oninput = preview);
+    $('#c-logo').onchange = (e) => {
+      const f = e.target.files[0];
+      if (!f) return;
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 128;
+        const k = Math.min(128 / img.width, 128 / img.height);
+        c.getContext('2d').drawImage(img, (128 - img.width * k) / 2, (128 - img.height * k) / 2, img.width * k, img.height * k);
+        logo = c.toDataURL('image/png');
+        URL.revokeObjectURL(img.src);
+        preview();
+      };
+      img.src = URL.createObjectURL(f);
+    };
+    preview();
+    $('#c-go').onclick = () => {
+      const name = $('#c-name').value.trim();
+      if (!name) { toast('Введите название клуба.'); return; }
+      const city = $('#c-city').value.trim() || name;
+      onDone({
+        league: L.id, replace: $('#c-rep').value, name, city, stadium: $('#c-stad').value.trim() || `Стадион «${name}»`,
+        cap: +$('#c-cap').value, colors: [$('#c-col1').value, $('#c-col2').value], rep: lvl[$('#c-lvl').value], level: $('#c-lvl').value,
+        keep: $('#c-keep').value === '1', logoData: logo,
+      });
+    };
+  }
+
   // ================== стартовый экран ==================
   // репутация клуба из базы: задана явно или считается по стоимости состава, как при создании мира
   const repOf = (t) => t.rep ?? FM.repFromValue((t.players || '').split('\n').reduce((a, l) => a + (+l.split('|')[3] || 0), 0));
@@ -289,19 +346,23 @@
       area.innerHTML = `${leaguePick(db, lid, 'data-l')}
         <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
-          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}</div>`;
+          ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}
+          <button class="tp tp-new" id="mk-club"><span class="badge lg tp-plus">+</span><div><b>Свой клуб</b><div class="muted small">Создать клуб в лиге «${esc(L.name)}»</div></div></button></div>`;
       area.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; drawPick(); });
-      area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => {
+      area.querySelector('#mk-club').onclick = () => createClubModal(L, (custom) => start(custom.replace, custom));
+      area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => start(b.dataset.pick));
+    };
+    const start = (teamId, custom) => {
         const mgr = app.querySelector('#mgr').value.trim() || 'Тренер';
         ls.set('ffm26_mgr', mgr);
         const ruEuro = app.querySelector('#ru-euro').checked;
         ls.set('ffm26_ru_euro', ruEuro ? '1' : '0');
-        UI.g = FM.Game.newGame(b.dataset.pick, mgr, customDb() || undefined, { ruEuro });
+        closeModal();
+        UI.g = FM.Game.newGame(teamId, mgr, customDb() || undefined, { ruEuro, custom });
         UI.tab = 'home';
         UI.tablesLid = UI.g.userTeam().league;
         save();
         render();
-      });
     };
     for (const k of [SAVE_AUTO, SAVE_SLOT + 1, SAVE_SLOT + 2, SAVE_SLOT + 3]) metas[k] = localMeta(k);
     draw();
