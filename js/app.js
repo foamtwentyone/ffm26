@@ -1136,7 +1136,8 @@
       <div id="act" style="margin-top:14px">${mine && p.loan ? `
         <div class="note">В аренде из «${esc(T(p.loan.from).name)}» до конца сезона. Вы платите ${p.loan.wagePct}% зарплаты — ${FM.money(p.wage * p.loan.wagePct / 100)}/нед.${p.loan.buy ? ` Опция выкупа: ${FM.money(p.loan.buy)}.` : ''}</div>
         ${p.loan.buy ? `<div class="row"><button class="btn primary" data-loanbuy>Выкупить за ${FM.money(p.loan.buy)}</button></div>` : ''}` : mine ? `
-        <div class="row"><button class="btn" data-renew>Продлить контракт</button>
+        ${p.pre && p.pre.team !== g().s.user && T(p.pre.team) ? `<div class="note bad">Подписал предварительный контракт с «${esc(T(p.pre.team).name)}» — летом уйдёт бесплатно.</div>` : ''}
+        <div class="row">${p.pre && p.pre.team !== g().s.user ? '' : '<button class="btn" data-renew>Продлить контракт</button>'}
         <button class="btn" data-loanout>Отдать в аренду</button>
         <button class="btn ${p.listed ? 'on' : ''}" data-tl>${p.listed ? 'Снять с трансфера' : 'Выставить на трансфер'}</button>
         <button class="btn danger" data-release>Расторгнуть контракт</button></div>
@@ -1164,7 +1165,7 @@
         res.querySelectorAll('[data-lo]').forEach((b) => b.onclick = () => { toast(esc(G.loanOut(pid, offers[+b.dataset.lo]))); save(); closeModal(); render(); });
       };
       el.querySelector('[data-tl]').onclick = () => { p.listed = !p.listed; save(); playerModal(pid); render(); };
-      el.querySelector('[data-renew]').onclick = () => {
+      if (el.querySelector('[data-renew]')) el.querySelector('[data-renew]').onclick = () => {
         const w = G.renewCost(p);
         res.innerHTML = `<div class="note">Игрок согласен на ${FM.money(w)}/нед. Срок:
           ${[1, 2, 3, 4].map((y) => `<button class="btn sm" data-y="${y}">${y} г.</button>`).join(' ')}</div>`;

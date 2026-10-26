@@ -1237,7 +1237,7 @@
               s.freeAgents.push(p.id);
               p.listed = false;
               this.msg('Контракт истёк', `${p.name} покидает клуб свободным агентом.`, 'squad');
-            } else if (FM.chance(this.renewChance(p, core))) {
+            } else if (!p.leaving && FM.chance(this.renewChance(p, core))) {
               p.contract = y + (p.age >= 33 ? 1 : FM.ri(1, 3));
             } else {
               this.removeFromTeam(p);
@@ -1246,6 +1246,9 @@
           }
         }
       }
+      for (const id in this.players) delete this.players[id].leaving;
+      // летом клубы в первую очередь разбирают свободных агентов, недостающих игроков потом добирает академия
+      this.aiFreeAgents(true);
       // воспитанники
       for (const tid in this.teams) {
         const t = this.teams[tid];
@@ -1264,7 +1267,11 @@
         if (tid !== s.user) t.sponsor = Math.round(Math.max(bill * 0.97, t.sponsor * 0.9) * 10) / 10;
         else t.sponsor = Math.round(Math.max(t.sponsor * (1 + (exp - pos) * 0.03 + (moved ? (moved.up ? 0.25 : -0.2) : 0)), bill * 0.6) * 10) / 10;
       }
-      s.freeAgents = s.freeAgents.filter((id) => this.players[id] && this.players[id].age < 36).slice(-120);
+      // в пуле остаются 300 лучших свободных агентов, остальные завершают карьеру
+      const pool = s.freeAgents.map((id) => this.players[id]).filter((p) => p && p.age < 36).sort((a, b) => b.ovr - a.ovr);
+      for (const p of pool.slice(300)) delete this.players[p.id];
+      for (const id of s.freeAgents) if (this.players[id] && this.players[id].age >= 36) delete this.players[id];
+      s.freeAgents = pool.slice(0, 300).map((p) => p.id);
 
       s.season++;
       s.date = `${s.season}-06-20`;
@@ -1626,6 +1633,8 @@
         p.fit = Math.min(100, p.fit + (p.inj ? 4 : 13));
       }
       if (monday) this.weekly();
+      if (monday) this.aiPreContracts();
+      if (FM.weekday(s.date) % 3 === 0) this.aiFreeAgents();
       if (s.payments && s.payments.length) {
         for (const pay of s.payments.filter((x) => x.date <= s.date)) {
           const from = this.teams[pay.from], to = this.teams[pay.to];
@@ -2228,11 +2237,6 @@
       }
       // подписание свободных агентов и разгрузка составов
       for (const t of ai) {
-        if (t.players.length < 21 && s.freeAgents.length) {
-          const best = s.freeAgents.map((id) => this.players[id]).filter((p) => p && p.ovr <= this.teamBaseOvr(t) + 4)
-            .sort((a, b) => b.ovr - a.ovr)[0];
-          if (best) this.transfer(best, t, 0, null, FM.ri(1, 2));
-        }
         if (t.players.length > 29) {
           const worst = this.squad(t).sort((a, b) => a.ovr - b.ovr)[0];
           this.removeFromTeam(worst);
@@ -2275,6 +2279,110 @@
       cands.sort((a, b) => b[0].ovr - a[0].ovr);
       const [p, fee] = FM.pick(cands.slice(0, 4));
       this.transfer(p, buyer, fee, null, FM.ri(2, 4));
+    }
+
+    // ================== свободные агенты и предварительные контракты (ИИ) ==================
+    // Снимок клубов для подбора: уровень состава, рейтинги по позициям (по убыванию), размер, деньги.
+    marketInfo() {
+      const s = this.s, info = {};
+      for (const id in this.teams) {
+        const t = this.teams[id];
+        if (id === s.user || t.reserveOf) continue;
+        const pos = {};
+        for (const pid of t.players) { const p = this.players[pid]; if (p) (pos[p.pos] = pos[p.pos] || []).push(p.ovr); }
+        for (const k in pos) pos[k].sort((a, b) => b - a);
+        info[id] = { t, base: this.teamBaseOvr(t), pos, size: t.players.length, country: this.countryOf(t.league) };
+      }
+      return info;
+    }
+
+    // Лучший клуб для игрока: нужен ли он клубу (дыра в составе или усиление основы), подходит ли уровень
+    // (игрок не идёт сильно вниз, клуб не берёт заметно слабее своих), хватает ли денег на зарплату.
+    suitorFor(p, info, relax = 0) {
+      let best = null, bv = 0;
+      const pc = p.club ? this.countryOf(this.teams[p.club].league) : p.nat;
+      for (const id in info) {
+        const x = info[id];
+        if (id === p.club || x.size >= MAX_SQUAD - 3) continue;
+        if (p.ovr < x.base - 7 || p.ovr > x.base + 5 + relax) continue;
+        const arr = x.pos[p.pos] || [];
+        const need = SQUAD_NEED[p.pos] || 2;
+        let v = 0;
+        if (arr.length < need) v += 6;
+        if (p.ovr > (arr[0] || 0)) v += 4 + (p.ovr - (arr[0] || 0));
+        else if (arr.length >= 2 && p.ovr > arr[1] + 1) v += 2;
+        if (!v) continue;
+        if (x.size >= 26) v -= 3;
+        const wage = this.wageDemand(p, x.t);
+        if (x.t.money < wage * 26) continue;
+        v += x.t.rep * 0.12 + (x.country === pc ? 2 : 0) + Math.random() * 2;
+        if (v > bv) { bv = v; best = x; }
+      }
+      return best ? best.t : null;
+    }
+
+    // Клубы ИИ подписывают свободных агентов: каждые несколько дней по ходу сезона и массово летом.
+    // Чем дольше игрок без клуба, тем ниже его запросы к уровню команды; ветераны без клуба завершают карьеру.
+    aiFreeAgents(bulk = false) {
+      const s = this.s;
+      const days = bulk ? 0 : 3;
+      const all = s.freeAgents.map((id) => this.players[id]).filter(Boolean).sort((a, b) => b.ovr - a.ovr);
+      for (const p of all) p.faDays = (p.faDays || 0) + days;
+      // подбор клуба — для 150 сильнейших (слабые и так подписываются редко), остальные ждут
+      const fas = all.slice(0, bulk ? 400 : 150);
+      if (!fas.length) return;
+      const info = this.marketInfo();
+      for (const p of fas) {
+        if (!bulk && p.age >= 34 && p.faDays > 150) {
+          s.freeAgents = s.freeAgents.filter((x) => x !== p.id);
+          delete this.players[p.id];
+          continue;
+        }
+        if (!FM.chance(bulk ? 0.75 : 0.15)) continue;
+        const t = this.suitorFor(p, info, Math.min(12, p.faDays / 10));
+        if (!t) continue;
+        this.transfer(p, t, 0, null, p.age >= 32 ? 1 : FM.ri(1, 3));
+        p.faDays = 0;
+        const x = info[t.id];
+        x.size++;
+        (x.pos[p.pos] = x.pos[p.pos] || []).push(p.ovr);
+        x.pos[p.pos].sort((a, b) => b - a);
+        if (p.ovr >= 74) this.news(`Свободный агент ${p.name} подписал контракт с «${t.name}».`);
+      }
+    }
+
+    // С 1 января клубы ИИ решают судьбу истекающих контрактов (не сразу — в течение зимы и весны), а игроки,
+    // с которыми не продлевают, а иногда и те, по кому решения ещё нет, подписывают предварительные контракты
+    // с новыми клубами. Игроки пользователя с непродлённым контрактом тоже могут договориться о переходе.
+    aiPreContracts() {
+      const s = this.s, y = s.season;
+      if (s.date < `${y + 1}-01-01` || s.date > `${y + 1}-05-31`) return;
+      let info = null;
+      for (const id in this.teams) {
+        const t = this.teams[id];
+        if (t.reserveOf) continue;
+        const mine = id === s.user;
+        const core = mine ? null : this.coreOf(t);
+        for (const pid of t.players.slice()) {
+          const p = this.players[pid];
+          if (!p || p.contract > y || p.pre || p.loan) continue;
+          if (!mine && !p.leaving && FM.chance(0.12)) {
+            if (FM.chance(this.renewChance(p, core))) { p.contract = y + (p.age >= 33 ? 1 : FM.ri(1, 3)); continue; }
+            p.leaving = true;
+          }
+          // ключевых игроков клубы продлевают — к ним до решения клуба не подходят
+          if (!mine && !p.leaving && core.has(p.id) && p.age < 33) continue;
+          const pr = mine ? 0.05 : p.leaving ? 0.12 : 0.015;
+          if (!FM.chance(pr)) continue;
+          info = info || this.marketInfo();
+          const to = this.suitorFor(p, info);
+          if (!to) continue;
+          p.pre = { team: to.id, wage: this.wageDemand(p, to), years: p.age >= 32 ? 1 : FM.ri(2, 4) };
+          info[to.id].size++;
+          if (mine) this.msg('Игрок уходит летом', `${p.name} подписал предварительный контракт с «${to.name}» и летом уйдёт бесплатно — вы не продлили с ним контракт.`, 'squad');
+          else if (p.ovr >= 74) this.news(`${p.name} летом бесплатно перейдёт из «${t.name}» в «${to.name}» — подписан предварительный контракт.`);
+        }
+      }
     }
 
     // Торг за своего игрока: у клуба-покупателя есть скрытый потолок, выше которого он не пойдёт.
