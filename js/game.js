@@ -1005,9 +1005,69 @@
       };
     }
 
+    // ================== «Золотой мяч» ==================
+    // Итоги сезона для наград: оценки, голы и передачи с поправкой на силу чемпионата, трофеи клуба
+    // (чемпионство, еврокубки, кубок страны) и класс игрока. Вручение — осенью следующего сезона.
+    computeAwards() {
+      const s = this.s, y = s.season;
+      const champs = new Set(), cupW = new Set();
+      for (const lid of s.order) if (s.leagues[lid].tier === 1 && this.table(lid)[0]) champs.add(this.table(lid)[0].id);
+      for (const c in s.cups) if (s.cups[c].winner) cupW.add(s.cups[c].winner);
+      const euroBonus = {};
+      const EB = { ucl: [26, 10, 5], uel: [10, 4, 2], uecl: [5, 2, 1] };
+      for (const E of FM.EURO) {
+        const e = s.euro && s.euro[E.id];
+        if (!e) continue;
+        const add = (id, v) => { euroBonus[id] = (euroBonus[id] || 0) + v; };
+        if (e.winner) add(e.winner, EB[E.id][0]);
+        if (e.final && s.matches[e.final] && s.matches[e.final].played) { const m = s.matches[e.final]; add(m.winner === m.h ? m.a : m.h, EB[E.id][1]); }
+        const semi = e.ko.find((R) => R.name === '1/2 финала');
+        if (semi) for (const t of semi.ties) if (t.winner) add(t.hi === t.winner ? t.lo : t.hi, EB[E.id][2]);
+      }
+      const rows = [];
+      for (const id in this.players) {
+        const p = this.players[id];
+        if (!p.club || !this.teams[p.club]) continue;
+        const apps = p.st.apps + p.cst.apps;
+        if (apps < 12) continue;
+        const t = this.teams[p.club];
+        const w = FM.leagueW(this.countryOf(t.league), this.tierOf(t));
+        const avg = (p.st.rsum + p.cst.rsum) / apps;
+        const g = p.st.g + p.cst.g, a = p.st.a + p.cst.a, cs = p.st.cs + p.cst.cs;
+        const gk = p.pos === 'GK';
+        let sc = (avg - 6.4) * 30 + Math.min(apps, 50) * 0.25 + (gk ? cs * 1.0 : g * 0.7 + a * 0.6);
+        sc = sc * w + (p.ovr - 70) * 2.2;
+        if (champs.has(t.id)) sc += 12 * w;
+        if (cupW.has(t.id)) sc += 3 * w;
+        sc += euroBonus[t.id] || 0;
+        rows.push({ id, name: p.name, nat: p.nat, pos: p.pos, age: p.age, club: t.id, clubName: t.name, apps, g, a, cs, r: +avg.toFixed(2), sc: +sc.toFixed(1), gk });
+      }
+      rows.sort((x, z) => z.sc - x.sc);
+      // вратари в общем зачёте ценятся чуть ниже (как в реальности), для Трофея Яшина — свой рейтинг
+      const ballon = rows.map((x) => Object.assign({}, x, { sc: x.gk ? x.sc - 8 : x.sc })).sort((x, z) => z.sc - x.sc).slice(0, 30);
+      const kopa = rows.filter((x) => x.age <= 21 && !x.gk).slice(0, 5);
+      const yashin = rows.filter((x) => x.gk).slice(0, 5);
+      return { year: y, ballon, kopa, yashin };
+    }
+
+    // день церемонии: результаты переходят в историю наград
+    awardsDue() {
+      const s = this.s, a = s.awardsPending;
+      if (!a || s.date < a.date) return false;
+      delete s.awardsPending;
+      s.awards = (s.awards || []).concat(a);
+      const w = a.ballon[0];
+      if (w) this.news(`«Золотой мяч» ${a.year}/${String(a.year + 1).slice(2)} — ${w.name} («${w.clubName}»)!`);
+      const mine = a.ballon.filter((x) => x.club === s.user);
+      this.msg('Церемония «Золотого мяча»', `В Париже вручили «Золотой мяч» за сезон ${a.year}/${String(a.year + 1).slice(2)}.${mine.length ? ` В списке номинантов игроки вашего клуба: ${mine.map((x) => `${x.name} (${a.ballon.indexOf(x) + 1}-е место)`).join(', ')}.` : ''}`, 'awards', { year: a.year });
+      return true;
+    }
+
     endSeason() {
       const s = this.s;
       const y = s.season;
+      // номинанты на награды — по статистике завершённого сезона, вручение в конце октября
+      s.awardsPending = Object.assign(this.computeAwards(), { date: `${y + 1}-10-26` });
       s.lastCupWinners = {};
       for (const c in s.cups) if (s.cups[c].winner) s.lastCupWinners[c] = s.cups[c].winner;
       const uc = this.userCup();
@@ -1528,6 +1588,7 @@
       const unreadBefore = s.inbox.filter((x) => !x.read && x.type === 'offer').length;
       this.nextDay();
       if (s.sacked) return 'sacked';
+      if (this.awardsDue()) return 'awards';
       if (this.userMatchToday()) return 'match';
       const unreadAfter = s.inbox.filter((x) => !x.read && x.type === 'offer').length;
       if (unreadAfter > unreadBefore) return 'offer';

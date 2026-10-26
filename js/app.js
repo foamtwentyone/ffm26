@@ -422,6 +422,7 @@
       return reviewModal();
     }
     if (r === 'sacked') { save(); render(); return sackedModal(); }
+    if (r === 'awards') { save(); render(); return ceremonyModal(G.s.awards[G.s.awards.length - 1].year); }
     if (r === 'offer') { toast('Новое предложение по игроку — загляните в почту.'); }
     save();
     render();
@@ -765,6 +766,7 @@
     let body = '';
     if (euroOf(view) && !(s.euro && s.euro[view])) UI.tablesView = 'table';
     if (view === 'cup') body = cupView();
+    else if (view === 'awards') body = awardsView();
     else if (view === 'po') body = playoffView();
     else if (euroOf(view) && s.euro && s.euro[view]) body = euroView(view);
     else {
@@ -791,11 +793,12 @@
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
       <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
-      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}</div></div>
+      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}<button data-v="awards" class="${view === 'awards' ? 'on' : ''}">Награды</button></div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
     main.querySelectorAll('[data-cupc]').forEach((b) => b.onclick = () => { UI.cupC = b.dataset.cupc; render(); });
+    main.querySelectorAll('[data-cer]').forEach((b) => b.onclick = () => ceremonyModal(+b.dataset.cer));
     const rp = main.querySelector('#rp'), rn = main.querySelector('#rn');
     if (rp) rp.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.max(1, UI.round - 1) }; render(); };
     if (rn) rn.onclick = () => { UI.roundPin = { lid, date: s.date, round: Math.min(L.rounds.length, UI.round + 1) }; render(); };
@@ -1308,6 +1311,64 @@
     matchReport(m.id);
   }
 
+  // ================== «Золотой мяч» ==================
+  // Церемония: номинанты объявляются с 30-го места, тройка лидеров — с паузой, затем Трофей Копа и Трофей Яшина.
+  let ceremonyTimer = null;
+  function ceremonyModal(year) {
+    const G = g(), s = G.s;
+    const A = (s.awards || []).find((x) => x.year === year);
+    if (!A) return;
+    clearTimeout(ceremonyTimer);
+    const seasonTxt = `${A.year}/${String(A.year + 1).slice(2)}`;
+    const club = (x) => (G.teams[x.club] ? badge(G.teams[x.club], 'sm') : '');
+    const stat = (x) => (x.gk ? `${x.apps} м · ${x.cs} сух.` : `${x.apps} м · ${x.g} г · ${x.a} п`) + ` · ${x.r.toFixed(2)}`;
+    const row = (x, i) => `<div class="bd-row ${x.club === s.user ? 'mine' : ''} ${i < 3 ? 'top' + (i + 1) : ''}"><span class="bd-pl">${i + 1}</span>${flag(x.nat)}<span class="grow"><b data-player="${x.id}">${esc(x.name)}</b> <span class="muted small">${FM.POS_RU[x.pos]}</span></span>${club(x)}<span class="small muted bd-cl">${esc(x.clubName)}</span><span class="small bd-st">${stat(x)}</span></div>`;
+    const card = (title, x, cls) => (x ? `<div class="bd-card ${cls}"><div class="bd-k">${title}</div><div class="row" style="gap:12px">${G.teams[x.club] ? badge(G.teams[x.club], 'lg') : ''}<div class="grow"><b class="bd-name">${flag(x.nat)}${esc(x.name)}</b><div class="small muted">${esc(x.clubName)} · ${x.age} лет · ${stat(x)}</div></div></div></div>` : '');
+    const el = modal(`<div class="bd-hero"><div class="bd-ball"></div><div><div class="bd-kick">Париж · театр «Шатле»</div><h2>Золотой мяч ${seasonTxt}</h2>
+        <div class="small muted">Лучшие игроки сезона по версии журналистов: игра, голы и передачи, трофеи клуба, сила чемпионата.</div></div></div>
+      <div id="bd-stage"></div><div id="bd-list" class="bd-list"></div><div id="bd-extra"></div>
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="btn" id="bd-skip">Показать сразу</button></div>`, 'wide ceremony');
+    const list = el.querySelector('#bd-list'), stage = el.querySelector('#bd-stage'), extra = el.querySelector('#bd-extra');
+    const n = A.ballon.length;
+    let k = n - 1;
+    const finish = () => {
+      clearTimeout(ceremonyTimer);
+      const w = A.ballon[0];
+      stage.innerHTML = w ? `<div class="bd-winner">${G.teams[w.club] ? badge(G.teams[w.club], 'xl') : ''}<div><div class="bd-k">🏆 Обладатель «Золотого мяча»</div><div class="bd-wname">${flag(w.nat, 'lg')}${esc(w.name)}</div>
+        <div class="muted">${esc(w.clubName)} · ${FM.POS_NAME[w.pos]} · ${w.age} лет</div><div class="small" style="margin-top:4px">${stat(w)}</div></div></div>` : '';
+      list.innerHTML = A.ballon.map(row).join('');
+      extra.innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));margin-top:12px">${card('Трофей Копа · лучший молодой игрок (до 21 года)', A.kopa[0], 'kopa')}${card('Трофей Яшина · лучший вратарь', A.yashin[0], 'yashin')}</div>`;
+      const b = el.querySelector('#bd-skip'); if (b) b.remove();
+      el.querySelectorAll('[data-player]').forEach((x) => x.onclick = () => { if (G.players[x.dataset.player]) playerModal(x.dataset.player); });
+    };
+    const step = () => {
+      if (!document.body.contains(list)) return;
+      if (k < 0) return finish();
+      const x = A.ballon[k];
+      if (k <= 2) {
+        // тройка лидеров — по одному, с паузой «для интриги»
+        stage.innerHTML = `<div class="bd-drum">${k === 0 ? 'И «Золотой мяч» получает…' : `${k + 1}-е место…`}</div>`;
+        ceremonyTimer = setTimeout(() => { if (k === 0) return finish(); list.insertAdjacentHTML('afterbegin', row(x, k)); stage.innerHTML = ''; k--; ceremonyTimer = setTimeout(step, 600); }, k === 0 ? 2200 : 1500);
+        return;
+      }
+      list.insertAdjacentHTML('afterbegin', row(x, k));
+      k--;
+      ceremonyTimer = setTimeout(step, k < 10 ? 650 : 260);
+    };
+    el.querySelector('#bd-skip').onclick = finish;
+    step();
+  }
+
+  // история наград по сезонам
+  function awardsView() {
+    const G = g(), s = G.s;
+    const A = (s.awards || []).slice().reverse();
+    if (!A.length) return '<div class="card muted" style="padding:14px">Первая церемония «Золотого мяча» — в конце октября, по итогам прошлого сезона.</div>';
+    const nm = (x) => (x ? `${flag(x.nat)}<b>${esc(x.name)}</b> <span class="muted small">${esc(x.clubName)}</span>` : '—');
+    return `<div class="card tight"><table><tr><th>Сезон</th><th>Золотой мяч</th><th class="hide-m">2-е и 3-е места</th><th class="hide-m">Трофей Копа</th><th class="hide-m">Трофей Яшина</th><th></th></tr>
+      ${A.map((a) => `<tr><td>${a.year}/${String(a.year + 1).slice(2)}</td><td>${nm(a.ballon[0])}</td><td class="hide-m small">${a.ballon.slice(1, 3).map((x) => esc(x.name)).join(', ')}</td><td class="hide-m">${nm(a.kopa[0])}</td><td class="hide-m">${nm(a.yashin[0])}</td><td><button class="btn sm" data-cer="${a.year}">Церемония</button></td></tr>`).join('')}</table></div>`;
+  }
+
   // ================== живой матч ==================
   const ICONS = { penkick: '🎯', goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', info: '' };
 
@@ -1637,6 +1698,7 @@
       ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
         <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
       ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>` : ''}
+      ${m.type === 'awards' && m.data ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-cer="${m.data.year}">Смотреть церемонию</button></div>` : ''}
       ${m.type === 'job' && m.data && m.data.closed && m.data.result ? `<div class="small muted">${esc(m.data.result)}</div>` : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
     s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
@@ -1646,6 +1708,7 @@
       toast(esc(G.counterOffer(+b.dataset.haggle, v)), 4000); save(); render();
     });
     main.querySelectorAll('[data-dec]').forEach((b) => b.onclick = () => { G.answerOffer(+b.dataset.dec, false); save(); render(); });
+    main.querySelectorAll('[data-cer]').forEach((b) => b.onclick = () => ceremonyModal(+b.dataset.cer));
     main.querySelectorAll('[data-jobno]').forEach((b) => b.onclick = () => { toast(esc(G.declineJob(+b.dataset.jobno))); save(); render(); });
     main.querySelectorAll('[data-job]').forEach((b) => b.onclick = () => {
       const m = s.inbox.find((x) => x.id === +b.dataset.job);

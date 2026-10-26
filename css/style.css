@@ -690,6 +690,39 @@ span.warn { color: var(--warn); font-weight: 700; }
 .ev.penkick { font-weight: 700; }
 .ev.pens { color: var(--gold); font-weight: 800; }
 
+/* «Золотой мяч» */
+.modal.ceremony { max-width: 860px; background: radial-gradient(600px 260px at 50% -40px, rgba(255, 201, 60, .22), transparent 70%), linear-gradient(180deg, rgba(28, 26, 60, .98), rgba(10, 12, 32, .98)); border-color: rgba(255, 201, 60, .45); }
+.bd-hero { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; padding-right: 34px; }
+.bd-hero h2 { margin: 2px 0 4px; background: linear-gradient(180deg, #fff3c4, #ffc93c 55%, #b8862b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bd-kick, .bd-k { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #e8c766; font-weight: 700; }
+.bd-ball { flex: none; width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff8d6, #ffd75a 35%, #c8961f 70%, #6b4a08); box-shadow: 0 0 28px rgba(255, 201, 60, .55), inset -6px -8px 14px rgba(0,0,0,.35); animation: bdGlow 2.4s ease-in-out infinite; }
+@keyframes bdGlow { 50% { box-shadow: 0 0 44px rgba(255, 201, 60, .85), inset -6px -8px 14px rgba(0,0,0,.35); } }
+.bd-drum { text-align: center; padding: 22px 10px; font-family: var(--f-display); font-size: 24px; color: #ffe08a; animation: bdPulse .9s ease-in-out infinite; }
+@keyframes bdPulse { 50% { opacity: .45; transform: scale(.97); } }
+.bd-winner { display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 12px; border-radius: 18px; border: 1px solid rgba(255, 201, 60, .6); background: linear-gradient(135deg, rgba(255, 201, 60, .22), rgba(255, 201, 60, .04)); box-shadow: 0 0 40px rgba(255, 201, 60, .25); animation: pop .5s var(--ease); }
+.bd-wname { font-family: var(--f-display); font-size: 26px; line-height: 1.15; margin: 4px 0 2px; }
+.bd-list { display: flex; flex-direction: column; gap: 4px; max-height: 46vh; overflow-y: auto; }
+.bd-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px; background: rgba(0,0,0,.22); border: 1px solid var(--line); animation: pop .35s var(--ease); }
+.bd-row b[data-player] { cursor: pointer; }
+.bd-row.mine { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.bd-row.top1 { border-color: #ffc93c; background: rgba(255, 201, 60, .16); }
+.bd-row.top2 { border-color: #cfd6e6; } .bd-row.top3 { border-color: #d08a4c; }
+.bd-pl { width: 26px; text-align: right; font-family: var(--f-display); color: #e8c766; flex: none; }
+.bd-cl { width: 130px; flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bd-st { width: 150px; flex: none; text-align: right; color: var(--muted); }
+.bd-card { padding: 12px 14px; border-radius: 14px; border: 1px solid var(--stroke); background: rgba(0,0,0,.25); }
+.bd-card .bd-k { margin-bottom: 8px; }
+.bd-card.kopa { border-color: rgba(77, 163, 255, .5); } .bd-card.yashin { border-color: rgba(46, 229, 138, .5); }
+.bd-name { font-size: 16px; }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  .bd-ball { width: 40px; height: 40px; }
+  .bd-cl { display: none; }
+  .bd-st { width: auto; font-size: 11px; }
+  .bd-wname { font-size: 20px; }
+  .bd-drum { font-size: 19px; padding: 14px; }
+  .bd-list { max-height: 40vh; }
+}
+
 /* таблица + туры (лиги, еврокубки) на узком экране — друг под другом */
 @media (max-width: 860px) and (orientation: portrait) { .grid[style*="minmax(280px"] { grid-template-columns: minmax(0, 1fr) !important; } }
 
