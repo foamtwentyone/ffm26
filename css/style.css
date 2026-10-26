@@ -760,3 +760,6 @@ span.warn { color: var(--warn); font-weight: 700; }
   .cm-row .lvl { margin-left: 40px; }
   .cm-row .btn { margin-left: auto; }
 }
+
+/* телефон: весь интерфейс равномерно мельче — на экран помещается больше */
+@media (max-width: 620px) { html { zoom: .86; } }
