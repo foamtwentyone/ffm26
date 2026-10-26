@@ -1276,7 +1276,16 @@
       <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? '✓ ' : ''}${l}</span>` : '')).join('')}</div>
       ${n.precontract ? '<div class="note">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
       <div class="chat" id="chat">${n.log.map((m) => `<div class="msg ${m.who}"><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
-      ${form}`, 'wide nego');
+      ${form}
+      <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn danger sm" id="n-end">Закончить переговоры</button></div>`, 'wide nego');
+    el.querySelector('#n-end').onclick = () => {
+      // переговоры сбрасываются: договорённости с клубом и игроком забываются, начать можно заново
+      delete s.nego[pid];
+      save();
+      closeModal();
+      render();
+      toast(`Переговоры по ${esc(p.name)} завершены.`);
+    };
     const chat = el.querySelector('#chat');
     chat.scrollTop = chat.scrollHeight;
     const after = (r) => { save(); negoModal(pid); if (r && r.status === 'broken') toast(esc(r.text)); };

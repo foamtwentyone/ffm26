@@ -31,12 +31,30 @@
         for (const id in state.players) { const p = state.players[id]; p.pot = FM.clamp(p.pot, p.ovr, p.ovr + FM.potRoom(p.age)); }
         state.potV2 = true;
       }
+      // старые сохранения: зарплаты по прежней (завышенной) формуле и стоимость без потолка —
+      // стоимость сохраняется (кроме превышения потолка), зарплаты и спонсорские контракты пересчитываются
+      if (!state.wageV2) {
+        state.wageV2 = true;
+        this.migrateMoney = true;
+      }
       // старые сохранения: один Кубок России в s.cup
       if (!state.cups) { state.cups = state.cup ? { RUS: state.cup } : {}; delete state.cup; }
       if (state.lastCupWinner !== undefined && !state.lastCupWinners) { state.lastCupWinners = state.lastCupWinner ? { RUS: state.lastCupWinner } : {}; delete state.lastCupWinner; }
       this.players = state.players;
       this.teams = state.teams;
       this._tables = {};
+      if (this.migrateMoney) {
+        delete this.migrateMoney;
+        for (const id in this.players) {
+          const p = this.players[id];
+          const base = FM.baseValue(p.ovr, p.age, p.pot);
+          p.vmul = FM.clamp(Math.min(p.value, FM.VALUE_CAP) / base, 0.2, 5);
+          this.revalue(p);
+          const t = p.club && this.teams[p.club];
+          p.wage = Math.round(FM.wageFor(p.value, t ? this.tierOf(t) : 2, p.age, t ? this.countryOf(t.league) : '') * 10) / 10;
+        }
+        for (const id in this.teams) { const t = this.teams[id]; t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10; }
+      }
     }
 
     static unpackPlayer(p) {
@@ -126,6 +144,7 @@
       for (const L of leagues) {
         s.order.push(L.id);
         s.potV2 = true;
+        s.wageV2 = true;
         s.leagues[L.id] = {
           id: L.id, name: L.name, short: L.short, tier: L.tier, weekday: L.weekday, country: L.country || 'RUS',
           autumn: L.autumn, spring: L.spring, ticket: L.ticket, prize: L.prize, single: !!L.single, teams: [],
@@ -176,7 +195,7 @@
       const ovr = d.ovr || FM.ovrFromValue(d.value, d.age);
       const pot = d.pot || FM.potFor(ovr, d.age);
       const base = FM.baseValue(ovr, d.age, pot);
-      const vmul = d.value ? FM.clamp(d.value / base, 0.4, 3) : 1;
+      const vmul = d.value ? FM.clamp(d.value / base, 0.3, 4) : 1;
       const tier = team ? this.tierOf(team) : 2;
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
@@ -187,7 +206,7 @@
         cst: { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 },
         car: { apps: 0, g: 0, a: 0 },
       };
-      p.wage = Math.round(FM.wageFor(p.value, tier) * 10) / 10;
+      p.wage = Math.round(FM.wageFor(p.value, tier, p.age, team ? this.countryOf(team.league) : '') * 10) / 10;
       s.players[id] = p;
       if (team) team.players.push(id);
       return p;
@@ -1209,7 +1228,7 @@
         // запас роста не может превышать возрастной: не раскрывшийся к 24–27 годам талант уже не раскроется,
         // а после пика потенциал снижается вместе с рейтингом
         p.pot = FM.clamp(p.pot, p.ovr, p.ovr + FM.potRoom(p.age));
-        this.revalue(p);
+        this.revalue(p, true);
       }
       this.returnLoans();
       for (const tid in this.teams) {
@@ -1302,8 +1321,15 @@
       return 'невысокий';
     }
 
-    revalue(p) {
-      p.value = FM.roundValue(FM.baseValue(p.ovr, p.age, p.pot) * (p.vmul || 1));
+    // smooth — пересчёт в межсезонье: за год стоимость меняется не больше чем в 1,5 раза вверх и на 40% вниз
+    revalue(p, smooth = false) {
+      const base = FM.baseValue(p.ovr, p.age, p.pot);
+      let v = Math.min(FM.VALUE_CAP, base * (p.vmul || 1));
+      if (smooth && p.value) {
+        const lim = FM.clamp(v, p.value * 0.6, p.value * 1.5);
+        if (lim !== v) { p.vmul = FM.clamp(lim / base, 0.2, 5); v = lim; }
+      }
+      p.value = FM.roundValue(v);
     }
 
     sack(text) {
@@ -1896,8 +1922,9 @@
     wageDemand(p, team) {
       const tier = this.tierOf(team);
       const cur = p.club ? this.teams[p.club] : null;
-      let w = Math.max(FM.wageFor(p.value, tier), p.wage * 1.1);
-      if (cur && team.rep < cur.rep) w *= 1 + (cur.rep - team.rep) * 0.04;
+      let w = Math.max(FM.wageFor(p.value, tier, p.age, this.countryOf(team.league)), p.wage * 1.1);
+      // за переход в клуб ниже уровнем игрок просит надбавку, но не больше 40%
+      if (cur && team.rep < cur.rep) w *= 1 + Math.min(0.4, (cur.rep - team.rep) * 0.025);
       return Math.round(w * 10) / 10;
     }
 
@@ -2037,7 +2064,7 @@
 
     playerDemand(p, team, role) {
       const it = this.playerInterest(p, team);
-      let w = Math.max(FM.wageFor(p.value, this.tierOf(team)), p.wage * (p.club ? 1.15 : 0.9));
+      let w = Math.max(FM.wageFor(p.value, this.tierOf(team), p.age, this.countryOf(team.league)), p.wage * (p.club ? 1.15 : 0.9));
       w *= 1 + Math.max(0, 55 - it.score) * 0.015;
       w *= { key: 0.92, starter: 1, rotation: 1.1, backup: 1.25 }[role] || 1;
       if (role === 'key' && !it.starter) w *= 1.08;
@@ -2188,7 +2215,7 @@
 
     renewCost(p) {
       const u = this.userTeam();
-      return Math.round(Math.max(p.wage * 1.08, FM.wageFor(p.value, this.tierOf(u))) * 10) / 10;
+      return Math.round(Math.max(p.wage * 1.08, FM.wageFor(p.value, this.tierOf(u), p.age, this.countryOf(u.league))) * 10) / 10;
     }
 
     renew(pid, years) {
