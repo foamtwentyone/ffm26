@@ -551,7 +551,7 @@
       const hasLower = !!this.leagueAt(c, L.tier + 1);
       const hasUpper = !!this.leagueAt(c, L.tier - 1);
       const z = {};
-      if (L.tier === 1) { z[1] = 'champ'; }
+      if (L.tier === 1) { z[1] = 'champ'; Object.assign(z, this.euroPlaces(c).places); }
       if (hasUpper) {
         const r = FM.promoRule(c, L.tier - 1);
         for (let i = 1; i <= r.up; i++) z[i] = 'up';
@@ -682,6 +682,34 @@
     // ================== еврокубки ==================
     // 24 клуба в каждом турнире. Общий этап — 8 туров: корзины по 6 клубов, с каждой корзиной по матчу дома
     // и в гостях (со своей — тоже). 1–4 места сразу в 1/4 финала, 5–12 играют стыки, 13–24 выбывают.
+    // Места страны в турнире: места стран, которых нет в базе (или российские при выключенной настройке),
+    // по очереди отдаются сильнейшим лигам
+    euroQuota(E) {
+      const s = this.s;
+      const have = new Set(s.order.filter((lid) => s.leagues[lid].tier === 1).map((lid) => this.countryOf(lid)));
+      const quota = Object.assign({}, E.quota);
+      let extra = 0;
+      for (const c in quota) {
+        if (!have.has(c) || (c === 'RUS' && s.settings.ruEuro === false)) { extra += quota[c]; delete quota[c]; }
+      }
+      const order = Object.keys(E.quota).filter((c) => quota[c]);
+      for (let i = 0; extra > 0 && order.length; i++, extra--) quota[order[i % order.length]]++;
+      return quota;
+    }
+
+    // Какие места высшей лиги страны ведут в еврокубки: { places: { место: 'ucl' | 'uel' | 'uecl' }, cupTo }.
+    // Первая путёвка страны в ЛЕ (или в ЛК, если мест в ЛЕ нет) — у обладателя кубка, поэтому по таблице её нет.
+    euroPlaces(c) {
+      const places = {};
+      let pos = 1, cupTo = null;
+      for (const E of FM.EURO) {
+        let n = this.euroQuota(E)[c] || 0;
+        if (E.id !== 'ucl' && !cupTo && n > 0) { n--; cupTo = E.id; }
+        for (let k = 0; k < n; k++) places[pos++] = E.id;
+      }
+      return { places, cupTo };
+    }
+
     setupEuro() {
       const s = this.s;
       s.euro = {};
@@ -702,14 +730,7 @@
       const cupDone = {};
       const nextOf = (c, E) => ranked[c].find((id) => !taken.has(id) && !(E.id !== 'ucl' && !cupDone[c] && id === cupWOf(c)));
       for (const E of FM.EURO) {
-        // места стран, которых нет в базе (или российские при выключенной настройке), по очереди отдаются сильнейшим лигам
-        const quota = Object.assign({}, E.quota);
-        let extra = 0;
-        for (const c in quota) {
-          if (!ranked[c] || (c === 'RUS' && s.settings.ruEuro === false)) { extra += quota[c]; delete quota[c]; }
-        }
-        const order = Object.keys(E.quota).filter((c) => quota[c]);
-        for (let i = 0; extra > 0 && order.length; i++, extra--) quota[order[i % order.length]]++;
+        const quota = this.euroQuota(E);
         const teams = [];
         for (const c in quota) {
           if (!ranked[c]) continue;

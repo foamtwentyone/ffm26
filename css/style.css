@@ -269,6 +269,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .zone.champ, .zone.up { background: var(--good); box-shadow: 0 0 10px color-mix(in srgb, var(--good) 60%, transparent); }
 .zone.po { background: var(--blue); }
 .zone.po_down { background: var(--warn); }
+.zone.ucl { background: #4d8dff; box-shadow: 0 0 10px rgba(77, 141, 255, .6); }
+.zone.uel { background: #ff9a1f; box-shadow: 0 0 10px rgba(255, 154, 31, .5); }
+.zone.uecl { background: #2ad6b0; box-shadow: 0 0 10px rgba(42, 214, 176, .5); }
 .zone.down { background: var(--bad); box-shadow: 0 0 10px color-mix(in srgb, var(--bad) 50%, transparent); }
 
 .ovr { display: inline-block; min-width: 34px; text-align: center; border-radius: 8px; padding: 2px 5px; font-family: var(--f-display); font-weight: 400; font-size: 13px; font-variant-numeric: tabular-nums; color: #fff; }
