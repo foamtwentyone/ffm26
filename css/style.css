@@ -839,3 +839,10 @@ span.warn { color: var(--warn); font-weight: 700; }
 .tp-plus { background: var(--glass2); color: var(--text); font-size: 28px; font-weight: 300; }
 input[type="color"] { width: 46px; height: 34px; padding: 3px; flex: none; cursor: pointer; }
 .nego-form input[type="color"] { width: 46px; }
+
+/* трансферы: выбор нескольких позиций */
+.pos-pick { display: flex; flex-wrap: wrap; gap: 4px; flex-basis: 100%; }
+.pos-chip { background: none; border: 1px solid transparent; border-radius: 9px; padding: 2px; opacity: .45; transition: opacity .15s, border-color .15s; }
+.pos-chip:hover { opacity: .8; }
+.pos-chip.on { opacity: 1; border-color: rgba(255, 255, 255, .7); }
+.pos-chip .pos { pointer-events: none; }

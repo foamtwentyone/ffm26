@@ -1025,7 +1025,8 @@
     if (view === 'search') {
       let list = Object.values(G.players).filter((p) => p.club !== u.id);
       if (f.name) list = list.filter((p) => p.name.toLowerCase().includes(f.name.toLowerCase()));
-      if (f.pos) list = list.filter((p) => p.pos === f.pos);
+      const posSel = [].concat(f.pos || []);
+      if (posSel.length) list = list.filter((p) => posSel.includes(p.pos));
       if (f.league === 'free') list = list.filter((p) => !p.club);
       else if (f.league) list = list.filter((p) => p.club && T(p.club).league === f.league);
       if (f.maxPrice) list = list.filter((p) => p.value <= f.maxPrice * 1000);
@@ -1044,8 +1045,9 @@
         : 'С 1 января игрокам с истекающим контрактом можно предложить <b>предварительный контракт</b> — они бесплатно перейдут к вам летом.'}</div>`;
       const th = (key, n, cls = 'num') => `<th class="sort ${cls}" data-sort="${key}">${n}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
       body = `<div class="card" style="margin-bottom:12px"><div class="row">
+        <div class="pos-pick" title="Можно выбрать несколько позиций"><span class="small muted" style="align-self:center;margin-right:4px">Позиции:</span>${FM.POS.map((p) => `<button class="pos-chip ${[].concat(f.pos || []).includes(p) ? 'on' : ''}" data-fpos="${p}" title="${FM.POS_NAME[p]}">${pos(p)}</button>`).join('')}</div>
         <input id="f-name" placeholder="Имя" value="${esc(f.name || '')}" style="width:150px">
-        <select id="f-pos"><option value="">Все позиции</option>${FM.POS.map((p) => `<option value="${p}" ${f.pos === p ? 'selected' : ''}>${FM.POS_NAME[p]}</option>`).join('')}</select>
+
         <select id="f-league"><option value="">Все лиги</option>${[...new Set(s.order.map((id) => G.countryOf(id)))].map((c) => `<optgroup label="${esc(FM.NAT[c] || c)}">${s.order.filter((id) => G.countryOf(id) === c).map((id) => `<option value="${id}" ${f.league === id ? 'selected' : ''}>${esc(s.leagues[id].name)}</option>`).join('')}</optgroup>`).join('')}<option value="free" ${f.league === 'free' ? 'selected' : ''}>Свободные агенты</option></select>
         <input id="f-price" type="number" placeholder="Цена до, млн €" value="${f.maxPrice || ''}" style="width:130px" step="0.1">
         <input id="f-ovr" type="number" placeholder="Рейтинг от" value="${f.minOvr || ''}" style="width:100px">
@@ -1053,6 +1055,7 @@
         <label class="small"><input type="checkbox" id="f-listed" ${f.listed ? 'checked' : ''}> на трансфере</label>
         <label class="small"><input type="checkbox" id="f-real" ${f.realOnly ? 'checked' : ''}> только реальные</label>
         <label class="small"><input type="checkbox" id="f-exp" ${f.expiring ? 'checked' : ''}> контракт истекает летом</label>
+        <span class="grow"></span><button class="btn sm" id="f-reset" ${Object.keys(f).some((k) => k !== 'view' && f[k] != null && f[k] !== '' && f[k] !== false && !(Array.isArray(f[k]) && !f[k].length)) ? '' : 'disabled'}>Сбросить фильтры</button>
       </div>${preNote}</div>
       <div class="card tight"><div class="tbl-wrap"><table><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
         ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${p.pre ? ' <span class="tag">уже подписал предв. контракт</span>' : p.club && p.contract <= s.season ? ` <span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : ''}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small muted">${G.potLabel(p)}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
@@ -1086,7 +1089,15 @@
         render();
       };
     };
-    bindF('#f-name', 'name'); bindF('#f-pos', 'pos'); bindF('#f-league', 'league'); bindF('#f-price', 'maxPrice', true);
+    main.querySelectorAll('[data-fpos]').forEach((b) => b.onclick = () => {
+      const cur = [].concat(f.pos || []), k = b.dataset.fpos;
+      f.pos = cur.includes(k) ? cur.filter((x) => x !== k) : cur.concat(k);
+      UI.tfPage = 0;
+      render();
+    });
+    const rs = main.querySelector('#f-reset');
+    if (rs) rs.onclick = () => { UI.tf = { view: f.view }; UI.tfPage = 0; render(); };
+    bindF('#f-name', 'name'); bindF('#f-league', 'league'); bindF('#f-price', 'maxPrice', true);
     bindF('#f-ovr', 'minOvr', true); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly'); bindF('#f-exp', 'expiring');
     const pp = main.querySelector('#pp'), pn = main.querySelector('#pn');
     if (pp) pp.onclick = () => { UI.tfPage--; render(); };
