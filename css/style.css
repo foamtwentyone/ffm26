@@ -690,10 +690,10 @@ span.warn { color: var(--warn); font-weight: 700; }
 .ev.pens { color: var(--gold); font-weight: 800; }
 
 /* таблица + туры (лиги, еврокубки) на узком экране — друг под другом */
-@media (max-width: 860px) { .grid[style*="minmax(280px"] { grid-template-columns: minmax(0, 1fr) !important; } }
+@media (max-width: 860px) and (orientation: portrait) { .grid[style*="minmax(280px"] { grid-template-columns: minmax(0, 1fr) !important; } }
 
-/* ===== телефон: компактнее — меньше шрифты и отступы, длинные переключатели листаются вбок ===== */
-@media (max-width: 620px) {
+/* ===== телефон (и вертикально, и горизонтально): компактнее — меньше шрифты и отступы, переключатели листаются вбок ===== */
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
   body { font-size: 14px; }
   .club-name { font-size: 18px; }
   .hdr .badge.lg { width: 36px; height: 36px; font-size: 12px; }
@@ -762,4 +762,25 @@ span.warn { color: var(--warn); font-weight: 700; }
 }
 
 /* телефон: весь интерфейс равномерно мельче — на экран помещается больше */
-@media (max-width: 620px) { html { zoom: .86; } }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { html { zoom: .86; } }
+
+/* телефон горизонтально: экран низкий — шапка и нижнее меню тонкие, поле состава рядом со списком */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hdr-in { padding-block: 4px; }
+  .hdr .badge.lg { width: 30px; height: 30px; }
+  .club-name { font-size: 16px; }
+  .next-btn { font-size: 12px; padding: 6px 12px; }
+  .strip-in { padding-block: 3px; }
+  .crumb { padding-top: 8px; }
+  .crumb-hint { display: none; }
+  .mainnav { padding: 2px max(6px, env(safe-area-inset-left, 0px)) calc(2px + env(safe-area-inset-bottom, 0px)); }
+  .mainnav button { flex-direction: row; justify-content: center; gap: 6px; padding: 5px 4px; font-size: 12px; }
+  .mainnav .ni, .mainnav .ni svg { width: 18px; height: 18px; }
+  .mainnav .dot { position: static; }
+  body { padding-bottom: 46px; }
+  #toasts { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  .squad-layout { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+  .pitch { max-width: 300px; }
+  .badge.xl { width: 48px; height: 48px; }
+  .hm-team b { font-size: 13px; }
+}
