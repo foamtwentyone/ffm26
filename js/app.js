@@ -265,7 +265,7 @@
       </div>
       <div class="nego-form row" style="margin-top:10px">
         <label>Уровень клуба<select id="c-lvl"><option value="low">Аутсайдер лиги</option><option value="mid" selected>Середняк</option><option value="top">Один из лидеров</option></select></label>
-        <label>Вместо клуба<select id="c-rep">${teams.map((t) => `<option value="${t.id}">${esc(t.name)}</option>`).join('')}</select></label>
+        <label>Вместо клуба<select id="c-rep">${teams.map((t, i) => `<option value="${t.id}">${esc(t.name)}${i === 0 ? ' — самый слабый' : ''}</option>`).join('')}</select></label>
         <label>Состав<select id="c-keep"><option value="0">Новые игроки под уровень клуба</option><option value="1">Игроки заменённого клуба</option></select></label>
       </div>
       <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn primary" id="c-go">Создать клуб и начать карьеру</button></div>`);
@@ -344,10 +344,10 @@
       const area = app.querySelector('#pick-area');
       const L = db.find((x) => x.id === lid);
       area.innerHTML = `${leaguePick(db, lid, 'data-l')}
-        <div class="teams-pick">${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
+        <div class="teams-pick"><button class="tp tp-new" id="mk-club"><span class="badge lg tp-plus">+</span><div><b>Свой клуб</b><div class="muted small">Займёт место самого слабого клуба лиги «${esc(L.name)}»</div></div></button>${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}
-          <button class="tp tp-new" id="mk-club"><span class="badge lg tp-plus">+</span><div><b>Свой клуб</b><div class="muted small">Создать клуб в лиге «${esc(L.name)}»</div></div></button></div>`;
+</div>`;
       area.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; drawPick(); });
       area.querySelector('#mk-club').onclick = () => createClubModal(L, (custom) => start(custom.replace, custom));
       area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => start(b.dataset.pick));
