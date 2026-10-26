@@ -238,7 +238,11 @@
   function customDb() {
     try {
       const raw = ls.get(DB_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      // сохранённая база могла появиться до того, как в игру добавили новые лиги, — дополняем её ими
+      const db = JSON.parse(raw);
+      const ids = new Set(db.map((L) => L.id));
+      return db.concat(FM.leagues.filter((L) => !ids.has(L.id)));
     } catch (e) { return null; }
   }
 

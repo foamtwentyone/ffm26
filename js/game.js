@@ -85,8 +85,18 @@
       return g;
     }
 
-    buildWorld(leagues) {
+    // Лиги, добавленные в игру после начала карьеры, подключаются со следующего сезона
+    addMissingLeagues() {
       const s = this.s;
+      const add = FM.leagues.filter((L) => !s.leagues[L.id] && !L.teams.some((T) => s.teams[T.id]));
+      if (!add.length) return [];
+      this.buildWorld(add, false);
+      return add;
+    }
+
+    buildWorld(leagues, fresh = true) {
+      const s = this.s;
+      const before = new Set(Object.keys(s.teams));
       for (const L of leagues) {
         s.order.push(L.id);
         s.potV2 = true;
@@ -120,10 +130,12 @@
         }
       }
       for (const id in s.teams) {
+        if (before.has(id)) continue;
         const t = s.teams[id];
         t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10;
         this.pickFormation(t);
       }
+      if (!fresh) return;
       for (let i = 0; i < 45; i++) {
         const tier = FM.pick([1, 2, 2, 3, 3, 3]);
         const base = [0, 63, 56, 50][tier];
@@ -1209,6 +1221,8 @@
 
       s.season++;
       s.date = `${s.season}-06-20`;
+      const added = this.addMissingLeagues();
+      if (added.length) this.news(`В игре новые лиги: ${added.map((L) => L.name).join(', ')}.`);
       this.newSeason(false);
       if (s.board.conf <= 0) this.sack('Руководство приняло решение расстаться с вами по итогам сезона.');
       else this.msg('Новый сезон', `Задача на сезон ${s.season}/${String(s.season + 1).slice(2)}: ${this.expectText()}. Трансферное окно открыто до 7 сентября.`, 'board');
