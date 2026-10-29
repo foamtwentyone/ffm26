@@ -1469,7 +1469,7 @@
       ${extra}
       <div class="pv-grid">${star(h)}${xiList(h)}${xiList(a)}${star(a)}</div>
       ${problems.length ? `<div class="note warn small">${problems.map(esc).join('<br>')}<br>Свободные места займут лучшие доступные игроки.</div>` : ''}
-      <div class="row" style="justify-content:center;margin-top:14px">
+      <div class="row pv-actions" style="justify-content:center;margin-top:14px">
         <button class="btn" data-squad>Изменить состав</button>
         <button class="btn" data-quick>Быстрый результат</button>
         <button class="btn primary" data-live>Смотреть матч</button></div>`, 'wide prematch');
@@ -1565,8 +1565,6 @@
     const delays = { 1: 650, 2: 280, 4: 90 };
     const h = sim.home.team, a = sim.away.team;
     root.innerHTML = `<div class="inner">
-      ${(() => { const ab = (t) => t.name.replace(/[«»"]/g, '').replace(/\s+/g, '').slice(0, 3).toUpperCase(); const tc = (c) => (lum(c) > 0.5 ? '#0a0f2c' : '#fff');
-        return `<div class="scorebug"><span class="sb-comp">${esc(compShort(m.comp))}</span><span class="sb-t" style="background:${glow(h)};color:${tc(glow(h))}">${esc(ab(h))}</span><span class="sb-sc" id="bug-sc">0 – 0</span><span class="sb-t" style="background:${glow(a)};color:${tc(glow(a))}">${esc(ab(a))}</span><span class="sb-min" id="bug-min">0'</span></div>`; })()}
       <div class="board"><div class="tm">${badge(h, 'lg')}<b>${esc(h.name)}</b><div class="scorers" id="sh"></div></div>
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div>${m.firstLeg ? '<div class="agg" id="agg"></div>' : ''}<div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
@@ -1584,8 +1582,6 @@
     const feed = [];
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
-      $('#bug-sc').textContent = `${sim.home.goals} – ${sim.away.goals}`;
-      $('#bug-min').textContent = sim.done ? 'КОН' : `${sim.minuteLabel()}'`;
       if (m.firstLeg) {
         // ответный матч: счёт первой игры и сумма двух матчей
         const f = G.s.matches[m.firstLeg];

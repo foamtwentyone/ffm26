@@ -1078,3 +1078,34 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .inbox-item { border-left: 3px solid transparent; transition: background .2s; }
 .inbox-item.unread { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
 .inbox-item .t { font-family: var(--f-display); font-weight: 800; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; }
+
+/* телефон: компактное превью матча и живой матч */
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  .modal.prematch { padding: 10px; }
+  .bc.pv { padding: 10px 12px; gap: 8px; margin: 0 30px 8px 0; }
+  .bc.pv .bc-vs { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+  .bc.pv .bc-team.away { flex-direction: row-reverse; text-align: right; }
+  .bc.pv .bc-kick { order: 0; }
+  .bc.pv .badge.xl { width: 40px; height: 40px; }
+  .bc.pv .bc-tn b { font-size: 20px !important; }
+  .bc.pv .bc-tn span { font-size: 11px; }
+  .bc.pv .bc-v { font-size: 22px; } .bc.pv .bc-where { display: none; }
+  .bc.pv .form-s { display: none; }
+  .pv-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pv-star { display: none; }
+  .pv-xi h3 { font-size: 13px; }
+  .pv-row { font-size: 12px; padding: 2px 0; gap: 5px; }
+  .pv-row .ovr { transform: scale(.85); }
+  .pv-kit { width: 16px; height: 16px; }
+  .modal.prematch .note { font-size: 12px; padding: 6px 10px; margin: 6px 0; }
+  .modal.prematch .btn { padding: 7px 12px; }
+  /* живой матч */
+  .board { padding: 10px; }
+  .board .sc { font-size: 32px; padding: 4px 12px; }
+  .board .tm .badge.lg { width: 34px; height: 34px; }
+  .board .scorers { font-size: 11px; }
+}
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  /* кнопки превью всегда видны внизу окна */
+  .pv-actions { position: sticky; bottom: -10px; margin: 8px -10px -10px !important; padding: 8px 10px; background: color-mix(in srgb, var(--bg0) 92%, #000); border-top: 1px solid var(--stroke); z-index: 3; }
+}
