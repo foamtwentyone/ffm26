@@ -1017,3 +1017,64 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 @media (max-width: 900px) { .pv-grid { grid-template-columns: 1fr 1fr; } .pv-star { display: none; } }
 @media (max-width: 560px) { .pv-grid { grid-template-columns: 1fr; } .bc.pv { margin-right: 30px; } }
 @media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { .fut-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); } .podium { gap: 10px; } }
+
+/* 2D-схема живого матча */
+.lp { position: relative; aspect-ratio: 105 / 32; width: 100%; max-width: 100%; margin: 0 0 12px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,.18);
+  background: repeating-linear-gradient(90deg, #1b6537 0 10%, #18592f 10% 20%); }
+.lp::before { content: ""; position: absolute; inset: 5% 2.5%; border: 2px solid rgba(255,255,255,.35); border-radius: 3px; pointer-events: none; }
+.lp-half { position: absolute; top: 5%; bottom: 5%; width: 0; left: 50%; border-left: 2px solid rgba(255,255,255,.35); }
+.lp-half.r { display: none; }
+.lp-circle { position: absolute; left: 50%; top: 50%; height: 40%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.35); border-radius: 50%; }
+.lp-box { position: absolute; top: 25%; bottom: 25%; width: 13%; border: 2px solid rgba(255,255,255,.35); }
+.lp-box.l { left: 2.5%; border-left: 0; } .lp-box.r { right: 2.5%; border-right: 0; }
+.lp-zone { position: absolute; top: 0; bottom: 0; width: 45%; opacity: 0; transition: opacity .5s, background .5s; pointer-events: none; }
+.lp-zone.h { right: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--hc) 45%, transparent)); }
+.lp-zone.a { left: 0; background: linear-gradient(270deg, transparent, color-mix(in srgb, var(--ac) 45%, transparent)); }
+.lp-ball { position: absolute; left: 50%; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,.35), 0 0 12px rgba(255,255,255,.8);
+  transition: left .55s cubic-bezier(.3,.7,.3,1), top .55s cubic-bezier(.3,.7,.3,1); z-index: 2; }
+.lp-ev { position: absolute; transform: translate(-50%, -50%) scale(.8); opacity: 0; z-index: 3; font: 800 15px var(--f-display); letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 6px; background: rgba(5,8,25,.85); color: #fff; transition: opacity .2s, transform .2s; pointer-events: none; white-space: nowrap; }
+.lp-ev.on { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.lp-ev.goal { background: var(--gold); color: #1a1200; font-size: 20px; }
+.lp-ev.red { background: var(--bad); } .lp-ev.yellow { background: #ffd23f; color: #1a1200; }
+.lp-ev.goal.h, .lp-ev.save.h, .lp-ev.miss.h { box-shadow: 0 0 0 2px var(--hc); } .lp-ev.goal.a, .lp-ev.save.a, .lp-ev.miss.a { box-shadow: 0 0 0 2px var(--ac); }
+.lp-name { position: absolute; bottom: 7%; font: 800 11px var(--f-display); letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.55); }
+.lp-name.l { left: 4%; } .lp-name.r { right: 4%; }
+@media (prefers-reduced-motion: reduce) { .lp-ball { transition: none; } }
+@media (max-height: 500px) and (orientation: landscape) { .lp { aspect-ratio: 105 / 28; } }
+
+/* отчёт о матче */
+.bc.rep { cursor: default; margin: 0 34px 12px 0; animation: none; }
+.rep-sc { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 14px; }
+.rep-t { display: grid; justify-items: center; gap: 6px; text-align: center; min-width: 0; }
+.rep-t > b { font: 800 clamp(20px, 2.6vw, 30px)/1 var(--f-display); text-transform: uppercase; }
+.rep-t .scorers { font-size: 12px; color: var(--muted); }
+.rep-mid { text-align: center; display: grid; gap: 4px; justify-items: center; padding-top: 14px; }
+.rep-score { font: 800 64px/1 var(--f-display); font-variant-numeric: tabular-nums; padding: 4px 18px; border-radius: 12px; background: rgba(3,5,18,.7); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+.rep-score span { opacity: .5; margin: 0 4px; }
+.rep-mvp { display: flex; justify-content: center; margin: 4px 0 12px; }
+.rep-stats { margin: 6px 0 12px; }
+.rep-pl { padding: 3px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 560px) { .rep-score { font-size: 44px; } .rep-sc { gap: 8px; } }
+
+/* шапка-полоса разделов «Клуб» и «Финансы» */
+.band { position: relative; overflow: hidden; display: flex; align-items: center; gap: 22px; flex-wrap: wrap; padding: 16px 20px; margin-bottom: 14px; border-radius: var(--r); border: 1px solid var(--stroke);
+  background: linear-gradient(115deg, color-mix(in srgb, var(--hcb, var(--accent)) 40%, transparent) 0 30%, transparent 30.3%), linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--bg0); }
+.band::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(115deg, rgba(255,255,255,.03) 0 2px, transparent 2px 14px); }
+.band > * { position: relative; z-index: 1; }
+.band-name { display: grid; gap: 2px; min-width: 0; }
+.band-name b { font: 800 clamp(26px, 3vw, 40px)/1 var(--f-display); text-transform: uppercase; }
+.band-name span { color: var(--muted); font-size: 13px; }
+.band-big { display: grid; gap: 2px; }
+.band-big b { font: 800 26px/1.05 var(--f-display); font-variant-numeric: tabular-nums; }
+.band-big b.good { color: var(--good); } .band-big b.bad { color: var(--bad); }
+.band-meter { display: grid; gap: 6px; flex: 1 1 220px; max-width: 360px; }
+.meter { height: 8px; border-radius: 4px; background: rgba(255,255,255,.08); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 4px; }
+.meter i.good { background: var(--good); } .meter i.warn { background: var(--warn); } .meter i.bad { background: var(--bad); }
+.label { font: 700 11px var(--f-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* почта: письма как карточки «студии» */
+.inbox-item { border-left: 3px solid transparent; transition: background .2s; }
+.inbox-item.unread { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.inbox-item .t { font-family: var(--f-display); font-weight: 800; font-size: 17px; letter-spacing: .03em; text-transform: uppercase; }

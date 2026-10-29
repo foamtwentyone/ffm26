@@ -1423,13 +1423,16 @@
     const st = m.stats || {};
     const srow = (n, k) => st[k] ? statRow(n, st[k][0], st[k][1]) : '';
     const ratAll = Object.entries(m.ratings || {}).map(([pid, r]) => [G.players[pid], r]).filter(([p]) => p);
-    modal(`<div class="muted center small">${esc(compName(m.comp))} · ${FM.fmtDateWd(m.date)}${m.att ? ` · зрителей: ${m.att.toLocaleString('ru-RU')}` : ''}</div>
-      <div class="board" style="margin-top:8px"><div class="tm">${badge(h, 'lg')}<b>${esc(h.name)}</b><div class="scorers">${goals('h')}</div></div>
-      <div><div class="sc">${m.hg}:${m.ag}</div>${m.pens ? `<div class="center small muted">пен. ${m.pens[0]}:${m.pens[1]}</div>` : ''}</div>
-      <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers">${goals('a')}</div></div></div>
-      <div style="margin-top:12px">${srow('Владение, %', 'poss')}${srow('Удары', 'shots')}${srow('В створ', 'sot')}${srow('xG', 'xg')}${srow('Угловые', 'corners')}${srow('Жёлтые', 'yc')}${srow('Красные', 'rc')}</div>
-      ${m.mvp && G.players[m.mvp] ? `<div class="note">Лучший игрок матча: <b>${pname(G.players[m.mvp])}</b> ${rt(m.ratings[m.mvp])}</div>` : ''}
-      ${ratAll.length ? `<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${[h, a].map((t) => `<div><h3>${esc(t.name)}</h3>${ratAll.filter(([p]) => p.club === t.id).sort((x, y) => y[1] - x[1]).map(([p, r]) => `<div class="row small">${pos(p.pos)} <span class="grow">${pname(p)}${(m.reds || []).some((x) => x.pid === p.id) ? ' <i class="rc-card" title="Удалён"></i>' : ''}</span>${rt(r)}</div>`).join('')}</div>`).join('')}</div>` : ''}`);
+    const mvp = m.mvp && G.players[m.mvp];
+    modal(`<div class="bc rep" style="--hcb:${glow(h)};--acb:${glow(a)}">
+        <div class="bc-head"><span class="comp-pill">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</span>${bigTag(m)}<span class="small muted">${FM.fmtDateWd(m.date)}${m.att ? ` · ${m.att.toLocaleString('ru-RU')} зрителей` : ''}</span></div>
+        <div class="rep-sc"><div class="rep-t">${badge(h, 'xl')}<b>${esc(h.name)}</b><div class="scorers">${goals('h')}</div></div>
+          <div class="rep-mid"><div class="rep-score">${m.hg}<span>:</span>${m.ag}</div>${m.pens ? `<div class="small muted">пен. ${m.pens[0]}:${m.pens[1]}</div>` : '<div class="label">финальный счёт</div>'}</div>
+          <div class="rep-t">${badge(a, 'xl')}<b>${esc(a.name)}</b><div class="scorers">${goals('a')}</div></div></div>
+      </div>
+      ${mvp ? `<div class="rep-mvp">${futMini(mvp, `<b>${m.ratings[m.mvp].toFixed(1)}</b> лучший игрок матча`)}</div>` : ''}
+      <div class="rep-stats">${srow('Владение, %', 'poss')}${srow('Удары', 'shots')}${srow('В створ', 'sot')}${srow('xG', 'xg')}${srow('Угловые', 'corners')}${srow('Жёлтые', 'yc')}${srow('Красные', 'rc')}</div>
+      ${ratAll.length ? `<div class="grid" style="grid-template-columns:1fr 1fr;gap:10px">${[h, a].map((t) => `<div><h3>${esc(t.name)}</h3>${ratAll.filter(([p]) => p.club === t.id).sort((x, y) => y[1] - x[1]).map(([p, r]) => `<div class="row small rep-pl">${pos(p.pos)} <span class="grow">${pname(p)}${(m.reds || []).some((x) => x.pid === p.id) ? ' <i class="rc-card" title="Удалён"></i>' : ''}</span>${rt(r)}</div>`).join('')}</div>`).join('')}</div>` : ''}`);
   }
 
   function statRow(n, a, b) {
@@ -1568,6 +1571,9 @@
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div>${m.firstLeg ? '<div class="agg" id="agg"></div>' : ''}<div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
+      <div class="lp" id="lp" style="--hc:${glow(h)};--ac:${glow(a)}"><div class="lp-half l"></div><div class="lp-half r"></div><div class="lp-box l"></div><div class="lp-box r"></div><div class="lp-circle"></div>
+        <div class="lp-zone" id="lpz"></div><div class="lp-ball" id="lpb"></div><div class="lp-ev" id="lpe"></div>
+        <span class="lp-name l">${esc(h.name)} →</span><span class="lp-name r">← ${esc(a.name)}</span></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="grow"></span><button class="btn" id="mng">Замены и тактика</button><button class="btn" id="fin">До конца</button></div>
@@ -1626,8 +1632,37 @@
       draw();
       soTimer = setTimeout(soStep, e.type === 'penkick' ? ({ 1: 1600, 2: 1000, 4: 550 }[speed] || 1600) : 700);
     };
+    // 2D-схема: мяч смещается к воротам команды, которая владеет мячом; моменты и голы — у штрафной
+    let bx = 50, by = 50, lastPoss = [0, 0];
+    const EV_TXT = { goal: 'ГОЛ!', save: 'Сейв', miss: 'Удар', pen: 'Пенальти', yellow: 'ЖК', red: 'Удаление', injury: 'Травма', sub: 'Замена' };
+    const moveBall = (evs) => {
+      const H = sim.home.stats.possTicks, A = sim.away.stats.possTicks;
+      const dh = H - lastPoss[0], da = A - lastPoss[1];
+      lastPoss = [H, A];
+      const atk = evs.slice().reverse().find((e) => ['goal', 'save', 'miss', 'pen'].includes(e.type) && e.side);
+      if (atk) {
+        // атакующая команда: хозяева бьют вправо, гости — влево
+        const toR = atk.side === 'h' ? (atk.type === 'save' ? false : true) : (atk.type === 'save');
+        bx = toR ? 90 + Math.random() * 4 : 6 + Math.random() * 4; by = 38 + Math.random() * 24;
+      } else {
+        const dir = dh + da ? (dh - da) / (dh + da) : 0;
+        bx = FM.clamp(bx + dir * (8 + Math.random() * 10) + (Math.random() - 0.5) * 10, 14, 86);
+        by = FM.clamp(by + (Math.random() - 0.5) * 30, 12, 88);
+      }
+      const b = $('#lpb'); if (b) { b.style.left = `${bx}%`; b.style.top = `${by}%`; }
+      const z = $('#lpz'); if (z) { z.className = `lp-zone ${bx > 50 ? 'h' : 'a'}`; z.style.opacity = Math.min(0.9, Math.abs(bx - 50) / 45); }
+      const ev = evs.slice().reverse().find((e) => EV_TXT[e.type]);
+      const le = $('#lpe');
+      if (ev && le) {
+        le.textContent = EV_TXT[ev.type];
+        le.className = `lp-ev on ${ev.type} ${ev.side || ''}`;
+        le.style.left = `${FM.clamp(bx, 18, 82)}%`; le.style.top = `${FM.clamp(by - 16, 10, 80)}%`;
+        clearTimeout(le._t); le._t = setTimeout(() => { le.className = 'lp-ev'; }, 1400);
+      }
+    };
     const tick = () => {
       const evs = sim.step();
+      moveBall(evs);
       const si = evs.findIndex((e) => e.type === 'pens');
       if (si >= 0 && !so) {
         // началась серия пенальти: останавливаем матч и разыгрываем её по ударам
@@ -1732,7 +1767,14 @@
     const wages = G.wageBill(u);
     const net = u.sponsor - wages;
     const top = G.squad(u).sort((a, b) => b.wage - a.wage).slice(0, 10);
-    main.innerHTML = `<div class="grid">
+    // недельный баланс: доля зарплат от спонсорских денег — наглядная шкала
+    const ratio = u.sponsor ? Math.round((wages / u.sponsor) * 100) : 0;
+    main.innerHTML = `<div class="band" style="--hcb:${glow(u)}">${badge(u, 'lg')}
+        <div class="band-big"><span class="label">Деньги клуба</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
+        <div class="band-big"><span class="label">Итог недели</span><b class="${net < 0 ? 'bad' : 'good'}">${net >= 0 ? '+' : ''}${FM.money(net)}</b></div>
+        <div class="band-meter"><span class="label">Зарплаты — ${ratio}% спонсорских денег</span><div class="meter"><i class="${ratio > 100 ? 'bad' : ratio > 85 ? 'warn' : 'good'}" style="width:${Math.min(100, ratio)}%"></i></div></div>
+      </div>
+      <div class="grid">
       <div class="card"><h3>Баланс</h3><div class="kv">
         <div><span>Деньги клуба</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
         <div><span>Спонсоры, в неделю</span><b>${FM.money(u.sponsor)}</b></div>
@@ -1742,19 +1784,23 @@
         <div><span>Доходы / расходы за сезон</span><b>${FM.money(u.fin.income)} / ${FM.money(u.fin.expense)}</b></div></div>
         <div class="small muted">Доходы: спонсоры (каждый понедельник), билеты на домашние матчи, призовые по итогам сезона, кубковые премии и продажи игроков. Долг больше 3 млн € раздражает руководство.</div></div>
       <div class="card"><h3>Самые высокие зарплаты</h3>${top.map((p) => `<div class="row small">${pos(p.pos)} <span class="grow">${pname(p)}</span><b>${FM.money(p.wage)}</b><span class="muted">до ${p.contract + 1}</span></div>`).join('')}</div>
-      <div class="card"><h3>Движение средств</h3>${u.fin.log.slice(0, 30).map((x) => `<div class="row small"><span class="muted" style="width:70px">${FM.fmtDate(x.date)}</span><span class="grow">${esc(x.what)}</span><b class="${x.amount < 0 ? 'bad' : 'good'}">${FM.money(x.amount)}</b></div>`).join('') || '<div class="muted small">Пока пусто</div>'}</div></div>`;
+      <div class="card"><h3>Движение средств</h3>${u.fin.log.slice(0, 30).map((x) => `<div class="row small"><span class="muted" style="width:56px;flex:none">${FM.fmtDate(x.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow">${esc(x.what)}</span><b class="${x.amount < 0 ? 'bad' : 'good'}">${FM.money(x.amount)}</b></div>`).join('') || '<div class="muted small">Пока пусто</div>'}</div></div>`;
   }
 
   // ================== клуб ==================
   function viewClub(main) {
     const G = g(), s = G.s, u = G.userTeam();
-    main.innerHTML = `<div class="grid">
-      <div class="card"><div class="row">${badge(u, 'lg')}<div><h2 style="margin:0">${esc(u.name)}</h2><div class="muted">${esc(u.city)}</div></div></div>
+    main.innerHTML = `<div class="band" style="--hcb:${glow(u)}">${badge(u, 'xl')}
+        <div class="band-name"><b>${esc(u.name)}</b><span>${esc(u.city)} · ${esc(u.stadium)} · ${u.cap.toLocaleString('ru-RU')} мест</span></div>
+        <div class="band-big"><span class="label">Задача</span><b>${esc(G.expectText())}</b></div>
+        <div class="band-meter"><span class="label">Доверие руководства — ${Math.round(s.board.conf)}%</span><div class="meter"><i class="${s.board.conf < 45 ? 'bad' : s.board.conf < 75 ? 'warn' : 'good'}" style="width:${Math.round(s.board.conf)}%"></i></div></div>
+      </div>
+      <div class="grid">
+      <div class="card"><h3>Клуб</h3>
         <div class="kv"><div><span>Стадион</span><b>${esc(u.stadium)}</b></div><div><span>Вместимость</span><b>${u.cap.toLocaleString('ru-RU')}</b></div>
         <div><span>Репутация</span><b>${u.rep}</b></div><div><span>Лига</span><b>${esc(s.leagues[u.league].name)}</b></div></div>
         <button class="btn" data-team="${u.id}">Весь состав</button></div>
-      <div class="card"><h3>Руководство</h3><div>Задача: <b>${esc(G.expectText())}</b></div><div class="small muted">Ориентир — ${s.board.expect}-е место</div>
-        <div class="bar" style="margin:10px 0"><i style="width:${Math.round(s.board.conf)}%"></i></div><div class="small">Доверие: ${Math.round(s.board.conf)}%</div></div>
+      <div class="card"><h3>Руководство</h3><div>Ориентир — <b>${s.board.expect}-е место</b> в лиге.</div><div class="small muted" style="margin-top:6px">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
       <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? '<span class="good">▲</span>' : x.moved === 'down' ? '<span class="bad">▼</span>' : ''}${x.cup ? ' 🏆' : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} 🏆</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
   }
 
