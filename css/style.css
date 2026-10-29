@@ -897,7 +897,9 @@ html[data-comp="po"] { --bg0: #22081a; --bg1: #08040c; }
 .bc-team { display: flex; align-items: center; gap: 16px; min-width: 0; }
 .bc-team.away { flex-direction: row-reverse; text-align: right; }
 .bc-tn { display: grid; gap: 3px; min-width: 0; }
-.bc-tn b { font: 800 clamp(26px, 3.4vw, 46px)/.95 var(--f-display); text-transform: uppercase; letter-spacing: .01em; cursor: pointer; overflow-wrap: anywhere; }
+.bc-tn b { font: 800 clamp(26px, 3.4vw, 46px)/.95 var(--f-display); text-transform: uppercase; letter-spacing: .01em; cursor: pointer; overflow-wrap: break-word; hyphens: auto; }
+.bc-team.long .bc-tn b { font-size: clamp(22px, 2.6vw, 36px); }
+.bc-team.xlong .bc-tn b { font-size: clamp(18px, 2vw, 28px); }
 .bc-tn span { color: var(--muted); font-size: 13px; font-weight: 600; }
 .bc-team.away .form-s { justify-self: end; }
 .bc-kick { text-align: center; display: grid; gap: 2px; justify-items: center; }
@@ -973,3 +975,45 @@ html[data-comp="po"] { --bg0: #22081a; --bg1: #08040c; }
 .sb-comp { background: var(--text); color: var(--bg1); font-size: 12px; letter-spacing: .1em; }
 .sb-sc { background: #050816; color: #fff; font-variant-numeric: tabular-nums; letter-spacing: .04em; font-size: 19px; }
 .sb-min { background: color-mix(in srgb, var(--bg0) 80%, #fff 8%); color: var(--gold); font-variant-numeric: tabular-nums; min-width: 52px; justify-content: center; }
+
+/* ===== таблицы «студии» ===== */
+table.lt th { font-family: var(--f-display); font-weight: 800; font-size: 13px; letter-spacing: .08em; }
+table.lt td { padding-block: 7px; }
+table.lt td.num { font-variant-numeric: tabular-nums; }
+table.lt tr:not(:first-child):hover td { background: rgba(255,255,255,.035); }
+table.lt td.num b, table.lt td:last-child > b { font: 800 17px var(--f-display); }
+table.lt tr.me td { background: color-mix(in srgb, var(--accent) 16%, transparent); font-weight: 700; }
+table.lt tr.me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+table.lt td:first-child { font: 800 15px var(--f-display); }
+
+/* ===== мини-карточки FUT: подиумы и сетка трансферов ===== */
+.fut.sm { width: 118px; padding: 9px 9px 8px; border-radius: 12px 12px 20px 20px; }
+.fut.sm .fut-ovr { font-size: 28px; } .fut.sm .fut-pos { font-size: 12px; }
+.fut.sm .fut-name { font-size: 14px; padding-top: 4px; } .fut.sm .fut-st { font-size: 9px; } .fut.sm .fut-st b { font-size: 12px; }
+.fut.sm .badge.sm { width: 22px; height: 22px; }
+.fut-mini { display: grid; justify-items: center; gap: 6px; background: none; border: 0; padding: 0; cursor: pointer; color: var(--text); font: inherit; transition: transform .2s var(--ease); }
+.fut-mini:hover { transform: translateY(-3px); }
+.fut-mini:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 12px; }
+.fut-cap { font-size: 12px; color: var(--muted); text-align: center; max-width: 130px; line-height: 1.25; }
+.fut-cap b { color: var(--text); font: 800 15px var(--f-display); }
+.fut-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 16px 10px; padding: 16px; justify-items: center; }
+.podium { display: flex; justify-content: center; align-items: flex-end; gap: 18px; margin: 4px 0 16px; flex-wrap: wrap; }
+.pod { position: relative; display: grid; justify-items: center; }
+.pod.p1 { order: 2; } .pod.p2 { order: 1; margin-bottom: -10px; } .pod.p3 { order: 3; margin-bottom: -18px; }
+.pod.p1 .fut.sm { width: 132px; }
+.pod-n { position: absolute; top: -10px; left: -8px; z-index: 2; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 800 15px var(--f-display); background: var(--text); color: var(--bg1); box-shadow: 0 4px 10px rgba(0,0,0,.4); }
+.pod.p1 .pod-n { background: var(--gold); }
+
+/* ===== превью матча ===== */
+.modal.prematch { max-width: 1020px; }
+.bc.pv { cursor: default; margin: 0 34px 12px 0; animation: none; }
+.pv-grid { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; gap: 14px; align-items: start; }
+.pv-xi { display: grid; gap: 2px; min-width: 0; }
+.pv-xi h3 { font: 800 15px var(--f-display); letter-spacing: .06em; text-transform: uppercase; margin: 0 0 4px; }
+.pv-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.pv-row [data-player] { cursor: pointer; }
+.pv-kit { width: 20px; height: 20px; flex: none; } .pv-kit svg { width: 100%; height: 100%; display: block; }
+.pv-star { display: grid; justify-items: center; gap: 6px; padding-top: 4px; }
+@media (max-width: 900px) { .pv-grid { grid-template-columns: 1fr 1fr; } .pv-star { display: none; } }
+@media (max-width: 560px) { .pv-grid { grid-template-columns: 1fr; } .bc.pv { margin-right: 30px; } }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { .fut-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); } .podium { gap: 10px; } }

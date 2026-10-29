@@ -122,6 +122,9 @@
       <div class="fut-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div></div>`;
   }
 
+  // маленькая карточка FUT для подборок (лидеры, трансферы); подпись под ней — главный показатель
+  const futMini = (p, caption) => `<button class="fut-mini" data-player="${p.id}" title="${esc(p.name)}">${futCard(p).replace('class="fut ', 'class="fut sm ')}${caption ? `<span class="fut-cap">${caption}</span>` : ''}</button>`;
+
   function badge(t, cls = '') {
     if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
     if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="${FM.LOGO_IMG ? FM.LOGO_IMG[t.id] : `img/logos/${t.id}.png`}" alt="${esc(t.name)}"></span>`;
@@ -654,7 +657,7 @@
       const h = T(nm.h), a = T(nm.a);
       const rh = lineRatings(h), ra = lineRatings(a);
       const row = (t) => G.s.leagues[t.league] ? G.table(t.league).find((r) => r.id === t.id) : null;
-      const side = (t, away) => { const r = row(t); return `<div class="bc-team ${away ? 'away' : ''}">${badge(t, 'xl')}<div class="bc-tn"><b data-team="${t.id}">${esc(t.name)}</b>
+      const side = (t, away) => { const r = row(t); return `<div class="bc-team ${away ? 'away' : ''} ${t.name.length > 16 ? 'xlong' : t.name.length > 9 ? 'long' : ''}">${badge(t, 'xl')}<div class="bc-tn"><b data-team="${t.id}">${esc(t.name)}</b>
         <span>${r ? `${r.pos}-е место · ${r.pts} очк.` : esc(s.leagues[t.league].short)}</span><span class="form-s">${form(t.form.slice(-5))}</span></div></div>`; };
       const dRec = G.derbyOf(nm) ? G.derbyRecord(nm.h, nm.a) : null;
       const days = Math.round((FM.parseDate(nm.date) - FM.parseDate(s.date)) / 864e5);
@@ -916,7 +919,7 @@
         cur = last || 1;
       }
       body = `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
-      <div class="card tight"><div class="tbl-wrap"><table>
+      <div class="card tight"><div class="tbl-wrap"><table class="lt">
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
@@ -1042,6 +1045,8 @@
     main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}
         <div class="seg">${[['all', 'Все турниры'], ['league', 'Чемпионат'], ['cups', 'Кубки и еврокубки']].map(([k, n]) => `<button data-sc="${k}" class="${k === scope ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="small muted">Голов: <b>${tot.g}</b> · передач: <b>${tot.a}</b> · нажмите на заголовок столбца, чтобы отсортировать</span></div>
+      ${(() => { const top = rows.filter(([, t]) => t[key] > 0).slice(0, 3); const lbl = (cols.find((c) => c[0] === key) || ['', ''])[1].toLowerCase();
+        return top.length ? `<div class="podium">${top.map(([p, t], i) => `<div class="pod p${i + 1}"><span class="pod-n">${i + 1}</span>${futMini(p, `<b>${key === 'r' ? t.r.toFixed(2) : t[key]}</b> ${esc(lbl)}`)}</div>`).join('')}</div>` : ''; })()}
       <div class="sortbar">${cols.filter(([k]) => ['apps', 'g', 'a', 'r', 'cs'].includes(k)).map(([k, n]) => `<button data-ts="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div>
       <div class="card tight"><div class="tbl-wrap"><table class="ts"><tr><th>#</th><th>Поз</th><th>Игрок</th>${cols.map(([k, n, sh]) => `<th class="num sort ${k === key ? 'on' : ''} ${hideM.has(k) ? 'hide-m' : ''}" data-ts="${k}" title="${n}">${sh}${k === key ? ' ▾' : ''}</th>`).join('')}</tr>
         ${rows.map(([p, t], i) => `<tr><td class="num muted">${i + 1}</td><td>${pos(p.pos)}</td><td>${pname(p)}${status(p)}</td>${cols.map(([k]) => `<td class="num ${k === key ? 'hl' : ''} ${hideM.has(k) ? 'hide-m' : ''}">${k === 'r' ? (t.apps ? rt(t.r) : '—') : k === 'cs' && !['G', 'D'].includes(FM.GROUP[p.pos]) ? '<span class="muted">—</span>' : t[k]}</td>`).join('')}</tr>`).join('')}
@@ -1060,7 +1065,8 @@
     const rows = G.leaders(lid, key, 30);
     main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}</div>${leaguePick(s.order.map((id) => s.leagues[id]), lid)}<div class="row" style="margin-bottom:12px">
       <div class="seg">${[['g', 'Голы'], ['a', 'Передачи'], ['rating', 'Оценки'], ['cs', 'Сухие'], ['yc', 'Жёлтые']].map(([k, n]) => `<button data-k="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div></div>
-      <div class="card tight"><table><tr><th>#</th><th>Игрок</th><th>Клуб</th><th class="num">И</th><th class="num">${{ g: 'Голы', a: 'Пас', rating: 'Оценка', yc: 'ЖК', cs: 'Сухие' }[key]}</th></tr>
+      ${rows.length ? `<div class="podium">${rows.slice(0, 3).map(([p, v], i) => `<div class="pod p${i + 1}"><span class="pod-n">${i + 1}</span>${futMini(p, `<b>${key === 'rating' ? v.toFixed(2) : v}</b> ${{ g: 'голов', a: 'передач', rating: 'оценка', yc: 'ЖК', cs: 'сухих' }[key]}`)}</div>`).join('')}</div>` : ''}
+      <div class="card tight"><table class="lt"><tr><th>#</th><th>Игрок</th><th>Клуб</th><th class="num">И</th><th class="num">${{ g: 'Голы', a: 'Пас', rating: 'Оценка', yc: 'ЖК', cs: 'Сухие' }[key]}</th></tr>
       ${rows.map(([p, v], i) => `<tr class="${p.club === s.user ? 'me' : ''}"><td class="num">${i + 1}</td><td>${pos(p.pos)} ${pname(p)}</td><td>${tname(T(p.club))}</td><td class="num">${p.st.apps}</td><td class="num"><b>${key === 'rating' ? v.toFixed(2) : v}</b></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Пока нет данных</td></tr>'}</table></div>`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; render(); });
     main.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { UI.statsKey = b.dataset.k; render(); });
@@ -1122,10 +1128,10 @@
         <label class="small"><input type="checkbox" id="f-exp" ${f.expiring ? 'checked' : ''}> контракт истекает летом</label>
         <span class="grow"></span><button class="btn sm" id="f-reset" ${Object.keys(f).some((k) => k !== 'view' && f[k] != null && f[k] !== '' && f[k] !== false && !(Array.isArray(f[k]) && !f[k].length)) ? '' : 'disabled'}>Сбросить фильтры</button>
       </div>${preNote}</div>
-      <div class="card tight"><div class="tbl-wrap"><table><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
+      <div class="card tight">${UI.tfCards ? `<div class="fut-grid">${shown.map((p) => futMini(p, `<b>${FM.money(p.value)}</b> ${p.club ? esc(T(p.club).name) : 'своб. агент'}`)).join('')}</div>` : `<div class="tbl-wrap"><table class="lt"><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
         ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${p.pre ? ' <span class="tag">уже подписал предв. контракт</span>' : p.club && p.contract <= s.season ? ` <span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : ''}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small muted">${G.potLabel(p)}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
-      </table></div>
-      <div class="row" style="padding:10px"><span class="muted small grow">Найдено: ${list.length}</span><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>›</button></div></div>`;
+      </table></div>`}
+      <div class="row" style="padding:10px"><span class="muted small grow">Найдено: ${list.length}</span><div class="seg"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>›</button></div></div>`;
     } else if (view === 'mine') {
       const sq = G.squad(u).sort((a, b) => b.value - a.value);
       body = `<div class="card tight"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">Цена</th><th class="num">Зарплата/нед</th><th class="num">Контракт до</th><th></th></tr>
@@ -1140,6 +1146,9 @@
     main.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg">${[['search', 'Поиск'], ['mine', 'Мои игроки'], ['log', 'Переходы']].map(([v, n]) => `<button data-view="${v}" class="${view === v ? 'on' : ''}">${n}</button>`).join('')}</div>
       <span class="small muted">Окно: ${G.windowText()} · Бюджет: <b>${FM.money(u.money)}</b> · Игроков: <b class="${u.players.length >= 32 ? 'bad' : ''}">${u.players.length}/32</b></span></div>${body}`;
     main.querySelectorAll('[data-view]').forEach((b) => b.onclick = () => { f.view = b.dataset.view; render(); });
+    const tl = main.querySelector('#tf-list'), tc = main.querySelector('#tf-cards');
+    if (tl) tl.onclick = () => { UI.tfCards = false; render(); };
+    if (tc) tc.onclick = () => { UI.tfCards = true; render(); };
     main.querySelectorAll('[data-sort]').forEach((b) => b.onclick = () => {
       if (UI.sortKey === b.dataset.sort) UI.sortDir *= -1; else { UI.sortKey = b.dataset.sort; UI.sortDir = b.dataset.sort === 'name' ? 1 : -1; }
       render();
@@ -1441,18 +1450,26 @@
       const f = s.matches[m.firstLeg];
       extra = `<div class="note">Первый матч: ${esc(T(f.h).name)} ${f.hg}:${f.ag} ${esc(T(f.a).name)}</div>`;
     }
+    // Превью в стиле трансляции: заставка с командами, вероятные составы и главные игроки обеих команд
     const dRec = G.derbyOf(m) ? G.derbyRecord(m.h, m.a) : null;
-    const el = modal(`<div class="muted center small">${esc(compName(m.comp))}${roundText(m) ? `, ${esc(roundText(m))}` : ''} · ${FM.fmtDateWd(m.date)}</div>
-      ${bigTag(m) ? `<div class="center" style="margin-top:6px">${bigTag(m)}${dRec ? ` <span class="small muted">личные встречи: ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>` : ''}
-      <div class="next"><div class="side">${badge(h, 'lg')}<b>${esc(h.name)}</b><span class="small muted">${form(h.form.slice(-5))}</span></div><div class="vs">vs</div>
-      <div class="side">${badge(a, 'lg')}<b>${esc(a.name)}</b><span class="small muted">${form(a.form.slice(-5))}</span></div></div>
+    const row = (t) => (s.leagues[t.league] ? G.table(t.league).find((r) => r.id === t.id) : null);
+    const side = (t, away) => { const r = row(t); return `<div class="bc-team ${away ? 'away' : ''} ${t.name.length > 16 ? 'xlong' : t.name.length > 9 ? 'long' : ''}">${badge(t, 'xl')}<div class="bc-tn"><b>${esc(t.name)}</b>
+      <span>${r ? `${r.pos}-е место · ${r.pts} очк.` : esc(s.leagues[t.league].short)}</span><span class="form-s">${form(t.form.slice(-5))}</span></div></div>`; };
+    const xiOf = (t) => G.matchLineup(t).xi.map((x) => ({ p: G.players[x.pid], slot: x.slot })).filter((x) => x.p);
+    const xiList = (t) => { const xi = xiOf(t);
+      return `<div class="pv-xi"><h3>${esc(t.name)} <span class="muted">· ${t.formation}</span></h3>${xi.map(({ p, slot }) => `<div class="pv-row"><span class="pv-kit">${kitSvg(t, slot === 'GK')}</span>${pos(slot)}<span class="grow ell" data-player="${p.id}">${esc(p.name)}</span>${ovr(p.ovr)}</div>`).join('')}</div>`; };
+    const star = (t) => { const p = xiOf(t).map((x) => x.p).sort((a, b) => b.ovr - a.ovr)[0]; return p ? `<div class="pv-star"><span class="label">Главный игрок</span>${futMini(p)}</div>` : ''; };
+    const el = modal(`<div class="bc pv" style="--hcb:${glow(h)};--acb:${glow(a)}">
+        <div class="bc-head"><span class="comp-pill">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</span>${bigTag(m)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
+        <div class="bc-vs">${side(h)}<div class="bc-kick"><span class="bc-when">${esc(FM.fmtDateWd(m.date))}</span><span class="bc-v">VS</span><span class="bc-where">${m.neutral ? 'нейтральное поле' : esc(h.stadium || '')}</span></div>${side(a, true)}</div>
+      </div>
       ${extra}
-      <div class="small muted center">Соперник играет по схеме ${opp.formation}. Ваша схема: ${u.formation}.</div>
+      <div class="pv-grid">${star(h)}${xiList(h)}${xiList(a)}${star(a)}</div>
       ${problems.length ? `<div class="note warn small">${problems.map(esc).join('<br>')}<br>Свободные места займут лучшие доступные игроки.</div>` : ''}
       <div class="row" style="justify-content:center;margin-top:14px">
         <button class="btn" data-squad>Изменить состав</button>
         <button class="btn" data-quick>Быстрый результат</button>
-        <button class="btn primary" data-live>Смотреть матч</button></div>`);
+        <button class="btn primary" data-live>Смотреть матч</button></div>`, 'wide prematch');
     el.querySelector('[data-squad]').onclick = () => { closeModal(); UI.tab = 'squad'; render(); };
     el.querySelector('[data-quick]').onclick = () => {
       closeModal();
