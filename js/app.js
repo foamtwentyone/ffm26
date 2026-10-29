@@ -98,6 +98,26 @@
     else setAccent(u);
   }
 
+  // Номер игрока: постоянный, по позиции (вратари 1/12/31, защитники 2–5, полузащита 6–8/10, атака 7/9/11…)
+  function shirtNo(p) {
+    const pool = { GK: [1, 12, 31, 99], CB: [3, 4, 5, 15, 23], LB: [3, 13, 21], RB: [2, 22, 24], DM: [6, 16, 18], CM: [8, 14, 17], AM: [10, 20, 19], LW: [11, 7, 27], RW: [7, 17, 77], ST: [9, 19, 29] }[p.pos] || [p.id % 98 + 1];
+    return pool[p.id % pool.length];
+  }
+  // Футболка со спины: номер и фамилия, цвета клуба (у вратаря — своя расцветка)
+  function kitBack(t, p) {
+    const gk = p.pos === 'GK';
+    const c1 = gk ? '#f2c14e' : (t && t.colors && t.colors[0]) || '#2f6bff';
+    const c2 = gk ? '#1b1b1b' : (t && t.colors && t.colors[1]) || '#ffffff';
+    const ink = lum(c1) > 0.5 ? '#111' : (lum(c2) > 0.5 ? c2 : '#fff');
+    const last = esc(p.name.split(' ').slice(-1)[0].toUpperCase()).slice(0, 12);
+    const path = 'M30 6L8 18l9 18 9-4.5V94h48V31.5l9 4.5 9-18L70 6c-3 6-11 9-20 9s-17-3-20-9z';
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${path}" fill="${c1}"/>
+      <path d="M8 18l9 18M92 18l-9 18" stroke="${c2}" stroke-width="4"/><path d="M30 6c3 6 11 9 20 9s17-3 20-9" fill="none" stroke="${c2}" stroke-width="4"/>
+      <text x="50" y="35" text-anchor="middle" font-family="Saira Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="${last.length > 8 ? 9 : 11}" fill="${ink}" letter-spacing=".5">${last}</text>
+      <text x="50" y="80" text-anchor="middle" font-family="Saira Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="40" fill="${ink}">${shirtNo(p)}</text>
+      <path d="${path}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
+  }
+
   // Футболка клуба (SVG): основной цвет, полоса и воротник вторым цветом; у вратаря — своя расцветка
   function kitSvg(t, gk, empty) {
     const c1 = gk ? '#f2c14e' : (t.colors && t.colors[0]) || '#2f6bff';
@@ -118,7 +138,7 @@
     const stats = p.pos === 'GK' ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']];
     const last = p.name.split(' ').slice(-1)[0];
     return `<div class="fut ${tier}"><div class="fut-top"><div><div class="fut-ovr">${p.ovr}</div><div class="fut-pos">${FM.POS_RU[p.pos]}</div><div class="fut-flag">${flag(p.nat)}</div></div>${club ? badge(club, 'sm') : ''}</div>
-      <div class="fut-sil"></div><div class="fut-name">${esc(last)}</div>
+      <div class="fut-sil">${kitBack(club, p)}</div><div class="fut-name">${esc(last)}</div>
       <div class="fut-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div></div>`;
   }
 
@@ -1569,9 +1589,6 @@
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div>${m.firstLeg ? '<div class="agg" id="agg"></div>' : ''}<div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
-      <div class="lp" id="lp" style="--hc:${glow(h)};--ac:${glow(a)}"><div class="lp-half l"></div><div class="lp-half r"></div><div class="lp-box l"></div><div class="lp-box r"></div><div class="lp-circle"></div>
-        <div class="lp-zone" id="lpz"></div><div class="lp-ball" id="lpb"></div><div class="lp-ev" id="lpe"></div>
-        <span class="lp-name l">${esc(h.name)} →</span><span class="lp-name r">← ${esc(a.name)}</span></div>
       <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="grow"></span><button class="btn" id="mng">Замены и тактика</button><button class="btn" id="fin">До конца</button></div>
@@ -1628,37 +1645,8 @@
       draw();
       soTimer = setTimeout(soStep, e.type === 'penkick' ? ({ 1: 1600, 2: 1000, 4: 550 }[speed] || 1600) : 700);
     };
-    // 2D-схема: мяч смещается к воротам команды, которая владеет мячом; моменты и голы — у штрафной
-    let bx = 50, by = 50, lastPoss = [0, 0];
-    const EV_TXT = { goal: 'ГОЛ!', save: 'Сейв', miss: 'Удар', pen: 'Пенальти', yellow: 'ЖК', red: 'Удаление', injury: 'Травма', sub: 'Замена' };
-    const moveBall = (evs) => {
-      const H = sim.home.stats.possTicks, A = sim.away.stats.possTicks;
-      const dh = H - lastPoss[0], da = A - lastPoss[1];
-      lastPoss = [H, A];
-      const atk = evs.slice().reverse().find((e) => ['goal', 'save', 'miss', 'pen'].includes(e.type) && e.side);
-      if (atk) {
-        // атакующая команда: хозяева бьют вправо, гости — влево
-        const toR = atk.side === 'h' ? (atk.type === 'save' ? false : true) : (atk.type === 'save');
-        bx = toR ? 90 + Math.random() * 4 : 6 + Math.random() * 4; by = 38 + Math.random() * 24;
-      } else {
-        const dir = dh + da ? (dh - da) / (dh + da) : 0;
-        bx = FM.clamp(bx + dir * (8 + Math.random() * 10) + (Math.random() - 0.5) * 10, 14, 86);
-        by = FM.clamp(by + (Math.random() - 0.5) * 30, 12, 88);
-      }
-      const b = $('#lpb'); if (b) { b.style.left = `${bx}%`; b.style.top = `${by}%`; }
-      const z = $('#lpz'); if (z) { z.className = `lp-zone ${bx > 50 ? 'h' : 'a'}`; z.style.opacity = Math.min(0.9, Math.abs(bx - 50) / 45); }
-      const ev = evs.slice().reverse().find((e) => EV_TXT[e.type]);
-      const le = $('#lpe');
-      if (ev && le) {
-        le.textContent = EV_TXT[ev.type];
-        le.className = `lp-ev on ${ev.type} ${ev.side || ''}`;
-        le.style.left = `${FM.clamp(bx, 18, 82)}%`; le.style.top = `${FM.clamp(by - 16, 10, 80)}%`;
-        clearTimeout(le._t); le._t = setTimeout(() => { le.className = 'lp-ev'; }, 1400);
-      }
-    };
     const tick = () => {
       const evs = sim.step();
-      moveBall(evs);
       const si = evs.findIndex((e) => e.type === 'pens');
       if (si >= 0 && !so) {
         // началась серия пенальти: останавливаем матч и разыгрываем её по ударам

@@ -961,8 +961,8 @@ html[data-comp="po"] { --bg0: #22081a; --bg1: #08040c; }
 .fut-ovr { font: 800 40px/.85 var(--f-display); }
 .fut-pos { font: 800 15px var(--f-display); letter-spacing: .06em; }
 .fut-flag .flag { margin: 4px 0 0; }
-.fut-sil { align-self: stretch; justify-self: center; width: 70%; min-height: 0; opacity: .22; background-size: contain !important;
-  background: radial-gradient(circle at 50% 34%, currentColor 0 24%, transparent 25%), radial-gradient(ellipse at 50% 100%, currentColor 0 48%, transparent 49%); }
+.fut-sil { align-self: stretch; justify-self: center; width: 78%; min-height: 0; display: grid; place-items: center; padding: 2px 0;
+  }
 .fut-name { text-align: center; font: 800 18px/1.05 var(--f-display); text-transform: uppercase; border-top: 1px solid currentColor; padding-top: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fut-st { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; font: 700 10px var(--f-body); gap: 2px; margin-top: 4px; }
 .fut-st b { display: block; font: 800 15px var(--f-display); }
@@ -1109,3 +1109,9 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
   /* кнопки превью всегда видны внизу окна */
   .pv-actions { position: sticky; bottom: -10px; margin: 8px -10px -10px !important; padding: 8px 10px; background: color-mix(in srgb, var(--bg0) 92%, #000); border-top: 1px solid var(--stroke); z-index: 3; }
 }
+
+.fut-sil svg { width: 100%; height: 100%; max-height: 100%; filter: drop-shadow(0 4px 6px rgba(0,0,0,.35)); }
+/* футболка со спины — крупно, за рейтингом и флагом, как портрет на карточке FUT */
+.fut .fut-sil { position: static; }
+.fut .fut-sil svg { position: absolute; left: 50%; top: 19%; height: 52%; width: auto; transform: translateX(-34%); z-index: 0; }
+.fut .fut-top, .fut .fut-name, .fut .fut-st { z-index: 1; }
