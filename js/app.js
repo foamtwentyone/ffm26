@@ -130,21 +130,27 @@
   }
 
   // Карточка игрока в стиле FUT: золото от 80, серебро 70–79, бронза ниже; статистика сезона во всех турнирах
+  // Карточка игрока — игровая майка: ткань в цветах клуба (у вратаря — своя форма), фамилия и номер на спине,
+  // статистика сезона и бирка с рейтингом. Рамка (золото/серебро/бронза) — по рейтингу.
   function futCard(p) {
     const tier = p.ovr >= 80 ? 'gold' : p.ovr >= 70 ? 'silver' : 'bronze';
     const club = p.club ? T(p.club) : null;
+    const gk = p.pos === 'GK';
+    const k1 = gk ? '#f2c14e' : (club && club.colors && club.colors[0]) || '#3a4256';
+    const k2 = gk ? '#1b1b1b' : (club && club.colors && club.colors[1]) || '#d9dde8';
+    const ink = lum(k1) > 0.55 ? '#111' : '#fff';
     const apps = p.st.apps + p.cst.apps;
     const r = apps ? ((p.st.rsum + p.cst.rsum) / apps).toFixed(1) : '—';
-    const stats = p.pos === 'GK' ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']];
-    const parts = p.name.split(' '), last = parts.slice(-1)[0], first = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
-    // компактная карточка без портрета: рейтинг и позиция, фамилия крупно, статистика сезона; цвета клуба — полосой
-    return `<div class="fut ${tier}" style="--kc1:${club ? glow(club) : '#555'}">
-      <div class="fut-top"><div class="fut-rp"><span class="fut-ovr">${p.ovr}</span><span class="fut-pos">${FM.POS_RU[p.pos]}</span></div>
-        <div class="fut-ids">${club ? badge(club, 'sm') : ''}${flag(p.nat)}</div></div>
-      <div class="fut-nm">${first ? `<span>${esc(first)}</span>` : ''}<b class="${last.length > 10 ? 'long' : ''}">${esc(last)}</b></div>
-      <div class="fut-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>
-      <div class="fut-ft"><span>${p.age} лет</span><span>${FM.money(p.value)}</span></div></div>`;
+    const stats = gk ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']];
+    const last = p.name.split(' ').slice(-1)[0];
+    return `<div class="fut kit-card ${tier}" style="--k1:${k1};--k2:${k2};--ki:${ink}">
+      <div class="kc-collar"></div><div class="kc-stitch"></div>
+      <div class="kc-ids">${club ? badge(club, 'sm') : ''}${flag(p.nat)}</div>
+      <div class="kc-sn ${last.length > 10 ? 'long' : ''}">${esc(last)}</div><div class="kc-no">${shirtNo(p)}</div>
+      <div class="kc-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>
+      <div class="kc-tag"><span>${FM.POS_RU[p.pos]}<br>${p.age} лет</span><b>${p.ovr}</b><span>${club ? esc(club.name.slice(0, 11)) : 'свободный'}<br>${FM.money(p.value)}</span></div></div>`;
   }
+
 
 
   // маленькая карточка FUT для подборок (лидеры, трансферы); подпись под ней — главный показатель
