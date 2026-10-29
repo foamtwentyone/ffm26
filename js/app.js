@@ -136,11 +136,16 @@
     const apps = p.st.apps + p.cst.apps;
     const r = apps ? ((p.st.rsum + p.cst.rsum) / apps).toFixed(1) : '—';
     const stats = p.pos === 'GK' ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']];
-    const last = p.name.split(' ').slice(-1)[0];
-    return `<div class="fut ${tier}"><div class="fut-top"><div><div class="fut-ovr">${p.ovr}</div><div class="fut-pos">${FM.POS_RU[p.pos]}</div><div class="fut-flag">${flag(p.nat)}</div></div>${club ? badge(club, 'sm') : ''}</div>
-      <div class="fut-sil">${kitBack(club, p)}</div><div class="fut-name">${esc(last)}</div>
-      <div class="fut-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div></div>`;
+    const parts = p.name.split(' '), last = parts.slice(-1)[0], first = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    // компактная карточка без портрета: рейтинг и позиция, фамилия крупно, статистика сезона; цвета клуба — полосой
+    return `<div class="fut ${tier}" style="--kc1:${club ? glow(club) : '#555'}">
+      <div class="fut-top"><div class="fut-rp"><span class="fut-ovr">${p.ovr}</span><span class="fut-pos">${FM.POS_RU[p.pos]}</span></div>
+        <div class="fut-ids">${club ? badge(club, 'sm') : ''}${flag(p.nat)}</div></div>
+      <div class="fut-nm">${first ? `<span>${esc(first)}</span>` : ''}<b class="${last.length > 10 ? 'long' : ''}">${esc(last)}</b></div>
+      <div class="fut-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>
+      <div class="fut-ft"><span>${p.age} лет</span><span>${FM.money(p.value)}</span></div></div>`;
   }
+
 
   // маленькая карточка FUT для подборок (лидеры, трансферы); подпись под ней — главный показатель
   const futMini = (p, caption) => `<button class="fut-mini" data-player="${p.id}" title="${esc(p.name)}">${futCard(p).replace('class="fut ', 'class="fut sm ')}${caption ? `<span class="fut-cap">${caption}</span>` : ''}</button>`;
@@ -1148,7 +1153,7 @@
         <label class="small"><input type="checkbox" id="f-exp" ${f.expiring ? 'checked' : ''}> контракт истекает летом</label>
         <span class="grow"></span><button class="btn sm" id="f-reset" ${Object.keys(f).some((k) => k !== 'view' && f[k] != null && f[k] !== '' && f[k] !== false && !(Array.isArray(f[k]) && !f[k].length)) ? '' : 'disabled'}>Сбросить фильтры</button>
       </div>${preNote}</div>
-      <div class="card tight">${UI.tfCards ? `<div class="fut-grid">${shown.map((p) => futMini(p, `<b>${FM.money(p.value)}</b> ${p.club ? esc(T(p.club).name) : 'своб. агент'}`)).join('')}</div>` : `<div class="tbl-wrap"><table class="lt"><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
+      <div class="card tight">${UI.tfCards ? `<div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент')).join('')}</div>` : `<div class="tbl-wrap"><table class="lt"><tr><th>Поз</th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенц.')}${th('value', 'Цена')}</tr>
         ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${p.pre ? ' <span class="tag">уже подписал предв. контракт</span>' : p.club && p.contract <= s.season ? ` <span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : ''}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small muted">${G.potLabel(p)}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}
       </table></div>`}
       <div class="row" style="padding:10px"><span class="muted small grow">Найдено: ${list.length}</span><div class="seg"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>›</button></div></div>`;
