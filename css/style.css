@@ -857,3 +857,26 @@ input[type="color"] { width: 46px; height: 34px; padding: 3px; flex: none; curso
 /* свой матч в списках туров и кубков */
 .list-item.mine { background: color-mix(in srgb, var(--accent) 20%, transparent); border-radius: 10px; margin: 2px -8px; padding-left: 8px; padding-right: 8px; border-bottom-color: transparent; box-shadow: inset 3px 0 0 var(--accent); }
 .list-item.mine .grow { font-weight: 700; color: #fff; }
+
+/* оформление по турниру (как в FC): ЛЧ — ночное небо со звёздами, ЛЕ — тёплое, ЛК — зелёное, кубок и финалы — золото */
+html[data-comp="ucl"] { --bg0: #0a1450; --bg1: #020518; }
+html[data-comp="ucl"] body {
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.55) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1px 1px at 28% 72%, rgba(255,255,255,.45) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1.5px 1.5px at 46% 34%, rgba(255,255,255,.5) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1px 1px at 63% 12%, rgba(255,255,255,.4) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(2px 2px at 78% 58%, rgba(255,255,255,.55) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1px 1px at 88% 26%, rgba(255,255,255,.4) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1.5px 1.5px at 8% 86%, rgba(255,255,255,.5) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1px 1px at 54% 88%, rgba(255,255,255,.4) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(900px 520px at 12% -12%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 62%),
+    radial-gradient(760px 560px at 108% 4%, rgba(160, 190, 255, .18), transparent 60%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+  background-attachment: fixed;
+}
+html[data-comp="uel"] { --bg0: #1a0e08; --bg1: #07040a; }
+html[data-comp="uecl"] { --bg0: #04201a; --bg1: #020a0c; }
+html[data-comp="cup"], html[data-comp="final"] { --bg0: #1e1608; --bg1: #08060a; }
+html[data-comp="final"] .next-btn, html[data-comp="cup"] .next-btn { color: #1a1200; }
+html[data-comp="po"] { --bg0: #22081a; --bg1: #08040c; }

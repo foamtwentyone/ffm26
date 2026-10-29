@@ -59,12 +59,43 @@
     for (let i = 0; i < 6 && lum(c) < 0.14; i++) c = mixHex(c, '#ffffff', 0.22);
     return c;
   }
-  function setAccent(t) {
-    const root = document.documentElement.style;
-    const a = t ? glow(t) : '#4da3ff';
+  function setAccent(t, color, kind = 'club') {
+    const el = document.documentElement, root = el.style;
+    const a = color || (t ? glow(t) : '#4da3ff');
     root.setProperty('--accent', a);
     root.setProperty('--accent2', mixHex(a, '#000000', 0.3));
     root.setProperty('--accent-ink', lum(a) > 0.45 ? '#0a0f2c' : '#ffffff');
+    el.dataset.comp = kind;
+  }
+
+  // Оформление как в FC: цвета турнира, в котором ближайший матч (в пределах недели) или который открыт
+  // в «Турнирах»; если матчей в ближайшие дни нет — цвета клуба.
+  const LEAGUE_THEME = { rpl: '#1f5fd6', fnl: '#14a3c7', l2: '#2e8b57', eng: '#8a2be2', eng2: '#3d6fd8', eng3: '#d8342e', eng4: '#2b9348',
+    esp: '#ff4b2b', esp2: '#1b8a5a', ita: '#2a7fff', ita2: '#4caf50', ger: '#e2001a', ger2: '#d50032', fra: '#3d5afe', fra2: '#ff6b35',
+    por: '#00a650', ned: '#ff6200', bel: '#e1a100', tur: '#e30a17', pol: '#00a0e9', sco: '#5b3fd6', sau: '#0aa36c', usa: '#1e4fd8',
+    bra: '#00a859', arg: '#4aa8ff' };
+  const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166' };
+  function themeOf(comp, m) {
+    if (!comp) return null;
+    if (euroOf(comp)) return m && m.neutral ? ['final', COMP_THEME.final] : [comp, COMP_THEME[comp]];
+    if (FM.isCup(comp)) return m && m.neutral ? ['final', COMP_THEME.final] : ['cup', COMP_THEME.cup];
+    if (comp === 'po') return ['po', COMP_THEME.po];
+    if (g().s.leagues[comp]) return ['league', LEAGUE_THEME[comp] || null];
+    return null;
+  }
+  function applyTheme() {
+    const G = g(), s = G.s, u = G.userTeam();
+    let th = null;
+    if (UI.tab === 'tables') {
+      const v = UI.tablesView;
+      th = v === 'table' ? themeOf(UI.tablesLid || u.league) : v === 'cup' ? themeOf('cup') : v === 'po' ? themeOf('po') : euroOf(v) ? themeOf(v) : null;
+    }
+    if (!th) {
+      const nm = G.userMatchToday() || G.nextUserMatch();
+      if (nm && FM.parseDate(nm.date) - FM.parseDate(s.date) <= 7 * 864e5) th = themeOf(nm.comp, nm);
+    }
+    if (th && th[1]) setAccent(u, th[1], th[0]);
+    else setAccent(u);
   }
 
   function badge(t, cls = '') {
@@ -420,7 +451,7 @@
   function render() {
     if (!UI.g) return startScreen();
     const G = g(), s = G.s, u = G.userTeam();
-    setAccent(u);
+    applyTheme();
     const unread = s.inbox.filter((m) => !m.read).length;
     const injured = G.squad(u).filter((p) => p.inj).length;
     const title = (TABS.find((t) => t[0] === UI.tab) || ['', ''])[1];
