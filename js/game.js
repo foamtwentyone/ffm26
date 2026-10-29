@@ -1302,7 +1302,8 @@
       // воспитанники
       for (const tid in this.teams) {
         const t = this.teams[tid];
-        const n = FM.ri(1, 3);
+        // у клуба пользователя воспитанники поднимаются, только если в заявке есть места
+        const n = tid === s.user ? Math.min(FM.ri(1, 3), Math.max(0, MAX_SQUAD - 2 - t.players.length)) : FM.ri(1, 3);
         const base = this.teamBaseOvr(t) - 12;
         for (let i = 0; i < n; i++) {
           const p = this.genPlayer(FM.pick(FM.POS), base + FM.gauss(0, 4), FM.ri(16, 18), t);
@@ -1336,6 +1337,8 @@
       this.newSeason(false);
       if (s.board.conf <= 0) this.sack('Руководство приняло решение расстаться с вами по итогам сезона.');
       else this.msg('Новый сезон', `Задача на сезон ${s.season}/${String(s.season + 1).slice(2)}: ${this.expectText()}. Трансферное окно открыто до 7 сентября.`, 'board');
+      // летом в заявку приходят игроки по предварительным контрактам и возвращаются арендованные — можно выйти за лимит
+      if (!s.sacked && this.userTeam().players.length > MAX_SQUAD) this.msg('Заявка переполнена', `В заявке ${this.userTeam().players.length} игроков при максимуме ${MAX_SQUAD}. Пока лишних не продадите, не отдадите в аренду или не отпустите, покупать новых игроков нельзя.`, 'board');
       return summary;
     }
 
@@ -1772,7 +1775,7 @@
       if (p.loan) return { ok: false, text: `${p.name} уже играет в аренде.` };
       if (p.pre) return { ok: false, text: `${p.name} уже подписал предварительный контракт.` };
       if (!this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто — арендовать можно только в окно.' };
-      if (u.players.length >= MAX_SQUAD) return { ok: false, text: `В заявке уже ${MAX_SQUAD} игроков.` };
+      if (u.players.length >= MAX_SQUAD) return { ok: false, text: this.squadFullText() };
       if (this.teams[p.club].players.length <= 18) return { ok: false, text: `«${this.teams[p.club].name}» не готов сокращать короткий состав.` };
       if ((t.fee || 0) > u.money) return { ok: false, text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
       const a = this.loanAsk(p);
@@ -2021,6 +2024,12 @@
       if (n.log.length > 30) n.log.shift();
     }
 
+    // сколько игроков в заявке и сколько мест нужно освободить для новичка
+    squadFullText() {
+      const n = this.userTeam().players.length, free = n - MAX_SQUAD + 1;
+      return `В заявке ${n} игроков при максимуме ${MAX_SQUAD} — чтобы купить кого-то, освободите ${free} ${free === 1 ? 'место' : free < 5 ? 'места' : 'мест'}: продайте, отдайте в аренду или расторгните контракт.`;
+    }
+
     negoBlocked(n) {
       return n.until && this.s.date < n.until ? `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(n.until)}.` : null;
     }
@@ -2040,7 +2049,7 @@
       if (n.stage !== 'club') return { status: 'blocked', text: 'С клубом уже есть договорённость.' };
       if (p.loan) return { status: 'blocked', text: `${p.name} сейчас в аренде — купить его можно после её окончания.` };
       if (!this.inWindow()) return { status: 'blocked', text: 'Трансферное окно закрыто. Покупать игроков можно летом (до 7 сентября) и зимой (20 января — 25 февраля).' };
-      if (u.players.length >= MAX_SQUAD) return { status: 'blocked', text: `В заявке уже ${MAX_SQUAD} игроков. Сначала кого-нибудь продайте или отпустите.` };
+      if (u.players.length >= MAX_SQUAD) return { status: 'blocked', text: this.squadFullText() };
       if ((inst ? fee * 0.4 : fee) > u.money) return { status: 'blocked', text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
       if (seller.players.length <= 18) return { status: 'blocked', text: `«${seller.name}» не готов ослаблять и без того короткий состав.` };
       this.negoSay(n, 'you', `Предлагаем ${FM.money(fee)}${inst ? ', рассрочка: 40% сразу и по 30% в следующие два лета' : ''}${sellOn ? `, ${sellOn}% от будущей продажи` : ''}.`);

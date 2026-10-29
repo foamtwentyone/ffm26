@@ -1075,7 +1075,7 @@
         ${s.seasonLog.map((x) => `<tr><td class="small">${FM.fmtDate(x.date)}</td><td>${G.players[x.pid] ? pname(G.players[x.pid]) : esc(x.name)}</td><td>${x.from ? esc(T(x.from).name) : '<span class="muted">своб. агент</span>'}</td><td>${esc(T(x.to).name)}</td><td class="num">${x.loan ? '<span class="muted">аренда</span>' : x.fee ? FM.money(x.fee) : 'бесплатно'}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Пока переходов нет</td></tr>'}</table></div>`;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:12px"><div class="seg">${[['search', 'Поиск'], ['mine', 'Мои игроки'], ['log', 'Переходы']].map(([v, n]) => `<button data-view="${v}" class="${view === v ? 'on' : ''}">${n}</button>`).join('')}</div>
-      <span class="small muted">Окно: ${G.windowText()} · Бюджет: <b>${FM.money(u.money)}</b> · Игроков: ${u.players.length}/32</span></div>${body}`;
+      <span class="small muted">Окно: ${G.windowText()} · Бюджет: <b>${FM.money(u.money)}</b> · Игроков: <b class="${u.players.length >= 32 ? 'bad' : ''}">${u.players.length}/32</b></span></div>${body}`;
     main.querySelectorAll('[data-view]').forEach((b) => b.onclick = () => { f.view = b.dataset.view; render(); });
     main.querySelectorAll('[data-sort]').forEach((b) => b.onclick = () => {
       if (UI.sortKey === b.dataset.sort) UI.sortDir *= -1; else { UI.sortKey = b.dataset.sort; UI.sortDir = b.dataset.sort === 'name' ? 1 : -1; }
