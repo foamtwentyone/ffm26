@@ -85,6 +85,8 @@
   const compName = (c) => (FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
   const compShort = (c) => (FM.isCup(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
+  // пометка особого матча: дерби или матч лидеров
+  const bigTag = (m) => { const d = g().derbyOf(m) || (g().s.leagues[m.comp] && !m.played ? g().bigMatchOf(m) : null); return d ? `<span class="derby-tag">🔥 ${esc(d)}</span>` : ''; };
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : FM.isCup(m.comp) && g().cupOf(m.comp) && g().cupOf(m.comp).rounds[m.round - 1] ? g().cupOf(m.comp).rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
@@ -373,7 +375,7 @@
   // ================== каркас ==================
   const TABS = [
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
-    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['news', 'Новости'], ['coach', 'Тренер'], ['menu', 'Сохранения и база'],
+    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['news', 'Новости'], ['coach', 'Тренер'], ['hall', 'Зал славы'], ['menu', 'Сохранения и база'],
   ];
   // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
   const NAV = ['home', 'squad', 'tables', 'transfers', 'stats', 'fixtures', 'finance', 'inbox', 'coach'];
@@ -391,8 +393,9 @@
     menu: 'Сохранения карьеры, экспорт в файл и редактор базы.',
     news: 'Все трансферы, отставки и события футбольного мира.',
     coach: 'Ваша карьера: турниры и результаты по сезонам и итоги за всё время.',
+    hall: 'Рекорды за всё время: бомбардиры и рекордсмены клубов и лиг, чемпионы по сезонам, рекордные трансферы, дерби.',
   };
-  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', news: 'news', coach: 'user', menu: 'gear' };
+  const TAB_ICONS = { home: 'home', squad: 'shirt', fixtures: 'calendar', tables: 'trophy', stats: 'chart', transfers: 'swap', finance: 'coin', club: 'shield', inbox: 'mail', news: 'news', coach: 'user', hall: 'star', menu: 'gear' };
 
   function seasonLabel(s) {
     return `${s.season}/${String(s.season + 1).slice(2)}`;
@@ -456,7 +459,7 @@
     app.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => go(b.dataset.tab));
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
-    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, menu: viewMenu })[UI.tab](main);
+    ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, hall: viewHall, menu: viewMenu })[UI.tab](main);
     if (same) window.scrollTo(0, scrollY);
     bindCommon(main);
     bindCommon(app.querySelector('.hdr'));
@@ -600,7 +603,7 @@
         <div class="tb">
           <div class="hm">${side(h)}
             <div class="hm-mid"><span class="hm-date">${FM.fmtDateWd(nm.date)}</span><span class="hm-vs">VS</span>
-              <span class="hm-tag">${esc(compName(nm.comp))}${roundText(nm) ? ` · ${esc(roundText(nm))}` : ''}</span>
+              <span class="hm-tag">${esc(compName(nm.comp))}${roundText(nm) ? ` · ${esc(roundText(nm))}` : ''}</span>${bigTag(nm)}
               </div>
             ${side(a)}</div>
           <div class="cmp">${cmpRow('Защита', rh.def, ra.def)}${cmpRow('Полузащита', rh.mid, ra.mid)}${cmpRow('Атака', rh.att, ra.att)}</div>
@@ -820,7 +823,7 @@
           cls = my > op ? 'W' : my < op ? 'L' : 'D';
           if (m.winner && my === op) cls = m.winner === u.id ? 'W' : 'L';
         }
-        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</td>
+        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''} ${bigTag(m)}</td>
           <td class="small muted">${m.h === u.id ? 'дома' : 'в гостях'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
@@ -1378,7 +1381,9 @@
       const f = s.matches[m.firstLeg];
       extra = `<div class="note">Первый матч: ${esc(T(f.h).name)} ${f.hg}:${f.ag} ${esc(T(f.a).name)}</div>`;
     }
+    const dRec = G.derbyOf(m) ? G.derbyRecord(m.h, m.a) : null;
     const el = modal(`<div class="muted center small">${esc(compName(m.comp))}${roundText(m) ? `, ${esc(roundText(m))}` : ''} · ${FM.fmtDateWd(m.date)}</div>
+      ${bigTag(m) ? `<div class="center" style="margin-top:6px">${bigTag(m)}${dRec ? ` <span class="small muted">личные встречи: ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>` : ''}
       <div class="next"><div class="side">${badge(h, 'lg')}<b>${esc(h.name)}</b><span class="small muted">${form(h.form.slice(-5))}</span></div><div class="vs">vs</div>
       <div class="side">${badge(a, 'lg')}<b>${esc(a.name)}</b><span class="small muted">${form(a.form.slice(-5))}</span></div></div>
       ${extra}
@@ -1685,6 +1690,54 @@
   }
 
   // ================== тренер ==================
+  // ================== зал славы ==================
+  function viewHall(main) {
+    const G = g(), s = G.s, u = G.userTeam();
+    const H = s.hall || { clubs: {}, leagues: {}, seasons: [], transfers: [], derbies: {} };
+    const view = UI.hallView || 'club';
+    const seg = `<div class="seg" style="margin-bottom:12px">${[['club', 'Клуб'], ['league', 'Лиги'], ['seasons', 'Чемпионы'], ['transfers', 'Трансферы'], ['derbies', 'Дерби']].map(([k, n]) => `<button data-hv="${k}" class="${view === k ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    const who = (e, pid) => `${flag(e.nat)}${G.players[pid] ? `<span class="link" data-player="${pid}">${esc(e.n)}</span>` : esc(e.n)}`;
+    const empty = '<div class="muted small" style="padding:12px">Рекорды накапливаются по ходу карьеры — сыграйте несколько матчей.</div>';
+    let body = '';
+    if (view === 'club') {
+      const tid = UI.hallClub && T(UI.hallClub) ? UI.hallClub : u.id;
+      const c = H.clubs[tid] || {};
+      const list = (key, n) => Object.entries(c).filter((x) => x[1][key] > 0).sort((a, b) => b[1][key] - a[1][key] || b[1].a - a[1].a).slice(0, n);
+      const tbl = (title, key, lbl) => `<div class="card tight"><h3>${title}</h3>${Object.keys(c).length ? `<table>${list(key, 15).map(([pid, e], i) => `<tr><td class="num muted">${i + 1}</td><td>${who(e, pid)}</td><td class="num"><b>${e[key]}</b> <span class="small muted">${lbl}</span></td></tr>`).join('')}</table>` : empty}</div>`;
+      const managed = [...new Set((s.history || []).map((h) => h.team).concat(u.id))].filter((id) => T(id));
+      body = `${managed.length > 1 ? `<div class="row" style="margin-bottom:10px;gap:6px">${managed.map((id) => `<button class="btn sm ${id === tid ? 'on' : ''}" data-hc="${id}">${badge(T(id), 'sm')} ${esc(T(id).name)}</button>`).join('')}</div>` : ''}
+        <h3 style="margin:0 0 10px">${badge(T(tid), 'sm')} ${esc(T(tid).name)} — рекордсмены за время вашей карьеры</h3>
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))">${tbl('Бомбардиры', 'g', 'гол.')}${tbl('Больше всего матчей', 'a', 'матч.')}${tbl('Ассистенты', 'as', 'пер.')}</div>`;
+    } else if (view === 'league') {
+      const lid = UI.hallLid || u.league;
+      const L = H.leagues[lid] || {};
+      const rows = Object.entries(L).sort((a, b) => b[1].g - a[1].g).slice(0, 25);
+      body = `${leaguePick(s.order.map((id) => s.leagues[id]), lid, 'data-hl')}
+        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr))">
+        <div class="card tight"><h3>Лучшие бомбардиры за всё время</h3>${rows.length ? `<table>${rows.map(([pid, e], i) => `<tr><td class="num muted">${i + 1}</td><td>${who(e, pid)}</td><td class="small muted">${e.club && T(e.club) ? esc(T(e.club).name) : ''}</td><td class="num"><b>${e.g}</b></td></tr>`).join('')}</table>` : empty}</div>
+        <div class="card tight"><h3>Чемпионы и лучшие бомбардиры сезонов</h3>${H.seasons.length ? `<table>${H.seasons.map((x) => `<tr><td class="small">${x.year}/${String(x.year + 1).slice(2)}</td><td>${x.champs[lid] && T(x.champs[lid]) ? tname(T(x.champs[lid])) : '—'}</td><td class="small">${x.scorers[lid] ? `${esc(x.scorers[lid][0])} <span class="muted">${x.scorers[lid][2]}</span>` : ''}</td></tr>`).join('')}</table>` : '<div class="muted small" style="padding:12px">История пополнится после первого сезона.</div>'}</div></div>`;
+    } else if (view === 'seasons') {
+      const tops = s.order.filter((id) => s.leagues[id].tier === 1).slice(0, 12);
+      body = H.seasons.length ? H.seasons.map((x) => `<div class="card tight" style="margin-bottom:12px"><h3>Сезон ${x.year}/${String(x.year + 1).slice(2)}</h3><table>
+          ${FM.EURO.filter((E) => x.euro[E.id]).map((E) => `<tr><td><b>${esc(E.name)}</b></td><td>🏆 ${tname(T(x.euro[E.id]))}</td></tr>`).join('')}
+          ${tops.filter((lid) => x.champs[lid]).map((lid) => `<tr><td>${flag(G.countryOf(lid))}${esc(s.leagues[lid].name)}</td><td>${tname(T(x.champs[lid]))}${x.cups[G.countryOf(lid)] && T(x.cups[G.countryOf(lid)]) ? ` <span class="small muted">· кубок: ${esc(T(x.cups[G.countryOf(lid)]).name)}</span>` : ''}</td></tr>`).join('')}
+          ${(s.awards || []).filter((a) => a.year === x.year && a.ballon[0]).map((a) => `<tr><td><b>Золотой мяч</b></td><td>${flag(a.ballon[0].nat)}${esc(a.ballon[0].name)} <span class="small muted">${esc(a.ballon[0].clubName)}</span></td></tr>`).join('')}
+        </table></div>`).join('') : '<div class="card muted" style="padding:14px">Чемпионы появятся здесь после первого сезона.</div>';
+    } else if (view === 'transfers') {
+      body = `<div class="card tight"><h3>Рекордные трансферы карьеры</h3>${H.transfers.length ? `<table><tr><th>#</th><th>Игрок</th><th>Откуда</th><th>Куда</th><th class="num">Сумма</th><th class="hide-m">Дата</th></tr>${H.transfers.map((x, i) => `<tr class="${x.to === u.id || x.from === u.id ? 'me' : ''}"><td class="num muted">${i + 1}</td><td>${flag(x.nat)}${esc(x.name)}</td><td>${x.from && T(x.from) ? tname(T(x.from)) : '—'}</td><td>${tname(T(x.to))}</td><td class="num"><b>${FM.money(x.fee)}</b></td><td class="hide-m small muted">${FM.fmtDate(x.date)} ${x.date.slice(0, 4)}</td></tr>`).join('')}</table>` : empty}</div>`;
+    } else {
+      const ds = FM.DERBIES.filter(([a, b]) => T(a) && T(b));
+      const mine = ds.filter(([a, b]) => a === u.id || b === u.id);
+      const row = ([a, b, n]) => { const r = G.derbyRecord(a, b); return `<tr class="${a === u.id || b === u.id ? 'me' : ''}"><td class="small"><b>${esc(n)}</b></td><td>${tname(T(a))}</td><td class="num">${r ? `${r[0]}–${r[1]}–${r[2]}` : '<span class="muted">—</span>'}</td><td>${tname(T(b))}</td></tr>`; };
+      body = `<div class="card tight"><h3>Дерби: личные встречи за время карьеры (победы — ничьи — победы)</h3><table>${mine.concat(ds.filter((x) => !mine.includes(x))).map(row).join('')}</table>
+        <div class="small muted" style="padding:10px">В дерби стадион почти полон и билеты дороже, судьи чаще показывают карточки, а победа или поражение сильнее влияют на настроение игроков и доверие руководства.</div></div>`;
+    }
+    main.innerHTML = seg + body;
+    main.querySelectorAll('[data-hv]').forEach((b) => b.onclick = () => { UI.hallView = b.dataset.hv; render(); });
+    main.querySelectorAll('[data-hc]').forEach((b) => b.onclick = () => { UI.hallClub = b.dataset.hc; render(); });
+    main.querySelectorAll('[data-hl]').forEach((b) => b.onclick = () => { UI.hallLid = b.dataset.hl; render(); });
+  }
+
   function viewCoach(main) {
     const G = g(), s = G.s;
     const seasons = (s.coach && s.coach.seasons ? s.coach.seasons : []).slice().sort((a, b) => b.year - a.year);

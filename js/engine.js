@@ -278,11 +278,12 @@
 
     discipline(s) {
       const press = s.tactics.press;
-      if (Math.random() < 0.13 * (1 + 0.15 * (press - 1))) s.stats.fouls++;
-      if (Math.random() < 0.0215 * (1 + 0.2 * (press - 1))) {
+      const hot = this.opts.derby ? 1.35 : 1; // в дерби больше фолов и карточек
+      if (Math.random() < 0.13 * hot * (1 + 0.15 * (press - 1))) s.stats.fouls++;
+      if (Math.random() < 0.0215 * hot * (1 + 0.2 * (press - 1))) {
         const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2.2, CM: 1.4, LB: 1.4, RB: 1.4, GK: 0.15 }[o.slot] || 0.9)).p;
         this.card(s, p, false);
-      } else if (Math.random() < 0.00075) {
+      } else if (Math.random() < 0.00075 * hot) {
         const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2, GK: 0.3 }[o.slot] || 1)).p;
         this.card(s, p, true);
       }

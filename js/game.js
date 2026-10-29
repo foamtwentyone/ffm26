@@ -1175,6 +1175,7 @@
     endSeason() {
       const s = this.s;
       const y = s.season;
+      this.hallSeason();
       // номинанты на награды — по статистике завершённого сезона, вручение в конце октября
       s.awardsPending = Object.assign(this.computeAwards(), { date: `${y + 1}-10-26` });
       s.lastCupWinners = {};
@@ -1536,8 +1537,100 @@
       return best;
     }
 
+    // ================== дерби и большие матчи ==================
+    derbyOf(m) { return m.h && m.a ? FM.derbyName(m.h, m.a) : null; }
+
+    // «матч лидеров»: во второй половине сезона встречаются две команды из тройки лидеров
+    bigMatchOf(m) {
+      const L = this.s.leagues[m.comp];
+      if (!L || m.round < L.rounds.length / 3) return null;
+      const t = this.table(m.comp);
+      const pos = (id) => t.findIndex((r) => r.id === id) + 1;
+      return pos(m.h) <= 3 && pos(m.a) <= 3 ? 'Матч лидеров' : null;
+    }
+
+    // личные встречи в дерби за время карьеры: [победы первого, ничьи, победы второго]
+    derbyRecord(a, b) {
+      const r = (this.s.hall && this.s.hall.derbies || {})[[a, b].sort().join('|')];
+      if (!r) return null;
+      return a < b ? r : [r[2], r[1], r[0]];
+    }
+
+    // ================== зал славы ==================
+    hall() {
+      const s = this.s;
+      s.hall = s.hall || { clubs: {}, leagues: {}, seasons: [], transfers: [], derbies: {} };
+      return s.hall;
+    }
+
+    // По итогам матча: статистика игроков за клуб и голы в чемпионате (для рекордов всех времён), счёт в дерби
+    hallMatch(m, sim, isLeague) {
+      const H = this.hall();
+      for (const side of [sim.home, sim.away]) {
+        const tid = side.team.id;
+        const c = H.clubs[tid] = H.clubs[tid] || {};
+        for (const pid of Object.keys(side.mins)) {
+          const p = this.players[pid];
+          if (!p) continue;
+          const e = c[pid] = c[pid] || { n: p.name, nat: p.nat, a: 0, g: 0, as: 0 };
+          e.a++;
+        }
+      }
+      for (const g of sim.goalsList) {
+        const tid = g.side === 'h' ? m.h : m.a;
+        const c = H.clubs[tid];
+        if (c && c[g.scorer]) c[g.scorer].g++;
+        if (g.assist && c && c[g.assist]) c[g.assist].as++;
+        if (isLeague) {
+          const p = this.players[g.scorer];
+          if (!p) continue;
+          const L = H.leagues[m.comp] = H.leagues[m.comp] || {};
+          const e = L[g.scorer] = L[g.scorer] || { n: p.name, nat: p.nat, g: 0 };
+          e.g++;
+          e.club = tid;
+        }
+      }
+      const dn = this.derbyOf(m);
+      if (dn) {
+        const key = [m.h, m.a].sort().join('|');
+        const r = H.derbies[key] = H.derbies[key] || [0, 0, 0];
+        const first = [m.h, m.a].sort()[0];
+        const fg = first === m.h ? m.hg : m.ag, sg = first === m.h ? m.ag : m.hg;
+        r[fg > sg ? 0 : fg === sg ? 1 : 2]++;
+      }
+    }
+
+    // В межсезонье: победители сезона в историю, у клубов остаются лучшие бомбардиры и игроки по числу матчей
+    hallSeason() {
+      const s = this.s, H = this.hall();
+      const managed = new Set((s.history || []).map((h) => h.team).concat(s.user));
+      const top = (obj, key, n) => Object.entries(obj).sort((a, b) => b[1][key] - a[1][key]).slice(0, n).map((x) => x[0]);
+      for (const tid in H.clubs) {
+        const c = H.clubs[tid], n = managed.has(tid) ? 40 : 10;
+        const keep = new Set(top(c, 'g', n).concat(top(c, 'a', n)));
+        for (const pid in c) if (!keep.has(pid)) delete c[pid];
+      }
+      for (const lid in H.leagues) {
+        const L = H.leagues[lid];
+        const keep = new Set(top(L, 'g', 25));
+        for (const pid in L) if (!keep.has(pid)) delete L[pid];
+      }
+      const champs = {}, scorers = {};
+      for (const lid of s.order) {
+        const t = this.table(lid);
+        if (t[0]) champs[lid] = t[0].id;
+        const sc = this.leaders(lid, 'g', 1)[0];
+        if (sc) scorers[lid] = [sc[0].name, sc[0].club, sc[1]];
+      }
+      const cups = {};
+      for (const c in s.cups) if (s.cups[c].winner) cups[c] = s.cups[c].winner;
+      const euro = {};
+      for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) euro[E.id] = s.euro[E.id].winner;
+      H.seasons.unshift({ year: s.season, champs, cups, euro, scorers });
+    }
+
     createMatch(m, live) {
-      const opts = { comp: m.comp, knockout: !!m.ko, userTeam: this.s.user, autoSubsUser: !live || this.s.settings.autoSubs };
+      const opts = { comp: m.comp, knockout: !!m.ko, userTeam: this.s.user, autoSubsUser: !live || this.s.settings.autoSubs, derby: !!this.derbyOf(m) };
       if (m.firstLeg) {
         const f = this.s.matches[m.firstLeg];
         // счёт первого матча с точки зрения нынешних хозяев (в первом они были гостями)
@@ -1624,6 +1717,19 @@
         const a = g.assist && this.players[g.assist];
         if (a) a[key].a++;
       }
+      this.hallMatch(m, sim, isLeague);
+      // дерби: громкий результат в новостях, для своей команды — реакция руководства и игроков
+      const dn = this.derbyOf(m);
+      if (dn) {
+        const H = this.teams[m.h], A = this.teams[m.a];
+        if (isLeague && s.leagues[m.comp].tier === 1 || m.h === s.user || m.a === s.user) this.news(`${dn}: «${H.name}» — «${A.name}» ${m.hg}:${m.ag}${m.pens ? ` (пен. ${m.pens[0]}:${m.pens[1]})` : ''}.`);
+        if (m.h === s.user || m.a === s.user) {
+          const mine = m.h === s.user ? m.hg : m.ag, opp = m.h === s.user ? m.ag : m.hg;
+          const w = m.winner ? (m.winner === s.user ? 1 : -1) : Math.sign(mine - opp);
+          s.board.conf = FM.clamp(s.board.conf + w * 3, 0, 100);
+          for (const pid of this.userTeam().players) { const p = this.players[pid]; if (p) p.morale = FM.clamp(p.morale + w * 3, 10, 100); }
+        }
+      }
       // оценки храним только для матчей своей команды, чтобы сохранение не разрасталось
       if (m.h === s.user || m.a === s.user) m.ratings = ratings;
       const best = Object.entries(ratings).sort((a, b) => b[1] - a[1])[0];
@@ -1633,9 +1739,10 @@
       const home = this.teams[m.h];
       if (!m.neutral) {
         const away = this.teams[m.a];
-        const fill = FM.clamp(0.12 + home.rep / 160 + (away.rep - 60) / 250 + (FM.isCup(m.comp) ? 0.05 : euro ? 0.15 : 0) + FM.gauss(0, 0.05), 0.08, 0.98);
+        const derby = !!this.derbyOf(m), big = derby || (s.leagues[m.comp] && !!this.bigMatchOf(m));
+        const fill = FM.clamp(0.12 + home.rep / 160 + (away.rep - 60) / 250 + (FM.isCup(m.comp) ? 0.05 : euro ? 0.15 : 0) + (derby ? 0.3 : big ? 0.15 : 0) + FM.gauss(0, 0.05), 0.08, derby ? 1 : 0.98);
         m.att = Math.round(home.cap * fill);
-        const price = (s.leagues[home.league].ticket || 2) * (m.comp === 'po' ? 1.5 : euro ? 2 : 1);
+        const price = (s.leagues[home.league].ticket || 2) * (m.comp === 'po' ? 1.5 : euro ? 2 : 1) * (derby ? 1.5 : 1);
         const inc = Math.round((m.att * price) / 100) / 10;
         home.money += inc;
         if (home.id === s.user) this.finLog(home, 'Билеты', inc);
@@ -2235,6 +2342,12 @@
       }
       p.sellOn = opts.sellOn && from ? { club: from.id, pct: opts.sellOn } : null;
       p.joined = s.date;
+      if (fee > 0) {
+        const H = this.hall();
+        H.transfers.push({ date: s.date, name: p.name, nat: p.nat, from: from ? from.id : null, to: to.id, fee });
+        H.transfers.sort((a, b) => b.fee - a.fee);
+        if (H.transfers.length > 25) H.transfers.length = 25;
+      }
       p.role = opts.role || null;
       p.release = opts.release || 0;
       p.pre = null;

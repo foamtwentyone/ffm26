@@ -177,6 +177,33 @@ FM.LEAGUE_W = { ENG: 1, ESP: 1, ITA: .94, GER: .94, FRA: .9, POR: .8, NED: .78, 
   KSA: .66, USA: .64, SCO: .66, CZE: .64, GRE: .64, DEN: .64, AUT: .64, SUI: .64, POL: .64 };
 FM.leagueW = (country, tier) => (FM.LEAGUE_W[country] || .55) * (tier === 1 ? 1 : tier === 2 ? .55 : .35);
 
+// Дерби и принципиальные противостояния: [клуб, клуб, название]
+FM.DERBIES = [
+  ['spartak', 'cska', 'Московское дерби'], ['spartak', 'zenit', 'Главное дерби страны'], ['cska', 'zenit', 'Дерби двух столиц'],
+  ['cska', 'dinamo', 'Московское дерби'], ['spartak', 'dinamo', 'Московское дерби'], ['spartak', 'lokomotiv', 'Московское дерби'],
+  ['cska', 'lokomotiv', 'Московское дерби'], ['dinamo', 'lokomotiv', 'Московское дерби'], ['krasnodar', 'rostov', 'Южное дерби'],
+  ['arsenal', 'tottenham', 'Северолондонское дерби'], ['liverpool', 'everton', 'Мерсисайдское дерби'], ['man_utd', 'man_city', 'Манчестерское дерби'],
+  ['liverpool', 'man_utd', 'Северо-западное дерби'], ['newcastle', 'sunderland', 'Тайн-Уирское дерби'], ['arsenal', 'chelsea', 'Лондонское дерби'],
+  ['chelsea', 'tottenham', 'Лондонское дерби'], ['aston_villa', 'birmingham', 'Второе городское дерби'],
+  ['real_madrid', 'barcelona', 'Эль Класико'], ['real_madrid', 'atletico', 'Мадридское дерби'], ['sevilla', 'betis', 'Севильское дерби'],
+  ['barcelona', 'espanyol', 'Барселонское дерби'], ['athletic', 'real_sociedad', 'Баскское дерби'],
+  ['inter', 'milan', 'Миланское дерби'], ['roma', 'lazio', 'Римское дерби'], ['juventus', 'inter', 'Дерби Италии'],
+  ['juventus', 'torino', 'Туринское дерби'], ['napoli', 'roma', 'Дерби Солнца'],
+  ['dortmund', 'schalke', 'Рурское дерби'], ['bayern', 'dortmund', 'Дер Классикер'], ['hamburg', 'werder', 'Северное дерби'],
+  ['psg', 'marseille', 'Ле Классик'], ['lyon', 'saint_etienne', 'Ронское дерби'],
+  ['benfica', 'sporting', 'Лиссабонское дерби'], ['porto', 'benfica', 'О Классико'],
+  ['ajax', 'feyenoord', 'Де Классикер'], ['ajax', 'psv', 'Принципиальное противостояние'],
+  ['galatasaray', 'fenerbahce', 'Межконтинентальное дерби'], ['besiktas', 'galatasaray', 'Стамбульское дерби'], ['besiktas', 'fenerbahce', 'Стамбульское дерби'],
+  ['celtic', 'rangers', 'Олд Фирм'], ['olympiacos', 'panathinaikos', 'Дерби вечных соперников'],
+  ['anderlecht', 'club_brugge', 'Топпер'], ['standard', 'anderlecht', 'Классико Бельгии'],
+  ['boca', 'river', 'Суперкласико'], ['flamengo', 'fluminense', 'Фла-Флу'], ['corinthians', 'palmeiras', 'Паулистское дерби'],
+  ['sao_paulo', 'corinthians', 'Паулистское дерби'], ['al_hilal', 'al_nassr', 'Эр-Риядское дерби'],
+  ['copenhagen', 'brondby', 'Новое дерби'], ['rapid', 'austria_wien', 'Венское дерби'], ['basel', 'zurich', 'Классико Швейцарии'],
+  ['dinamo_minsk', 'bate', 'Классико Беларуси'], ['qarabag', 'neftchi', 'Классико Азербайджана'], ['astana', 'kairat', 'Классико Казахстана'],
+];
+FM.DERBY_MAP = new Map(FM.DERBIES.flatMap(([a, b, n]) => [[`${a}|${b}`, n], [`${b}|${a}`, n]]));
+FM.derbyName = (a, b) => FM.DERBY_MAP.get(`${a}|${b}`) || null;
+
 // национальные кубки: у каждой страны с лигами в игре свой кубок
 FM.CUP_NAME = {
   RUS: 'Кубок России', ENG: 'Кубок Англии', ESP: 'Кубок Короля', ITA: 'Кубок Италии', GER: 'Кубок Германии',
