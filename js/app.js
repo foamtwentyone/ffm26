@@ -649,6 +649,8 @@
     main.querySelectorAll('[data-go]').forEach((el) => el.addEventListener('click', () => go(el.dataset.go)));
   }
 
+  // матч своей команды в списках туров, кубков, еврокубков и плей-офф выделяется
+  const mineCls = (m) => (m.h === g().s.user || m.a === g().s.user ? 'mine' : '');
   function resultLine(m, uid) {
     const h = T(m.h), a = T(m.a);
     let cls = '';
@@ -657,7 +659,7 @@
       cls = my > op ? 'W' : my < op ? 'L' : 'D';
       if (m.winner && my === op) cls = m.winner === uid ? 'W' : 'L';
     }
-    return `<div class="list-item" data-match="${m.id}" style="cursor:pointer"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span>
+    return `<div class="list-item ${uid ? "" : mineCls(m)}" data-match="${m.id}" style="cursor:pointer"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span>
       <span class="grow right">${esc(h.name)}</span><span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? '*' : ''}</span><span class="grow">${esc(a.name)}</span></div>`;
   }
 
@@ -864,7 +866,7 @@
         const cupNote = ep && ep.cupTo ? ` · ещё одна путёвка в ${euroOf(ep.cupTo).short} — у обладателя кубка` : '';
         return [['champ', 'чемпион'], ['ucl', 'Лига чемпионов'], ['uel', 'Лига Европы'], ['uecl', 'Лига конференций'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; ') + cupNote; })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${roundDates(L.rounds[cur - 1])}</b><button class="btn sm" id="rn">›</button></div>
-        ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
+        ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
@@ -894,7 +896,7 @@
     const pick = `<div class="lpick"><div class="lp-c">${list.map((k) => `<button data-cupc="${k}" class="${k === cc ? 'on' : ''}" title="${esc(s.cups[k].name)}">${flag(k)}<span>${esc(FM.NAT[k] || k)}</span></button>`).join('')}</div></div>`;
     const line = (id) => {
       const m = s.matches[id];
-      return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`;
+      return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`;
     };
     return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}${c.winner ? ` · 🏆 ${esc(T(c.winner).name)}` : ''}</h3>
       <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(400px,100%),1fr))">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
@@ -912,7 +914,7 @@
     let cur = pin;
     if (!cur) { cur = 1; e.md.forEach((md, i) => { if (md.some((mid) => s.matches[mid].played)) cur = i + 1; }); }
     UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
-    const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
+    const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
     const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
     const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">🏆 ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
     return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
@@ -941,7 +943,7 @@
     const G = g(), s = G.s;
     const card = (tie) => `<div class="card"><h3>${esc(T(tie.up).name)} — ${esc(T(tie.low).name)}</h3>
       <div class="small muted" style="margin-bottom:6px">${tie.stage === 'final' ? 'Финал (нейтральное поле)' : tie.stage === 'semi' ? 'Полуфинал' : 'Стыковые матчи'}</div>
-      ${tie.legs.map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}
+      ${tie.legs.map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}
       ${tie.winner ? `<div class="note">${tie.stage === 'semi' ? 'В финале' : tie.stage === 'final' ? 'Повышение' : 'Победитель'}: ${esc(T(tie.winner).name)}</div>` : ''}</div>`;
     const groups = [];
     for (const tie of s.playoff.ties) {
