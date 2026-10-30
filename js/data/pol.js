@@ -12,6 +12,7 @@ Aleks Olsztyn|GK|16|500|POL|2028
 Wiktor Obremski|GK|18|500|POL|2029
 Wojciech Mońka|CB|19|10000|POL|2030
 Terry Yegbe|CB|25|3000|GHA|2030
+Alex Douglas|CB|25|600|SWE|2027
 Mateusz Skrzypczak|CB|26|600|POL|2029
 Hubert Janyszka|CB|17|50|POL|2029
 Michal Gurgul|LB|20|7000|POL|2028
@@ -30,7 +31,10 @@ Daniel Håkans|LW|25|1500|FIN|2028
 Leo Bengtsson|LW|28|1500|SWE|2028
 Eryk Śledziński|LW|18|500|POL|2029
 Patrik Walemark|RW|25|5000|SWE|2029
-Yannick Agnero|ST|23|1500|CIV|2030` },
+Allahyar Sayyadmanesh|RW|25|3500|IRN|2029
+Ali Gholizadeh|RW|30|1500|IRN|2027
+Yannick Agnero|ST|23|1500|CIV|2030
+Mikael Ishak|ST|33|500|SWE|2027` },
     { id: 'gornik', name: 'Гурник Забже', city: 'Забже', stadium: 'Arena Zabrze', cap: 31871, colors: ['#0055a4', '#e30613'], players: `
 Philipp Schulze|GK|23|600|GER|2029
 Tomasz Loska|GK|30|250|POL|2028
@@ -40,6 +44,7 @@ Josema|CB|30|800|ESP|2028
 Pawel Bochniewicz|CB|30|400|POL|2029
 Rafał Janicki|CB|34|300|POL|2027
 Ondrej Zmrzly|LB|27|1200|CZE|2029
+Erik Janza|LB|33|400|SVN|2027
 Michal Sacek|RB|30|800|CZE|2028
 Patryk Warczak|RB|23|350|POL|2029
 Malthe Højholt|DM|25|1200|DEN|2029
@@ -80,6 +85,7 @@ Maciej Kuczyński|RB|19|500|POL|2027
 Anders Klynge|DM|26|1200|DEN|2029
 Eryk Kozłowski|DM|20|1000|POL|2027
 Hampus Finndell|DM|26|650|SWE|2029
+Taras Romanczuk|DM|34|200|POL|2028
 Sergio Lozano|AM|27|1500|ESP|2027
 Dawid Drachal|AM|21|350|POL|2028
 Jesús Imaz|AM|36|300|ESP|2028
@@ -111,6 +117,7 @@ Oskar Repka|DM|27|1500|POL|2030
 Владыслав Кочергин|DM|30|1000|UKR|2027
 Karol Struski|DM|25|1000|POL|2029
 Abraham Ojo|DM|19|250|NGA|2031
+Fran Tudor|RW|31|900|CRO|2027
 Jakub Jendryka|RW|19|350|POL|2030
 Adriano|LW|24|1000|BRA|2028
 Jean Carlos Silva|LW|30|700|ESP|2028
@@ -126,6 +133,7 @@ Oliwier Kwiatkowski|AM|21|400|POL|2031
 Махир Емрели|ST|29|700|AZE|2027
 Isak Brusberg|ST|20|500|SWE|2030` },
     { id: 'katowice', name: 'ГКС Катовице', city: 'Катовице', stadium: 'Arena Katowice', cap: 15048, colors: ['#ffd700', '#00a650'], players: `
+Rafał Strączek|GK|27|600|POL|2029
 Gabriel Kobylak|GK|24|350|POL|2028
 Maciej Kikolski|GK|22|300|POL|2027
 Wojciech Monica|GK|16|500|POL
@@ -134,6 +142,7 @@ Pau Resta|CB|25|1500|ESP|2030
 Marius Olsen|CB|25|450|NOR|2028
 Lukas Klemenz|CB|31|350|POL|2028
 Aleksander Paluszek|CB|25|250|POL|2027
+Arkadiusz Jędrych|CB|34|200|POL|2028
 Alan Czerwiński|CB|33|200|POL|2028
 Mateusz Kowalczyk|DM|22|1500|POL|2028
 Bartosz Wolski|DM|29|500|POL|2029
@@ -175,6 +184,7 @@ Wojciech Urbański|AM|21|1000|POL|2029
 Samuel Kovacik|AM|19|1000|SVK|2029
 Mateusz Szczepaniak|AM|19|800|POL|2027
 Michal Sevcik|AM|24|800|CZE|2027
+Bartosz Kapustka|AM|29|800|POL|2028
 Jakub Żewłakow|AM|19|700|POL|2030
 Вахан Бичахчян|AM|27|600|ARM|2028
 Богдан Виуннык|AM|24|500|UKR|2027
@@ -196,6 +206,7 @@ Maciej Urbański|CB|19|500|POL|2027
 Filip Kocaba|DM|21|1500|POL|2029
 Mateusz Dziewiatowski|DM|19|700|POL|2029
 Jakub Kolan|DM|22|600|POL|2029
+Damian Dabrowski|DM|34|250|POL|2027
 Patryk Dziekoński|DM|17|500|POL
 Igor Orlikowski|RW|20|800|POL|2028
 Szymon Lyczko|RW|20|400|POL|2028
@@ -230,6 +241,7 @@ Sidnei Tavares|DM|25|1800|CPV|2027
 Jurica Prsir|DM|26|1000|CRO|2029
 Kyriakos Savvidis|DM|31|250|GRE|2027
 Krystian Pomorski|DM|30|150|POL|2027
+Dani Pacheco|DM|35|150|ESP|2027
 Zan Rogelj|RW|26|900|SVN|2029
 Michał Król|RW|26|200|POL|2029
 Fabian Hiszpański|RW|32|75|POL|2027
@@ -243,6 +255,7 @@ Adam Radwański|AM|28|400|POL|2027
 Samuel Akere|RW|22|1000|NGA|2027
 Said Hamulic|ST|25|400|BIH|2027
 Deni Jurić|ST|29|300|AUS|2028
+Łukasz Sekulski|ST|35|100|POL|2027
 Kacper Błaszkiewicz|ST|20|500|POL|2028
 Marcin Kościelecki|ST|20|500|POL|2029` },
     { id: 'pogon', name: 'Погонь', city: 'Щецин', stadium: 'Stadion im. Floriana Krygiera', cap: 21163, colors: ['#1d3c8f', '#800020'], players: `
@@ -267,8 +280,10 @@ Jan Biegański|DM|23|400|POL|2027
 Mor Ndiaye|DM|25|300|SEN|2027
 Natan Ława|AM|17|1000|POL|2029
 Maciej Wojciechowski|AM|19|500|POL|2027
+José Pozo|AM|30|300|ESP|2027
 Darko Churlinov|LW|26|1500|MKD|2028
 Paul Mukairu|LW|26|1200|NGA|2027
+Kamil Grosicki|LW|38|150|POL|2027
 Jacek Czapliński|LW|20|100|POL|2028
 Musa Juwara|RW|24|400|GAM|2028
 Rajmund Molnár|ST|24|1000|HUN|2028
@@ -285,6 +300,7 @@ Steve Kingue|CB|26|600|CMR|2027
 Adrián Diéguez|CB|30|350|ESP|2027
 Kryspin Szcześniak|CB|25|300|POL|2027
 Filip Koperski|CB|22|200|POL|2028
+Mateusz Cichocki|CB|34|100|POL|2027
 Szymon Kilianek|CB|20|500|POL|2027
 Conrado|LB|29|400|BRA|2028
 Oskar Markiewicz|LB|26|25|POL|2027
@@ -296,6 +312,7 @@ Christos Donis|DM|32|300|GRE|2027
 Adam Żabicki|DM|20|25|POL|2027
 Luquinhas|AM|30|800|BRA|2027
 Roberto Alves|AM|29|400|SUI|2027
+Rafał Wolski|AM|33|250|POL|2028
 Kacper Karasek|AM|24|200|POL|2028
 Anastasios Donis|LW|30|500|GRE|2027
 Ronaldo Lumungo|RW|25|450|STP|2029
@@ -325,14 +342,18 @@ Hubert Zwoźny|RB|22|300|POL|2028
 Norbert Barczak|RB|21|300|POL|2029
 Patrik Hellebrand|DM|27|3500|CZE|2029
 Kamil Jakubczyk|DM|22|1500|POL|2030
+Nono|DM|35|150|ESP|2027
 Martin Remacle|AM|29|600|BEL|2028
 Simon Gustafson|AM|31|400|SWE|2027
 Kacper Minuczyc|AM|18|50|POL|2028
+Kornel Toboła|AM|20|500|POL|2027
 Michael Ameyaw|LW|26|1500|POL|2029
 Morgan Faßbender|LW|28|500|GER|2028
 Camilo Mena|RW|24|4000|COL|2027
+Ondrej Lingr|RW|28|3000|CZE|2029
 Stjepan Davidovic|RW|21|500|CRO|2029
 Dawid Błanik|RW|29|450|POL|2028
+Mariusz Stępiński|ST|31|500|POL|2028
 Daniel Bąk|ST|21|350|POL|2028` },
     { id: 'motor', name: 'Мотор', city: 'Люблин', stadium: 'Motor Lublin Arena', cap: 15247, colors: ['#ffd700', '#0055a4'], players: `
 Mihai Popa|GK|26|700|ROU|2028
@@ -358,6 +379,7 @@ Makan Aïko|LW|25|700|FRA|2028
 Mbaye Ndiaye|RW|23|3000|SEN|2028
 Rony Lopes|RW|30|900|POR|2028
 Florian Haxha|RW|24|200|KVX|2027
+Karol Czubak|ST|26|2500|POL|2027
 Dominik Gregorski|ST|20|50|POL|2029
 Mateusz Posmyk|ST|17|500|POL|2029` },
     { id: 'cracovia', name: 'Краковия', city: 'Краков', stadium: 'Stadion Cracovii', cap: 15016, colors: ['#e30613', '#ffffff'], players: `
@@ -372,12 +394,14 @@ Kamil Glik|CB|38|50|POL|2027
 Mauro Perkovic|LB|23|3000|CRO|2029
 Vincent Burlet|LB|21|600|BEL|2030
 Jakub Wilczek|LB|19|500|POL|2028
+Отар Какабадзе|RB|31|800|GEO|2027
 Dominik Piła|RB|25|400|POL|2028
 Amir Al-Ammari|DM|29|800|IRQ|2028
 Beno Selan|DM|21|400|SVN|2029
 Karol Knap|DM|25|200|POL|2028
 Mateusz Klich|DM|36|200|POL|2027
 Wiktor Dej|DM|18|500|POL|2029
+Filip Marchwiński|AM|24|1500|POL|2027
 Dijon Kameri|AM|22|700|AUT|2028
 Mateusz Praszelik|AM|26|300|POL|2028
 Mateusz Skoczylas|AM|20|200|POL|2028
@@ -401,14 +425,21 @@ Steve Kapuadi|CB|28|2500|COD|2030
 Przemysław Wiśniewski|CB|28|2500|POL|2031
 Mateusz Żyro|CB|27|500|POL|2028
 Ricardo Visus|CB|25|400|ESP|2029
+Mario García|LB|23|1500|ESP|2029
 Christopher Cheng|LB|24|1000|NOR|2029
 Jusuf Gazibegovic|RB|26|2000|BIH|2027
 Marcel Krajewski|RB|22|1000|POL|2027
+Carlos Isaac|RB|28|600|ESP|2028
+Juljan Shehu|DM|28|3000|ALB|2028
+Dani Silva|DM|26|2000|POR|2027
 Giannis Papanikolaou|DM|27|1200|GRE|2028
 Lindon Selahi|DM|27|800|ALB|2028
+Lukas Lerager|DM|33|400|DEN|2028
+Szymon Czyż|DM|25|300|POL|2027
 Emil Kornvig|AM|26|2500|DEN|2029
 Fran Álvarez|AM|28|1500|ESP|2028
 Stipe Biuk|LW|23|2000|CRO|2029
+Paulinho Bóia|LW|28|1200|BRA|2028
 Mariusz Fornalczyk|LW|23|900|POL|2029
 Darian Males|RW|25|1200|SUI|2029
 Antoni Klukowski|RW|19|250|CAN|2028
@@ -417,10 +448,12 @@ Sebastian Bergier|ST|26|1500|POL|2029
 Ioan Vermeșan|ST|20|1000|ROU` },
     { id: 'piast', name: 'Пяст', city: 'Гливице', stadium: 'Stadion Miejski', cap: 9913, colors: ['#0055a4', '#e30613'], players: `
 Domen Gril|GK|25|1000|SVN|2029
+Frantisek Plach|GK|34|150|SVK|2027
 Marcel Mendes-Dudziński|GK|21|50|POL|2029
 Jakub Grelich|GK|18|500|POL|2029
 Francisco Sierralta|CB|29|1200|CHI|2027
 Juande Rivas|CB|27|850|ESP|2027
+Jakub Czerwiński|CB|35|200|POL|2028
 Levis Pitan|CB|21|200|POL|2027
 Jakub Lewicki|LB|21|1000|POL|2027
 Elton Fikaj|LB|21|300|ALB|2028
@@ -448,6 +481,7 @@ Darijo Grujcic|CB|27|450|AUT|2027
 Maxence Maisonneuve|CB|27|400|FRA|2028
 Mariusz Kutwa|CB|22|300|POL|2027
 Wiktor Biedrzycki|CB|29|250|POL|2027
+Alan Uryga|CB|32|200|POL|2027
 Jakub Krzyzanowski|LB|20|2500|POL|2030
 Rafał Mikulec|LB|29|200|POL|2027
 Raoul Giger|RB|28|550|SUI|2029
@@ -464,6 +498,7 @@ Marko Bozic|LW|28|500|AUT|2027
 Frederico Duarte|LW|27|450|POR|2029
 Maciej Kuziemka|RW|20|1200|POL|2028
 Oliwier Pławiński|RW|17|500|POL|2028
+Ángel Rodado|ST|29|1500|ESP|2030
 Jérémy Guillemenot|ST|28|300|SUI|2028
 Karol Tokarczyk|ST|21|500|POL|2027` },
     { id: 'slask', name: 'Шлёнск', city: 'Вроцлав', stadium: 'Tarczyński Arena', cap: 42771, colors: ['#00a650', '#ffffff'], players: `
@@ -480,12 +515,15 @@ Marko Dijakovic|CB|24|150|AUT
 Adrian Żulewski|CB|19|500|POL|2027
 Karol Linetty|DM|31|800|POL|2028
 Eniss Shabani|DM|23|500|ALB|2028
+Michał Mokrzycki|DM|28|350|POL|2029
 Jorge Yriarte|DM|26|350|VEN|2027
 Dorian Markowski|DM|18|150|POL|2028
 Patryk Sokołowski|DM|32|100|POL|2027
 Przemyslaw Mazan|DM|16|500|POL|2027
 Jan Jurcec|RW|25|1000|CRO|2029
 Alex Timossi Andersson|RW|25|500|SWE|2028
+Marc Llinares|LW|27|350|ESP|2028
+Piotr Samiec-Talar|AM|24|1200|POL|2027
 Karol Borys|AM|20|600|POL|2029
 Adam Ciućka|AM|18|500|POL|2028
 Grzegorz Tomasiewicz|AM|30|300|POL|2028
@@ -507,6 +545,7 @@ Matus Vojtko|LB|26|400|SVK|2028
 Kamil Pestka|LB|28|350|POL|2027
 Karol Fila|RB|28|300|POL|2027
 Kamil Dankowski|RB|30|200|POL|2027
+Mikkel Maigaard|DM|31|500|DEN|2027
 Ben Lederman|DM|26|300|POL|2028
 Nikola Knezevic|DM|23|300|SRB|2028
 Tobias Christensen|AM|26|2000|NOR|2028

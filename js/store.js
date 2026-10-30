@@ -90,15 +90,44 @@ FM.Store = (function () {
     return JSON.parse(await unpack(meta.enc, data));
   }
 
-  // Локальное сохранение тоже сжимается: несжатая карьера с европейскими лигами весит около 2 МБ,
-  // и несколько слотов не поместились бы в хранилище браузера.
+  // Локальные сохранения — в IndexedDB браузера: там сотни мегабайт вместо 5 МБ у localStorage. Данные сжимаются.
+  // Старые сохранения из localStorage читаются как раньше и при следующей записи переезжают в IndexedDB.
+  let idbP = null;
+  function idb() {
+    if (idbP) return idbP;
+    idbP = new Promise((res) => {
+      try {
+        const rq = indexedDB.open('ffm26', 1);
+        rq.onupgradeneeded = () => rq.result.createObjectStore('saves');
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => res(null);
+      } catch (e) { res(null); }
+    });
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* не критично */ }
+    return idbP;
+  }
+  async function idbDo(mode, fn) {
+    const db = await idb();
+    if (!db) return undefined;
+    return new Promise((res) => {
+      try {
+        const tx = db.transaction('saves', mode), st = tx.objectStore('saves');
+        const rq = fn(st);
+        tx.oncomplete = () => res(mode === 'readonly' ? rq.result : true);
+        tx.onerror = tx.onabort = () => res(mode === 'readonly' ? undefined : false);
+      } catch (e) { res(undefined); }
+    });
+  }
+
   async function localSave(key, str) {
     const { enc, data } = await pack(str);
-    return ls.set(key, enc === 'raw' ? data : 'gz:' + data);
+    const val = enc === 'raw' ? data : 'gz:' + data;
+    if (await idbDo('readwrite', (st) => st.put(val, key))) { ls.del(key); return true; }
+    return ls.set(key, val);
   }
 
   async function localLoad(key) {
-    const raw = ls.get(key);
+    const raw = (await idbDo('readonly', (st) => st.get(key))) || ls.get(key);
     if (!raw) return null;
     return JSON.parse(raw.startsWith('gz:') ? await unpack('gz64', raw.slice(3)) : raw);
   }

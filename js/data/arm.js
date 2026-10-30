@@ -21,6 +21,7 @@ Maxence Carlier|DM|29|500|FRA|2027
 Карен Мурадян|DM|33|175|ARM
 Balanta Jr.|CM|29|500|COL|2027
 Alwyn Tera|CM|29|200|KEN
+Армен Амбарцумян|CM|32|175|ARM
 Мичел Айвазян|CM|21|150|ARM|2028
 Benny|AM|29|250|POR
 Жирайр Шагхоян|LW|25|500|ARM
@@ -41,15 +42,18 @@ Nathanaël Saintini|CB|26|500|GLP|2027
 Michael Pavlovic|LB|25|650|SVN
 David Sualehe|LB|29|350|POR
 Eric Boakye|RB|26|600|GHA|2028
+Ховханнес Хамбардзумян|RB|36|175|ARM
 Clinton Dombila|RB|21|150|GHA
 Sasa Zdjelar|DM|31|2000|SRB|2028
 Takuto Oshima|DM|28|800|JPN|2028
 Gustavo Sangaré|DM|29|800|BFA|2027
+Yan Eteki|DM|29|700|CMR
 Арам Хамоян|DM|26|250|ARM
 Valentin Costache|RW|28|800|ROU
 Гор Манвелян|AM|24|400|ARM|2027
 Алберт Гарегинян|AM|17|100|ARM
 Marin Jakolis|LW|29|800|CRO|2027
+Bilal Fofana|LW|20|150|FRA
 Hélder Ferreira|RW|29|900|POR|2028
 Brian Oddei|RW|24|200|GHA|2027
 Завен Худавердян|ST|19|200|ARM
@@ -77,6 +81,7 @@ Mohamed Bamba|CM|21|250|CIV|2027
 Алишер Рахимов|AM|24|500|TJK|2027
 Witi|LW|30|400|MOZ
 Геворг Тарахчян|LW|24|250|ARM
+Эдгар Малакян|LW|36|75|ARM|2027
 Iman Griffith|RW|24|250|NED
 Iasonas Pikis|ST|25|325|CYP
 Steven Alfred|ST|29|150|NGA|2027
@@ -99,6 +104,7 @@ Rafael Jesus|DM|19|250|BRA
 Даниэль Агхбалян|DM|27|200|ARM
 Hussein Adebayo|DM|18|50|NGA
 Ifeanyi David Nduka|CM|22|175|NGA
+Карен Налбандян|AM|24|400|ARM
 Daouda Togola|AM|18|50|MLI
 Domi Jaurès Massoumou|LW|23|650|CGO|2028
 Joseph Sabobo|LW|20|300|ZAM
@@ -117,6 +123,7 @@ Andrija Dragojevic|GK|34|75|MNE
 Петик Манукян|CB|20|200|ARM
 Евгений Цымбалюк|CB|30|200|UKR
 Арман Гхазарян|CB|25|175|ARM
+Жирайр Маргарян|LB|29|300|ARM|2027
 Жора Дадамян|LB|18|25|ARM
 Харитон Айвазян|RB|22|175|ARM
 Нарек Агхасарян|DM|25|250|ARM
@@ -147,12 +154,14 @@ Enoch Mensah Nkrumah|LB|20|75|GHA
 Alex|RB|19|100|BRA|2027
 Adedayo Saheed Akanni|RB|18|50|NGA
 Josue Gaba|RB|24|50|CIV
+Sargis Gaboyan|RB|20|500|BEL
 Ibrahim Isty Daniel|DM|21|125|NGA|2027
 Вахрам Махсудян|DM|23|125|ARM|2027
 Chimuka Lweendo|CM|18|125|ZAM|2027
 Aminu Ajanda Inusa|CM|19|10|NGA|2027
 Nascimento|CM|24|500|BRA
 Тигран Саргсян|RW|23|25|ARM|2027
+Петрос Аветисян|AM|30|175|ARM|2027
 Даныло Полонскьи|AM|24|50|UKR|2027
 Emmanuel Prince Obinna|LW|19|100|NGA|2028
 Brayann Santiago|LW|18|50|BRA
@@ -164,6 +173,7 @@ Kone Kleyba Boukari|ST|18|25|CIV` },
     { id: 'bkma', name: 'БКМА', city: 'Ереван', stadium: 'Стадион «Ереван»', cap: 8000, colors: ['#e30613', '#0055a4'], players: `
 Хайк Гхазарян|GK|20|150|ARM|2027
 Артём Давидов|GK|19|10|ARM|2028
+Аргишти Петросян|CB|34|150|ARM
 Погхос Крмзян|CB|22|125|ARM
 Давит Дохоян|CB|18|125|ARM|2028
 Артур Мовсесян|CB|18|75|ARM|2028
@@ -203,9 +213,11 @@ Mariano Ahouangbo|DM|23|250|BEN
 Dean Titkov|DM|22|100|AUT
 Leo Reis|CM|20|125|POR
 Артур Исраелян|CM|22|75|ARM
+Lucca|AM|22|150|LUX
 Патвакан Аветисян|AM|25|125|ARM|2027
 Tomás Rocha|LW|22|75|POR|2028
 João Adriano|RW|23|225|BRA|2028
+Артём Аванесян|RW|27|175|ARM
 Kalifala Doumbia|ST|22|225|MLI|2027
 Bertrand Mani|ST|29|150|CHA|2027
 Ethan Lizalda|ST|24|125|COL` },
@@ -225,6 +237,7 @@ Mohamed Lamine Fofana|DM|20|150|CIV
 Беник Ховханнисян|DM|33|125|ARM
 Moussa Kante|CM|21|175|CIV|2027
 Aboubacar Sidick Ouattara|CM|20|150|CIV
+Артур Григорян|CM|33|125|ARM|2027
 Okuchukwu Precious Chukwu|CM|19|100|NGA
 Александр Алексанян|CM|19|50|ARM|2028
 Нарек Алавердян|RW|24|150|ARM
@@ -240,6 +253,7 @@ Sindou Junior Bakayoko|ST|20|25|CIV` },
 Сергей Микаелян|GK|24|50|ARM
 Ваче Габриелян|GK|19|25|ARM
 Есаьи Багхрамян|CB|18|10|ARM
+Армен Саргсян|CB|22|150|ARM
 Ousmane Konaté|CB|21|125|SEN
 Vayanga Doumbia|CB|21|100|CIV|2027
 Christ Yann Lago|CB|21|100|CIV
@@ -276,6 +290,7 @@ Donassy Ibrahim Coulibaly|CB|24|25|CIV
 Мхер Тарлоян|RB|21|150|ARM
 Ховханнес Пахлеванян|RB|21|125|ARM
 Самвел Гхукасян|RB|24|50|ARM
+Рафик Мисакян|DM|26|225|ARM
 Рудик Мкртчян|DM|27|175|ARM
 Левон Дарбинян|CM|24|150|ARM
 Сергей Манукян|RW|22|150|ARM
@@ -297,6 +312,7 @@ Riad Belhadj|CB|24|125|ALG
 Amanallah Souassi|CB|23|100|TUN
 Артём Литвиаков|CB|30|100|MDA
 Перч Погхикян|CB|26|75|ARM
+Ален Карапетян|CB|30|50|ARM|2027
 Артур Меликян|CB|24|25|ARM|2027
 Miguel Silva|LB|28|100|POR
 Эрик Согхомонян|LB|26|50|ARM|2027

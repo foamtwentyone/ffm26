@@ -38,6 +38,7 @@ Martin Zlomislic|GK|28|2000|BIH|2029
 Шахрудин Махаммадалиев|GK|32|600|AZE
 Бахлул Мустафазада|CB|29|1000|AZE|2027
 Bence Várkonyi|CB|24|500|HUN|2029
+Бадави Хусейнов|CB|35|100|AZE|2027
 Елвин Цафаркулиев|LB|25|2000|AZE|2027
 Bruno Langa|LB|28|1000|MOZ|2029
 Jérémie Gnali|LB|24|400|FRA|2028
@@ -74,6 +75,7 @@ Jorge Silva|RB|30|650|POR|2027
 Álex Serrano|CM|31|800|ESP|2027
 Roberto Olabe|CM|30|600|ESP|2027
 Steeve Beusnard|CM|34|250|FRA|2028
+Вейсал Рзаев|CM|24|125|AZE
 Рахим Садыхов|AM|30|1200|AZE|2027
 Хаял Нацафов|AM|28|350|AZE
 David Tavares|AM|27|175|CPV|2028
@@ -99,6 +101,7 @@ Sessi D'Almeida|DM|30|400|BEN|2027
 Ifeanyi Mathew|CM|29|650|NGA
 Эмиль Сафаров|CM|23|500|AZE|2027
 Gustavo Klismahn|CM|26|500|BRA|2028
+Емин Махмудов|CM|34|450|AZE|2027
 Freddy Vargas|LW|27|900|VEN|2028
 Alen Skribek|LW|25|400|HUN|2028
 Андрий Штогрин|LW|27|350|UKR|2027
@@ -110,6 +113,7 @@ Bassala Sambou|ST|29|400|ENG
 Adeleke Akinyemi|ST|28|250|NGA|2028` },
     { id: 'zira', name: 'Зиря', city: 'Баку', stadium: 'Стадион «Баку»', cap: 8000, colors: ['#00a650', '#ffffff'], players: `
 Айдын Байрамов|GK|30|400|AZE|2028
+Maycon Cleiton|GK|27|250|BRA|2028
 Хусейнали Кулиев|GK|27|200|AZE|2028
 Анар Назиров|GK|41|500|AZE
 Ruan Renato|CB|32|750|BRA|2027
@@ -118,6 +122,7 @@ Mehdi Mchakhchekh|CB|22|325|MAR|2029
 Елчин Алицанов|CB|27|300|AZE|2028
 Issa Djibrilla|LB|30|550|NIG|2027
 Henrique Gelain|LB|31|300|BRA|2027
+Кисмат Алиев|RB|30|1400|AZE|2027
 Амин Сейдиев|RB|27|650|AZE|2028
 Исмаьил Ибрахимли|DM|28|550|AZE|2027
 Guima|DM|30|500|MOZ|2027
@@ -154,6 +159,7 @@ Mohamed Mara|LW|29|350|GUI|2027
 Charles Boli|RW|28|600|FRA
 Нихат Мехралиев|RW|21|50|AZE|2027
 Улви Исгандаров|ST|29|300|AZE|2027
+Агададаш Салянский|ST|22|150|AZE|2027
 Abdallah Sudi|ST|26|125|BDI|2027` },
     { id: 'sumgayit', name: 'Сумгайыт', city: 'Сумгайыт', stadium: 'Стадион «Сумгайыт»', cap: 8000, colors: ['#0055a4', '#ffffff'], players: `
 Хаял Фарзуллаев|GK|21|350|AZE|2027
@@ -164,11 +170,13 @@ Renan Santana|CB|21|1000|BRA|2029
 Easah Suliman|CB|28|200|PAK|2027
 Imani Barker|CB|24|175|GUY|2029
 Хоццат Хакверди|CB|33|100|AZE|2027
+Канан Фейзиев|CB|19|75|AZE
 Keffel|LB|27|750|BRA|2027
 Надир Оруцов|LB|19|250|AZE|2028
 Айхан Сулейманлы|LB|22|100|AZE|2027
 Tiago Almeida|RB|25|700|POR|2027
 Руслан Алиев|DM|22|25|AZE
+Сабухи Абдуллазада|CM|24|1500|AZE|2027
 Roi Kehat|CM|34|200|ISR|2027
 Ronaldo Vásquez|AM|27|750|DOM|2027
 Masaki Murata|AM|27|400|JPN|2027
@@ -211,6 +219,7 @@ Ayman Bouali|ST|27|500|MAR` },
 Имам Али|GK|19|25|AZE|2028
 Айхан Аббасзада|GK|19|500|AZE|2028
 Diogo Rollo|CB|24|550|BRA|2027
+Азар Салахлы|CB|32|200|AZE|2027
 Бахтияр Хасанализада|CB|33|150|AZE|2027
 Акбар Еюбов|CB|21|500|AZE|2027
 Edwin Banguera|LB|30|800|COL|2027
@@ -233,10 +242,12 @@ Diogo Cardoso|ST|24|175|POR|2027
 Rogério|GK|27|275|POR|2027
 Елгун Байрамов|GK|23|25|AZE|2027
 Рашад Азизли|GK|32|500|AZE|2027
+Diogo Verdasca|CB|29|650|POR|2028
 Мате Абуладзе|CB|26|350|GEO
 David Domgjoni|CB|29|250|KVX|2027
 Хусейн Бабаев|CB|23|500|AZE|2027
 Adama Fofana|LB|27|250|BFA|2027
+Максад Исаев|LB|32|250|AZE
 Урфан Аббасов|LB|34|175|AZE|2027
 Умид Самадов|LB|23|100|AZE|2027
 Рафаел Махаррамли|RB|27|550|AZE|2027
@@ -258,6 +269,7 @@ Kenneth Kalunga|RW|29|500|ZAM|2027
 Asumah Abubakar|ST|29|175|POR|2027` },
     { id: 'gabala', name: 'Габала', city: 'Габала', stadium: 'Стадион «Габала»', cap: 8000, colors: ['#e30613', '#000000'], players: `
 Arthur|GK|25|700|BRA|2027
+Салахат Агаев|GK|35|100|AZE|2027
 Хабиб Хушанов|GK|19|500|AZE|2027
 Isaac Amoah|CB|25|350|GHA|2027
 Nathan Monzango|CB|25|300|FRA|2027
@@ -290,6 +302,7 @@ Ismaheel Akinade|ST|32|125|NGA|2027` },
 Maudo Jarjué|CB|29|300|GAM|2028
 Christopher Mamengi|CB|25|300|NED|2027
 Мурад Мусаев|CB|32|125|AZE|2027
+Тарлан Кулиев|CB|34|500|AZE|2027
 Oumar Diaw|CB|25|500|FRA|2028
 Andrei Dragu|LB|27|400|ROU|2027
 Исмаьил Зулфукарлы|LB|25|500|AZE

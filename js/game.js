@@ -43,6 +43,12 @@
       this.players = state.players;
       this.teams = state.teams;
       this._tables = {};
+      // старые сохранения: в базе не хватало игроков с отметкой капитана, травмы или дисквалификации (Винисиус, Вальверде,
+      // Акинфеев…) — добавляем их в свои клубы; если в заявке нет места — в свободные агенты
+      if (!state.dbV2) {
+        state.dbV2 = true;
+        if (FM.leagues) this.addMissingRealPlayers();
+      }
       if (this.migrateMoney) {
         delete this.migrateMoney;
         for (const id in this.players) {
@@ -55,6 +61,27 @@
         }
         for (const id in this.teams) { const t = this.teams[id]; t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10; }
       }
+    }
+
+    addMissingRealPlayers() {
+      const s = this.s;
+      const have = new Set(Object.values(this.players).map((p) => p.name));
+      let n = 0;
+      for (const L of FM.leagues) for (const T of L.teams) {
+        const team = this.teams[T.id];
+        if (!team) continue; // лиги, которых ещё нет в карьере, добавятся целиком со следующего сезона
+        for (const line of (T.players || '').split('\n').map((x) => x.trim()).filter(Boolean)) {
+          const f = line.split('|');
+          if (have.has(f[0])) continue;
+          const d = { name: f[0], pos: f[1], age: +f[2], value: +f[3], nat: f[4] || 'RUS', until: /^\d{4}$/.test(f[5] || '') ? +f[5] : null };
+          const into = team && team.players.length < MAX_SQUAD ? team : null;
+          const p = this.createPlayer(d, into);
+          if (!into) { p.club = null; s.freeAgents.push(p.id); }
+          have.add(f[0]);
+          n++;
+        }
+      }
+      if (n) this.news(`В базу добавлены ${n} игроков, которых раньше не хватало в составах клубов.`);
     }
 
     static unpackPlayer(p) {
@@ -118,7 +145,7 @@
         const base = c.level === 'top' ? lv[lv.length - 1] : c.level === 'low' ? lv[0] : lv[Math.floor(lv.length / 2)];
         for (const pid of t.players) delete g.players[pid];
         t.players = [];
-        g.fillSquad(t, base);
+        g.fillSquad(t, base, true);
         t.money = Math.round(g.squadValue(t) * 0.12);
         t.sponsor = Math.round(g.wageBill(t) * 0.97 * 10) / 10;
         g.pickFormation(t);
@@ -181,12 +208,6 @@
         this.pickFormation(t);
       }
       if (!fresh) return;
-      for (let i = 0; i < 45; i++) {
-        const tier = FM.pick([1, 2, 2, 3, 3, 3]);
-        const base = [0, 63, 56, 50][tier];
-        const p = this.genPlayer(FM.pick(FM.POS), base + FM.ri(-4, 3), FM.ri(19, 33), null);
-        s.freeAgents.push(p.id);
-      }
     }
 
     createPlayer(d, team) {
@@ -227,23 +248,33 @@
       return byRep;
     }
 
-    fillSquad(team, baseOvr) {
+    // Добор состава. full — состав своего клуба с нуля (создание клуба): игроки любого возраста.
+    // Иначе — только молодёжь из академии (17–19 лет, ниже уровня основы, с запасом роста) и только до минимума:
+    // 2 вратаря и 18 игроков (в межсезонье — 21). Реальные составы в начале игры почти никогда не добираются.
+    fillSquad(team, baseOvr, full = false) {
       const base = baseOvr || this.teamBaseOvr(team);
-      const count = {};
-      for (const id of team.players) {
-        const p = this.players[id];
-        count[p.pos] = (count[p.pos] || 0) + 1;
+      const sq = () => team.players.map((id) => this.players[id]);
+      const youth = (pos) => {
+        const p = this.genPlayer(pos, base - 9 + FM.gauss(0, 3), FM.ri(17, 19), team);
+        p.pot = Math.min(92, p.ovr + FM.ri(8, 20));
+        p.contract = this.s.season + FM.ri(2, 4);
+        this.revalue(p);
+        return p;
+      };
+      if (full) {
+        const count = {};
+        for (const p of sq()) count[p.pos] = (count[p.pos] || 0) + 1;
+        for (const pos of FM.POS) for (let i = count[pos] || 0; i < SQUAD_NEED[pos]; i++) this.genPlayer(pos, base + FM.gauss(-2, 3.5), FM.ri(18, 33), team);
+        while (team.players.length < 23) this.genPlayer(FM.pick(['CB', 'CM', 'ST', 'LW', 'RW', 'DM']), base + FM.gauss(-3, 3.5), FM.ri(17, 32), team);
+        return;
       }
-      for (const pos of FM.POS) {
-        for (let i = count[pos] || 0; i < SQUAD_NEED[pos]; i++) {
-          const age = FM.ri(18, 33);
-          const o = base + FM.gauss(-2, 3.5) - (age < 21 ? 3 : 0);
-          this.genPlayer(pos, o, age, team);
-        }
-      }
-      while (team.players.length < 23) {
-        const age = FM.ri(17, 32);
-        this.genPlayer(FM.pick(['CB', 'CM', 'ST', 'LW', 'RW', 'DM']), base + FM.gauss(-3, 3.5), age, team);
+      while (sq().filter((p) => p.pos === 'GK').length < 2) youth('GK');
+      const min = this.s.matches && Object.keys(this.s.matches).length ? 21 : 18;
+      const order = ['CB', 'CM', 'ST', 'LB', 'RB', 'DM', 'LW', 'RW', 'AM'];
+      for (let k = 0; team.players.length < min; k++) {
+        // недостающая позиция: где игроков меньше всего относительно нужного
+        const need = order.slice().sort((a, b) => sq().filter((p) => p.pos === a).length / SQUAD_NEED[a] - sq().filter((p) => p.pos === b).length / SQUAD_NEED[b])[0];
+        youth(need);
       }
     }
 
@@ -1105,7 +1136,7 @@
       const moves = this.seasonMoves().filter(([tid, lid]) => this.teams[tid].league !== lid)
         .map(([tid, lid]) => ({ id: tid, to: lid, from: this.teams[tid].league, up: s.leagues[lid].tier < s.leagues[this.teams[tid].league].tier }));
       const row = this.table(u.league).find((r) => r.id === u.id);
-      const all = (p) => ({ apps: p.st.apps + p.cst.apps, g: p.st.g + p.cst.g, a: p.st.a + p.cst.a, r: p.st.apps + p.cst.apps ? (p.st.rsum + p.cst.rsum) / (p.st.apps + p.cst.apps) : 0 });
+      const all = (p) => { const x = p.pst || {}; const apps = p.st.apps + p.cst.apps + (x.apps || 0); return { apps, g: p.st.g + p.cst.g + (x.g || 0), a: p.st.a + p.cst.a + (x.a || 0), r: apps ? (p.st.rsum + p.cst.rsum + (x.rsum || 0)) / apps : 0 }; };
       const top = (f) => this.squad(u).map((p) => [p, f(all(p))]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1])[0] || null;
       return {
         year: s.season, leagues, euro, cups, moves,
@@ -1137,12 +1168,13 @@
       for (const id in this.players) {
         const p = this.players[id];
         if (!p.club || !this.teams[p.club]) continue;
-        const apps = p.st.apps + p.cst.apps;
+        const x = p.pst || {};
+        const apps = p.st.apps + p.cst.apps + (x.apps || 0);
         if (apps < 12) continue;
         const t = this.teams[p.club];
         const w = FM.leagueW(this.countryOf(t.league), this.tierOf(t));
-        const avg = (p.st.rsum + p.cst.rsum) / apps;
-        const g = p.st.g + p.cst.g, a = p.st.a + p.cst.a, cs = p.st.cs + p.cst.cs;
+        const avg = (p.st.rsum + p.cst.rsum + (x.rsum || 0)) / apps;
+        const g = p.st.g + p.cst.g + (x.g || 0), a = p.st.a + p.cst.a + (x.a || 0), cs = p.st.cs + p.cst.cs + (x.cs || 0);
         const gk = p.pos === 'GK';
         let sc = (avg - 6.4) * 30 + Math.min(apps, 50) * 0.25 + (gk ? cs * 1.0 : g * 0.7 + a * 0.6);
         sc = sc * w + (p.ovr - 70) * 2.2;
@@ -1250,7 +1282,9 @@
       // игроки: возраст, развитие, контракты, завершение карьеры
       for (const id in this.players) {
         const p = this.players[id];
-        p.car.apps += p.st.apps + p.cst.apps; p.car.g += p.st.g + p.cst.g; p.car.a += p.st.a + p.cst.a;
+        const x = p.pst || {};
+        p.car.apps += p.st.apps + p.cst.apps + (x.apps || 0); p.car.g += p.st.g + p.cst.g + (x.g || 0); p.car.a += p.st.a + p.cst.a + (x.a || 0);
+        delete p.pst;
         p.st = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
         p.cst = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
         p.ycAcc = 0;
@@ -1847,6 +1881,7 @@
     // fee: плата за аренду, buy: цена опции выкупа или 0 }. Все аренды — до конца сезона.
     loanMove(p, to, terms) {
       const from = this.teams[p.club];
+      this.stashStats(p, to);
       this.removeFromTeam(p);
       p.club = to.id;
       to.players.push(p.id);
@@ -2310,9 +2345,23 @@
     }
 
     // opts: inst (рассрочка 40/30/30), sellOn (% продавцу с будущей продажи), role, release, agent, bonus
+    // Статистика сезона за прежний клуб уходит в p.pst: в таблицах лидеров новой лиги учитываются только матчи за новый
+    // клуб. Внутри одной лиги матчи продолжают идти в зачёт лиги (как в жизни), кубковые — внутри одной страны.
+    stashStats(p, to) {
+      const fromT = p.club ? this.teams[p.club] : null;
+      if (!fromT) return;
+      const sameLeague = fromT.league === to.league, sameC = this.countryOf(fromT.league) === this.countryOf(to.league);
+      const add = (a, b) => { for (const k in b) a[k] = (a[k] || 0) + (b[k] || 0); };
+      p.pst = p.pst || { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 };
+      if (!sameLeague && p.st.apps) { add(p.pst, p.st); p.st = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }; }
+      if (!sameC && p.cst.apps) { add(p.pst, p.cst); p.cst = { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }; }
+      if (!p.pst.apps) delete p.pst;
+    }
+
     transfer(p, to, fee, wage, years, opts = {}) {
       const s = this.s;
       const from = p.club ? this.teams[p.club] : null;
+      this.stashStats(p, to);
       const now = opts.inst ? Math.round(fee * 0.4) : fee;
       if (from) {
         from.money += now;

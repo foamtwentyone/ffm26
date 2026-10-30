@@ -6,22 +6,26 @@ FM.addLeague({
   ticket: 15, prize: [10000, 9550, 9100, 8700, 8250, 7800, 7350, 6900, 6450, 6050, 5600, 5150, 4700, 4250, 3800, 3400, 2950, 2500],
   teams: [
     { id: 'anderlecht', name: 'Андерлехт', city: 'Брюссель', stadium: 'Lotto Park', cap: 28063, colors: ['#5b2b82', '#ffffff'], players: `
+Colin Coosemans|GK|34|1200|BEL|2028
 Justin Heekeren|GK|25|500|GER|2029
 Mattis Seghers|GK|17|200|BEL|2028
 Michiel Haentjens|GK|20|200|BEL|2027
 Andrew Omobamidele|CB|24|8000|IRL|2027
 Giulian Biancone|CB|26|3500|FRA|2029
+Lucas Hey|CB|23|2500|DEN|2029
 Léo Pétrot|CB|29|2000|FRA|2028
 Zoumana Keita|CB|20|400|GER|2029
 Kaïs Barry|CB|20|300|MAR|2027
 Олег Реабциук|LB|28|2500|MDA|2029
 Ludwig Augustinsson|LB|32|1500|SWE|2027
 Ali Maamar|RB|21|5000|MAR|2028
+Ilay Camara|RB|23|3000|SEN|2030
 Killian Sardella|RB|24|2500|BEL|2028
 Marco Kana|DM|24|4000|BEL|2028
 Enric Llansana|DM|25|2000|NED|2029
 Noah Kalonji|DM|17|1000|BEL|2028
 Romeo Amane|CM|23|5000|CIV|2030
+Ilias Koutsoupias|CM|25|3000|GRE|2028
 Lukas Ambros|AM|22|6500|CZE|2030
 Mario Stroeykens|AM|22|3000|COD|2028
 Thelo Aasgaard|AM|24|2800|NOR|2027
@@ -47,6 +51,7 @@ Luca Schelfhout|CB|19|400|BEL|2030
 Daam Foulon|LB|27|2000|BEL|2028
 Eran Tuypens|LB|20|750|BEL|2029
 Aaron Ibrahim|LB|18|200|BEL|2028
+Maxime Busi|RB|27|1500|BEL|2029
 Semm Renders|RB|18|1200|BEL|2029
 Arthur Vermeeren|DM|21|15000|BEL|2027
 Mauricio Benítez|DM|22|2500|ARG|2030
@@ -54,6 +59,7 @@ Bahmed Deuff|DM|20|2000|MTN|2027
 Xander Dierckx|CM|17|5000|BEL|2028
 Modibo Fofana|CM|18|3000|CIV|2030
 Christopher Scott|CM|24|2200|GER|2028
+Youssef Hamdaoui|CM|18|1500|MAR|2029
 Louie Van Gelder|CM|17|500|BEL|2028
 Thibo Somers|RW|27|3000|BEL|2028
 Farouck Adekami|AM|20|1500|CIV|2027
@@ -78,9 +84,11 @@ Bruno Godeau|CB|34|300|BEL|2027
 Christophe Janssens|LB|28|500|BEL|2027
 Dominic Thompson|LB|26|400|ENG|2028
 Cheick Oumar Konaté|RB|22|1200|MLI|2028
+Laurent Jans|RB|34|250|LUX|2027
 Sieben Dewaele|DM|27|800|BEL|2028
 Cheick Condé|DM|26|700|GUI|2028
 Noah Mawete|DM|21|250|COD|2028
+Léandre Kuavita|CM|22|500|BEL|2028
 Ferre Slegers|AM|21|800|BEL|2028
 Arno Verschueren|AM|29|700|BEL|2029
 Guillaume De Schryver|AM|29|500|BEL|2027
@@ -88,6 +96,7 @@ Christian Brüls|AM|38|150|BEL|2027
 Jearl Margaritha|LW|26|1800|CUW|2028
 Chris Lokesa|LW|21|1000|BEL|2028
 Ilyes Najim|LW|24|300|FRA|2027
+Kurt Abrahams|RW|29|500|RSA|2027
 Victor Olatunji|ST|27|2000|NGA|2027
 Elohim Kaboré|ST|19|800|BFA|2027
 Lennart Mertens|ST|34|300|BEL|2027
@@ -107,12 +116,14 @@ Tayo Adaramola|LB|22|800|IRL|2030
 Gary Magnée|RB|27|2200|BEL|2028
 Ibrahim Diakité|RB|22|2000|GUI|2028
 Lukas Mondele|DM|22|1000|BEL|2029
+Hannes Van Der Bruggen|DM|33|400|BEL|2027
 Luke Le Roux|CM|26|800|RSA|2028
 Lazare Amani|CM|28|700|CIV|2028
 Erick Nunes|RW|22|600|BRA|2029
 Viggo Martens|AM|19|600|BEL|2029
 Lucas Michal|LW|21|3500|FRA|2027
 Abdoulie Manneh|LW|22|3000|GAM|2027
+Joel Ndala|LW|20|2500|ENG|2030
 Tunde Akinsola|LW|23|1500|NGA|2030
 Charles Herrmann|RW|20|800|GER|2029
 Steve Ngoura|ST|21|4000|FRA|2028
@@ -124,6 +135,7 @@ Mohamed Koné|GK|24|2000|CIV|2027
 Martin Delavallée|GK|22|1000|BEL|2027
 Arthur Cremer|GK|26|100|BEL|2028
 Check Keita|CB|23|3500|MLI|2027
+Aiham Ousou|CB|26|3000|SYR|2028
 Massamba Sow|CB|22|700|FRA|2027
 Noah Solheid|CB|23|400|BEL|2029
 Naël Piron|CB|18|150|BEL|2028
@@ -139,6 +151,7 @@ Yassine Khalifi|CM|21|3000|MAR|2029
 Patrick Pflücke|RW|29|1800|GER|2027
 Jakob Napoleon Romsaas|AM|22|2000|NOR|2027
 Freddy Mbemba|LW|23|1500|FRA|2028
+Antoine Bernier|RW|29|1500|BEL|2028
 Gaku Nawata|ST|20|500|JPN|2027
 Aurélien Scheidler|ST|28|2000|FRA|2028
 Adama Bojang|ST|22|1200|GAM|2027
@@ -148,6 +161,7 @@ Yann Sommer|GK|37|2000|SUI|2029
 Nordin Jackers|GK|29|1000|BEL|2029
 Argus Vanden Driessche|GK|19|1000|BEL|2029
 Axl De Corte|GK|20|400|BEL|2028
+Joel Ordóñez|CB|22|33000|ECU|2029
 Han-beom Lee|CB|24|7000|KOR|2029
 Jorne Spileers|CB|21|3000|BEL|2028
 Brandon Mechele|CB|33|2800|BEL|2028
@@ -162,6 +176,7 @@ Gianluca Okon-Engstler|DM|17|1500|ITA|2029
 Cheveyo Tsawa|CM|19|6000|SUI|2030
 Hugo Vetlesen|CM|26|5000|NOR|2029
 Félix Lemaréchal|AM|23|6000|FRA|2029
+Hans Vanaken|AM|34|5000|BEL|2028
 Tian Nai Koren|AM|17|3000|SVN|2029
 Jan Virgili|LW|20|15000|ESP|2031
 Mamadou Diakhon|LW|21|7000|SEN|2029
@@ -181,6 +196,7 @@ Josué Kongolo|CB|20|7000|BEL|2030
 Christiaan Ravych|CB|24|3000|BEL|2030
 Elie Mbavu|CB|17|3000|BEL|2028
 Adrián Palacios|CB|22|800|VEN|2028
+Yaimar Medina|LB|21|4000|ECU|2029
 Joris Kayembe|LB|32|2000|COD|2027
 Christian Akpan|LB|21|200|NGA|2030
 Milan Roganovic|RB|20|4000|MNE|2031
@@ -189,8 +205,10 @@ Ken Nkuba|RB|24|1000|BEL|2028
 Emmanuel Sarfo|RB|19|300|BEL|2027
 Ibrahima Sory Bangoura|DM|22|6000|GUI|2030
 Nikolas Sattlberger|DM|22|2200|AUT|2029
+Bryan Heynen|CM|29|8000|BEL|2029
 Benjamin Tahirović|CM|23|4500|BIH|2027
 August De Wannemacker|CM|17|2000|BEL|2028
+Kenan Haroun|CM|20|400|BEL|2029
 Jeppe Erenbjerg|AM|26|5500|DEN|2029
 Daan Heymans|AM|27|4000|BEL|2029
 Noah Adedeji-Sternberg|LW|21|4000|BEL|2028
@@ -200,16 +218,21 @@ Rafiu Durosinmi|ST|23|10000|NGA|2030
 Aaron Bibout|ST|22|3500|CMR|2030
 Jerry Afriyie|ST|19|3500|GHA|2031` },
     { id: 'gent', name: 'Гент', city: 'Гент', stadium: 'Planet Group Arena', cap: 20185, colors: ['#0055a4', '#ffffff'], players: `
+Davy Roef|GK|32|2500|BEL|2029
 Kjell Peersman|GK|22|400|BEL|2030
 Bas Evers|GK|17|400|BEL|2028
+Tom Vandenberghe|GK|34|250|BEL|2027
 Victor De Coninck|GK|20|75|BEL|2027
 Maksim Paskotsi|CB|23|3500|EST|2029
+Mouhamed Ngom|CB|26|3000|SEN|2031
 Siebe Van der Heyden|CB|28|3000|BEL|2028
 Matties Volckaert|CB|24|2500|BEL|2029
 Christian Burgess|CB|35|1800|ENG|2028
 Mamadou Diallo|CB|19|300|SEN|2029
+Hannes Vernemmen|CB|21|200|BEL|2028
 Tiago Araújo|LB|25|5000|POR|2028
 Abdoul Ayinde|LB|21|600|BFA|2028
+Lars Cooman|LB|23|200|BEL|2029
 Gilles De Meyer|RB|20|500|BEL|2028
 Tibe De Vlieger|CM|20|8000|BEL|2030
 Mathias Delorge|CM|22|7000|BEL|2028
@@ -219,14 +242,18 @@ Mohammed El Âdfaoui|CM|18|2000|BEL|2028
 Matisse Samoise|RW|24|2500|BEL|2028
 Abdelkahar Kadri|AM|26|2500|ALG|2029
 Aimé Omgba|AM|24|1000|NED|2029
+Pieter Gerkens|AM|31|600|BEL|2027
 Michel-Ange Balikwisha|LW|25|3000|COD|2027
 Momodou Sonko|LW|21|3000|SWE|2028
 El Hadji Seck|LW|19|2000|SEN|2030
 Kyrell Wilson|RW|21|1000|ENG|2030
+Josué Vergara|ST|19|5000|PAN|2031
 Hyllarion Goore|ST|21|4000|CIV|2029
 Ibrahima Cissé|ST|19|3000|SEN|2028
+Max Dean|ST|22|2500|ENG|2028
 Abubakar Abdullahi|ST|20|700|NGA|2028` },
     { id: 'kortrijk', name: 'Кортрейк', city: 'Кортрейк', stadium: 'Guldensporenstadion', cap: 9399, colors: ['#e30613', '#ffffff'], players: `
+Marko Ilic|GK|28|800|SRB|2029
 Patrik Gunnarsson|GK|25|400|ISL|2028
 Ebbe De Vlaeminck|GK|20|200|BEL|2028
 Tristen Alliet|GK|21|50|BEL|2027
@@ -237,11 +264,16 @@ Harrison Murray-Campbell|CB|20|750|ENG|2027
 Gilles Ruyssen|CB|32|600|BEL|2028
 Matthew Anderson|LB|22|1200|SCO|2028
 Guust Lamerand|LB|18|150|BEL|2029
+Basile Vroninks|RB|19|400|BEL|2029
 Mohamed Fofana|RB|20|250|CIV|2028
 Gilles Dewaele|RB|30|200|BEL|2027
+Jamie Roche|DM|25|2500|SWE|2029
 Boris Lambert|DM|26|800|BEL|2029
+Nayel Mehssatou|CM|24|1000|CHI|2029
 Liam De Smet|CM|22|450|BEL|2028
+Brecht Dejaegere|CM|35|300|BEL|2027
 Ken Masui|LW|25|900|JPN|2027
+Rok Storman|AM|22|1000|SVN|2027
 Lennard Hens|AM|30|300|BEL|2028
 Shandre Campbell|LW|21|1000|RSA|2030
 Jellert Van Landschoot|LW|29|800|BEL|2028
@@ -253,6 +285,7 @@ Thierry Ambrose|ST|29|1800|GLP|2027
 Sixtus Ogbuehi|ST|23|200|NGA|2028
 Abdoul Diop|CM|21|100|SEN|2028` },
     { id: 'la_louviere', name: 'Ла-Лувьер', city: 'Ла-Лувьер', stadium: 'Easi Arena', cap: 8050, colors: ['#00a650', '#ffffff'], players: `
+Marcos Peano|GK|28|2000|ARG|2029
 Tiago Pereira Cardoso|GK|20|1000|LUX|2027
 Lucas Monteiro|GK|21|100|POR|2027
 Théo Radelet|GK|18|50|BEL|2029
@@ -265,11 +298,13 @@ Mehdi Boukamir|CB|22|500|MAR|2027
 Wagane Faye|CB|32|400|SEN|2027
 Thierry Lutonda|LB|25|600|BEL|2027
 Nolan Gillot|LB|23|500|FRA|2028
+Shaquil Delos|RB|27|750|FRA|2028
 Marius Courcoul|DM|19|2500|FRA|2027
 Ismaila Coulibaly|CM|25|1000|MLI|2028
 Mame Wade|CM|24|600|SEN|2028
 Anas Tajaouart|CM|21|600|MAR|2027
 Mátyás Kovács|RW|23|700|HUN|2028
+Joël Ito|AM|28|700|BEL|2028
 Bryan Soumaré|AM|27|200|FRA|2027
 Timéo Kerckhofs|AM|17|150|BEL|2028
 Noah Makembo-Ntemo|AM|19|100|BEL|2027
@@ -277,22 +312,28 @@ Quentin Benaets|RW|23|100|BEL|2027
 Mustapha Isah|ST|22|2500|NGA|2029
 Zsombor Gruber|ST|22|1500|HUN|2029
 Elias Filet|ST|24|1000|FRA|2028
-Léandro Rousseau|ST|23|1000|BEL|2028` },
+Léandro Rousseau|ST|23|1000|BEL|2028
+Mouhamed Belkheir|ST|27|500|ALG|2028` },
     { id: 'lommel', name: 'Ломмел', city: 'Ломмел', stadium: 'Soeverein Stadion', cap: 12911, colors: ['#00a650', '#ffffff'], players: `
 Matthias Pieklak|GK|20|1500|BEL|2029
 Nikola Ivezic|GK|23|200|MNE|2027
 Rik Vercauteren|GK|25|100|BEL|2027
 Melvin Ramundo|GK|19|50|BEL|2027
 Shawn Adewoye|CB|26|900|BEL|2028
+Dries Wouters|CB|29|800|BEL|2027
 Timothy Eyoma|CB|26|600|ENG|2027
+Jhon Banguera|CB|22|400|COL|2028
 Jesper Tolinsson|CB|23|400|SWE|2028
+Henry Oware|CB|22|400|GHA|2028
 Emile Vandecraen|CB|18|100|BEL|2028
 Josias Lama|CB|21|50|BEL|2027
+Sam de Grand|LB|22|1500|NED|2027
 Jason van Duiven|RB|21|1000|NED|2029
 Tristan Gooijer|RB|22|1000|NED|2028
 Isaiah Dada-Mascoll|DM|20|500|ENG|2027
 Joey Pelupessy|DM|33|400|IDN|2027
 Sverre Nypan|CM|19|10000|NOR|2027
+Lucas Schoofs|CM|29|700|BEL|2027
 Djordje Gordic|CM|21|500|SRB|2027
 Nicolas Rommens|CM|31|400|BEL|2028
 Elijah Odede|LW|19|600|NGA|2027
@@ -301,6 +342,7 @@ Stredair Appuah|RW|22|1000|FRA|2027
 Tom Reyners|RW|26|900|BEL|2028
 Niek Corthouts|RW|20|150|BEL|2027
 Don-Angelo Konadu|ST|20|1500|NED|2027
+Ralf Seuntjens|ST|37|150|NED|2027
 Alexander Reumers|ST|19|150|BEL|2028` },
     { id: 'mechelen', name: 'Мехелен', city: 'Мехелен', stadium: 'Achter De Kazerne', cap: 16715, colors: ['#ffd700', '#e30613'], players: `
 Nacho Miras|GK|29|3000|ESP|2029
@@ -308,14 +350,19 @@ Ortwin De Wolf|GK|29|500|BEL|2027
 Tijn Van Ingelgom|GK|19|100|BEL|2027
 Axel Willockx|GK|19|50|BEL|2027
 José Marsà|CB|24|3500|ESP|2027
+Tommy St. Jago|CB|26|2000|CUW|2028
 Mike Eerdhuijzen|CB|26|1800|NED|2030
 Luc Marijnissen|CB|23|1500|NED|2030
 Gora Diouf|CB|23|1500|SEN|2028
+Leo Hjelde|CB|23|1500|NOR|2029
+Ian Struyf|CB|19|400|BEL|2028
 Thérence Koudou|RB|21|4000|FRA|2029
 Kobe Corbanie|RB|21|500|BEL|2029
+Fredrik Hammar|DM|25|2500|SWE|2028
 Massimo Decoene|DM|22|400|BEL|2027
 Ryan Teague|DM|24|400|AUS|2028
 Dennis Praet|CM|32|1500|BEL|2028
+Dikeni Salifou|CM|23|1000|GER|2028
 Marco Decherf|CM|20|800|FRA|2030
 Amine Ouahabi|CM|18|100|MAR|2028
 Simion Michez|RW|24|600|CMR|2029
@@ -327,9 +374,13 @@ Myron van Brederode|LW|23|4500|NED|2029
 Cedric Van Meirvenne|LW|21|1000|BEL|2030
 Bill Antonio|RW|24|1000|ZIM|2027
 Halil Özdemir|ST|21|400|TUR|2027
+Bouke Boersma|ST|21|2500|NED|2029
+Keano Vanrafelghem|ST|23|1500|BEL|2029
 Benito Raman|ST|31|800|BEL|2027
+Adeshina Ayodele|ST|20|500|NGA|2029
 Malcolm Lohunanu-Mbasi|ST|18|500|BEL|2028` },
     { id: 'leuven', name: 'Лёвен', city: 'Лёвен', stadium: 'Den Dreef', cap: 10000, colors: ['#ffffff', '#e30613'], players: `
+Dani van den Heuvel|GK|23|800|NED|2029
 Kiany Vroman|GK|22|300|BEL|2029
 Owen Jochmans|GK|23|150|BEL|2027
 Marcel Van Dijck|GK|18|50|BEL|2027
@@ -347,6 +398,7 @@ Thibault Vlietinck|RB|29|350|BEL|2028
 Lukasz Lakomy|DM|25|1500|POL|2029
 Birger Verstraete|DM|32|700|BEL|2027
 Manuel Osifo|DM|23|400|BEL|2027
+Siebe Schrijvers|CM|30|1500|BEL|2027
 Wouter George|CM|24|1200|BEL|2030
 Bryang Kayo|CM|24|300|USA|2028
 Sebastian Murru|CM|19|150|BEL|2028
@@ -354,8 +406,10 @@ William Balikwisha|AM|27|300|COD|2028
 Hasan Bulut|AM|19|150|TUR|2027
 Matteo Heremans|AM|20|100|BEL|2027
 Emmanuel Addai|LW|25|1200|GHA|2029
+Thibaud Verlinden|LW|27|900|BEL|2028
 Henok Teklab|LW|27|800|GER|2027
 Robin Mirisola|ST|19|4000|BEL|2027
+Abdoul Traoré|ST|19|1300|GUI|2029
 Chukwubuikem Ikwuemesi|ST|25|1200|NGA|2028
 Shin Yamada|ST|26|800|JPN|2027
 Kyan Vaesen|ST|25|700|BEL|2029
@@ -368,6 +422,7 @@ Ahmad Abu Rasen|GK|22|25|KSA|2028
 Kota Takai|CB|22|5000|JPN|2027
 Joedrick Pupe|CB|29|1300|BEL|2029
 Visar Musliu|CB|31|1000|MKD|2027
+Shogo Taniguchi|CB|35|750|JPN|2027
 Jeremy Mbambi|CB|18|450|BEL|2027
 Wolke Janssens|CB|31|300|BEL|2028
 Taiga Hata|LB|24|2500|JPN|2028
@@ -393,17 +448,21 @@ Lucas Pirard|GK|31|350|BEL|2028
 Belmin Dizdarevic|GK|25|100|BIH|2027
 Ibrahim Karamoko|CB|25|5000|FRA|2030
 Ibe Hautekiet|CB|24|4000|BEL|2029
+Josué Homawoo|CB|28|2000|TOG|2027
 Dimitri Lavalée|CB|29|1500|BEL|2028
 Daan Dierckx|CB|23|1200|BEL|2028
 Noah Sy|CB|19|200|BEL|2027
 Gustav Mortensen|LB|22|4500|DEN|2030
 Henry Lawrence|RB|25|4000|ENG|2029
+Marlon Fossey|RB|28|3500|USA|2027
 Ryan Fosso|DM|24|2000|CMR|2029
 Marco Ilaimaharitra|DM|31|800|MAD|2027
 Laurens Goemaere|DM|20|600|BEL|2030
 Rayan Touzghar|CM|22|3000|MAR|2029
 Alexis Trouillet|CM|25|2000|FRA|2028
+Casper Nielsen|CM|32|1500|DEN|2028
 Tobias Mohr|LW|31|800|GER|2028
+Mohammed El Hankouri|AM|29|800|MAR|2027
 Salieu Drammeh|LW|23|2000|GAM|2029
 Sylvester Jasper|LW|25|1800|BUL|2029
 Adnane Abid|RW|23|6000|BEL|2029
@@ -416,18 +475,25 @@ Hervé Koffi|GK|30|6000|BFA|2027
 Vic Chambaere|GK|23|700|BEL|2027
 Гиорги Кавлашвили|GK|19|100|GEO|2028
 Keo Boets|GK|22|50|BEL|2027
+Kevin Mac Allister|CB|28|12000|ARG|2031
 Massiré Sylla|CB|21|5000|SEN|2030
 Ross Sykes|CB|27|4500|ENG|2027
 Nikki Havenaar|CB|31|500|JPN|2029
 Nohim Chibani|CB|23|400|FRA|2030
 Louis Patris|RB|25|4000|BEL|2029
 Denzel De Roeve|RB|22|3500|BEL|2031
+Ondrej Kricfalusi|DM|22|5000|CZE|2030
+Adem Zorgane|CM|26|12000|ALG|2029
 Kamiel Van de Perre|CM|22|11000|BEL|2030
 Besfort Zeneli|CM|23|10000|SWE|2030
+Rob Schoofs|CM|32|2000|BEL|2028
+Ivan Pavlic|CM|24|400|BEL|2029
 Darius Olaru|AM|28|4500|ROU|2030
+Anouar Ait El Hadj|AM|24|3500|BEL|2028
 Dylan Aquino|LW|21|6000|ARG|2030
 Relebohile Mofokeng|LW|22|6000|RSA|2030
 Guilherme Smith|LW|23|4000|BRA|2030
+Ilan Hurtevent|RW|21|1200|BEL|2030
 Mateo Biondić|ST|23|7000|GER|2030
 Kevin Rodríguez|ST|26|6000|ECU|2029
 Raul Florucz|ST|25|4000|AUT|2029` },
@@ -444,6 +510,7 @@ Dylan Ourega|LB|22|2000|FRA|2030
 Fabio Ferraro|LB|24|800|BEL|2029
 Lasse Flø|RB|21|1200|DEN|2030
 Lucas Mbamba|RB|20|1000|BEL|2029
+Doğucan Haspolat|DM|26|5000|TUR|2027
 Ibrahim Fofana|DM|23|3000|CIV|2030
 Pape Diong|DM|20|2000|SEN|2030
 Сергий Сыдорчук|DM|35|250|UKR|2027
@@ -453,7 +520,9 @@ Philippe Bibout|CM|18|100|CMR|2030
 Isa Sakamoto|AM|23|5000|JPN|2028
 Cisse Sandra|AM|22|2000|BEL|2030
 Shunsuke Saito|LW|21|4000|JPN|2029
+Nikola Storm|LW|32|1200|BEL|2028
 Naoufal Bohamdi-Kamoni|LW|19|500|MAR|2027
+Cameron Congreve|RW|22|1800|WAL|2030
 Dino Delic|RW|18|250|AUT|2028
 David Amegnaglo|RW|21|200|FRA|2030
 Norman Bassette|ST|21|3000|BEL|2027
@@ -471,6 +540,7 @@ Mouhamadou Sall|CB|19|100|SEN|2028
 Youssoupha Mbodji|LB|22|1200|SEN|2027
 Yannick Cappelle|LB|23|800|BEL|2028
 Salim Diakité|RB|26|1500|MLI|2027
+Wilguens Paugain|RB|25|800|HAI|2028
 Enrique Lofolomo|DM|26|1500|GER|2027
 Thomas Claes|CM|22|1500|BEL|2028
 Dirk Asare|CM|22|1000|BEL|2029
@@ -481,6 +551,7 @@ Niko Horvat|AM|18|200|CRO|2027
 Marley Aké|LW|25|2500|FRA|2028
 Zalán Átrok|LW|20|1500|HUN|2029
 Nikola Mituljikic|RW|23|400|SRB|2028
+Malick Mbaye|RW|22|400|SEN|2029
 Anosike Ementa|ST|24|5000|DEN|2028
 Tobias Hedl|ST|23|1000|AUT|2027
 Hemsley Akpa-Chukwu|ST|21|650|BEL|2029` },

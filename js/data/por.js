@@ -6,6 +6,7 @@ FM.addLeague({
   ticket: 15, prize: [15000, 14300, 13600, 12900, 12200, 11450, 10750, 10050, 9350, 8650, 7950, 7250, 6550, 5800, 5100, 4400, 3700, 3000],
   teams: [
     { id: 'porto', name: 'Порту', city: 'Порту', stadium: 'Estádio Do Dragão', cap: 50399, colors: ['#004b9b', '#ffffff'], players: `
+Diogo Costa|GK|27|40000|POR|2030
 Cláudio Ramos|GK|34|500|POR|2027
 João Costa|GK|30|500|POR|2030
 Jakub Kiwior|CB|26|40000|POL|2030
@@ -23,9 +24,11 @@ Pablo Rosario|DM|29|10000|DOM|2029
 Victor Froholdt|CM|20|50000|DEN|2030
 Seko Fofana|CM|31|8000|CIV|2027
 In-beom Hwang|CM|30|7000|KOR|2029
+Vasco Sousa|CM|23|2000|POR|2030
 Gabri Veiga|AM|24|35000|ESP|2030
 Oskar Pietuszewski|LW|18|25000|POL|2031
 Borja Sainz|LW|25|20000|ESP|2030
+William Gomes|RW|20|30000|BRA|2031
 Pepê|RW|29|17000|BRA|2028
 Gabriel Mec|RW|18|16000|BRA|2031
 Duarte Cunha|RW|18|1500|POR|2031
@@ -36,10 +39,13 @@ André Silva|ST|30|5000|POR|2027` },
 Rui Silva|GK|32|5000|POR|2028
 Kaique Pereira|GK|23|4000|BRA|2031
 Diego Callai|GK|22|1500|BRA|2030
+Gonçalo Inácio|CB|25|35000|POR|2030
+Zeno Debast|CB|23|25000|BEL|2029
 Ibrahima Ba|CB|21|20000|SEN|2031
 Eduardo Quaresma|CB|24|17000|POR|2031
 Maxi Araújo|LB|26|40000|URU|2030
 Moncef Zekri|LB|18|4000|MAR|2031
+Nuno Santos|LB|31|2000|POR|2027
 Rodrigo Dias|LB|21|1500|POR|2028
 Iván Fresneda|RB|22|20000|ESP|2028
 Georgios Vagiannidis|RB|25|6000|GRE|2030
@@ -49,6 +55,7 @@ Silas Andersen|DM|22|7000|DEN|2031
 Issa Doumbia|CM|23|20000|ITA|2031
 João Simões|CM|19|15000|POR|2030
 Pedro Lima|CM|23|3000|BRA|2031
+Sotiris Alexandropoulos|CM|24|1200|GRE|2027
 Rodrigo Zalazar|AM|27|30000|URU|2031
 Nestory Irankunda|LW|20|15000|AUS|2031
 Flávio Gonçalves|LW|19|15000|POR|2030
@@ -74,9 +81,11 @@ João Palhinha|DM|31|15000|POR|2030
 Enzo Barrenechea|DM|25|14000|ARG|2030
 Manu Silva|DM|25|6000|POR|2030
 Leandro Barreiro|CM|26|20000|LUX|2029
+Fredrik Aursnes|CM|30|15000|NOR|2029
 Георгий Судаков|AM|24|25000|UKR|2029
 Claudio Echeverri|AM|20|15000|ARG|2027
 Andreas Schjelderup|LW|22|40000|NOR|2028
+Jakub Kamiński|LW|24|17000|POL|2031
 Gianluca Prestianni|RW|20|40000|ARG|2029
 Dodi Lukébakio|RW|29|15000|BEL|2030
 Rafa Silva|RW|33|3000|POR|2028
@@ -88,6 +97,8 @@ Bernardo|GK|24|5000|BRA|2030
 João Carvalho|GK|22|1500|POR|2028
 Tiago Sá|GK|31|300|POR|2027
 Gustaf Lagerbielke|CB|26|10000|SWE|2030
+Bright Arrey-Mbi|CB|23|9000|GER|2029
+Sikou Niakaté|CB|27|5000|MLI|2030
 Vítor Carvalho|CB|29|4000|BRA|2028
 Adrian Barisic|CB|25|4000|BIH|2030
 Adrian Bajrami|CB|24|3000|SUI|2031
@@ -103,6 +114,7 @@ João Moutinho|CM|40|300|POR|2027
 Mario Dorgeles|RW|22|10000|CIV|2030
 Gabriel Silva|LW|24|7000|BRA|2031
 Gabri Martínez|LW|23|7000|ESP|2029
+Ricardo Horta|AM|32|9000|POR|2028
 João Trovisco|AM|19|500|POR|2029
 Pau Víctor|ST|24|15000|ESP|2030
 Jovan Milosevic|ST|21|7000|SRB|2031
@@ -110,6 +122,7 @@ Fran Navarro|ST|28|4000|ESP|2029
 Jonas Wind|ST|27|4000|DEN|2029` },
     { id: 'famalicao', name: 'Фамаликан', city: 'Вила-Нова-ди-Фамаликан', stadium: 'Estádio Municipal 22 de Junho', cap: 8000, colors: ['#1d3c8f', '#ffffff'], players: `
 Lazar Carević|GK|27|5000|MNE|2028
+Иван Злобин|GK|29|1000|RUS|2027
 Gabriel Cabral|GK|23|500|BRA|2029
 Léo Realpe|CB|25|5000|ECU|2029
 Finn van Breemen|CB|23|2000|NED|2030
@@ -141,10 +154,12 @@ André Picornell|GK|22|500|SWE|2029
 Tiago Ferreira|GK|17|500|POR|2028
 Marvin Elimbi|CB|23|4000|FRA|2029
 David Moreira|CB|22|1700|CPV|2029
+Buatu|CB|33|600|ANG|2028
 Antonio Espigares|CB|22|500|ESP|2029
 Weverson|LB|26|800|BRA|2028
 José Silva|RB|21|500|POR|2029
 Ricardo Esgaio|RB|33|500|POR|2028
+Mohamed Bamba|DM|22|1500|CIV|2027
 Diogo Prioste|CM|22|2000|POR|2027
 Zé Carlos|CM|24|800|POR|2028
 Andreas Lausen|CM|24|700|DEN|2030
@@ -170,6 +185,7 @@ Maracás|CB|32|500|BRA|2029
 Janderson|CB|21|500|BRA|2031
 Kiko|LB|24|2500|POR|2029
 Álvaro Martínez|LB|24|400|ESP|2028
+Dinis Pinto|RB|26|3500|POR|2027
 Leandro Santos|RB|21|1000|POR|2030
 Mateja Stjepanović|DM|22|3000|SRB|2029
 Guilherme Liberato|DM|25|800|BRA|2028
@@ -198,6 +214,7 @@ Javi Sánchez|CB|29|1000|ESP|2027
 Diogo Monteiro|CB|21|300|POR|2028
 Орест Лебеденко|LB|28|500|UKR|2028
 Mario Climent|LB|24|500|ESP|2028
+Tiago Esgaio|RB|31|1000|POR|2027
 Leo Shahar|RB|19|500|ENG|2027
 Taichi Fukui|CM|22|6000|JPN|2028
 Espen van Ee|CM|23|1500|NED|2029
@@ -235,12 +252,14 @@ Matija Mitrović|CM|21|2000|SRB|2029
 Marco Cruz|CM|22|400|POR|2028
 Santi Verdi|CM|18|300|POR|2031
 Alan|AM|26|5000|BRA|2028
+Samu|AM|30|2500|POR|2027
 Oumar Camara|LW|19|8000|FRA|2029
 Fabio Blanco|LW|22|800|ESP|2029
 Victor Andersson|LW|22|800|SWE|2030
 Gustavo Silva|RW|27|4000|BRA|2028
 Telmo Arcanjo|RW|25|3000|CPV|2027
 Miguel Nogueira|RW|21|2500|POR|2029
+Alioune Ndoye|ST|25|1000|SEN|2029
 Arnel Jakupovic|ST|28|800|AUT|2029
 Patrick Ouotro|ST|21|300|CIV|2030` },
     { id: 'estoril', name: 'Эшторил', city: 'Эшторил', stadium: 'Estádio António Coimbra da Mota', cap: 5100, colors: ['#ffd700', '#1d3c8f'], players: `
@@ -263,6 +282,7 @@ Antef Tsoungui|DM|23|1000|BEL|2029
 Tiago Brito|DM|22|300|POR|2029
 Milan Robin|CM|26|1000|FRA|2029
 Xeka|CM|31|600|POR|2028
+João Carvalho|AM|29|5000|POR|2027
 Luís Gomes|AM|22|500|POR|2028
 Nail Omerovic|LW|24|2000|BIH|2029
 André Lacximicant|LW|25|800|POR|2028
@@ -270,7 +290,8 @@ Rafik Guitane|RW|27|4000|ALG|2027
 Axel Camblan|RW|23|600|FRA|2029
 Fabrício Garcia|RW|25|400|CPV|2028
 Peixinho|RW|22|200|POR|2028
-Yanis Begraoui|ST|25|12000|MAR|2028` },
+Yanis Begraoui|ST|25|12000|MAR|2028
+Israel Salazar|ST|23|100|ESP|2028` },
     { id: 'alverca', name: 'Алверка', city: 'Алверка-ду-Рибатежу', stadium: 'Complexo Desportivo FC Alverca', cap: 7705, colors: ['#e30613', '#ffffff'], players: `
 Noah Raveyre|GK|21|1500|FRA|2030
 Matheus Mendes|GK|27|600|BRA|2028
@@ -278,6 +299,8 @@ Jhonatan|GK|35|100|BRA|2027
 Bastien Meupiyou|CB|20|7000|FRA|2028
 Yaya Bojang|CB|22|1500|GAM|2030
 Steven Baseya|CB|21|700|FRA|2028
+Julián Martínez|CB|22|500|HON|2029
+Sergi Gómez|CB|34|200|ESP|2027
 Mofe Jemide|CB|19|500|ENG|2030
 Chissumba|LB|21|5000|POR|2027
 Isaac James|LB|22|1000|NGA|2027
@@ -286,6 +309,7 @@ Toni Tamarit|RB|20|500|ESP|2030
 Vasco Moreira|DM|25|1000|POR|2028
 Ian Luccas|DM|23|1000|BRA|2030
 Rayan Lucas|DM|21|900|BRA|2030
+Sabit Abdulai|DM|27|500|GHA|2028
 Davy Gui|CM|20|800|CIV|2030
 Zé Rafael|CM|33|800|BRA|2027
 Zakaria Kessary|CM|20|150|MAR|2027
@@ -303,6 +327,7 @@ Vivaldo Semedo|ST|21|2000|POR|2027
 Dawda Camara|ST|23|2000|MTN|2030
 Samy Merheg|ST|19|1000|LBN|2029` },
     { id: 'rio_ave', name: 'Риу Ави', city: 'Вила-ду-Конди', stadium: 'Estádio do Rio Ave Futebol Clube', cap: 5300, colors: ['#00a650', '#ffffff'], players: `
+Cezary Miszta|GK|24|5000|POL|2027
 Vítor Hugo|GK|25|800|BRA|2030
 Ennio van der Gouw|GK|26|600|NED|2029
 Kevin Chamorro|GK|26|300|CRC|2029
@@ -316,11 +341,13 @@ Julien Lomboto|CB|24|300|FRA|2029
 Jakub Brabec|CB|34|200|CZE|2027
 Caike|CB|21|100|BRA|2027
 Pedro Amaral|LB|29|1500|POR|2028
+Marios Vrousai|RB|28|3000|GRE|2027
 Zé Carlos|RB|28|1500|POR|2028
 João Tomé|RB|23|600|POR|2027
 Tamás Nikitscher|DM|26|800|HUN|2029
 Georgios Liavas|DM|25|700|GRE|2029
 Diogo Nascimento|CM|23|3000|POR|2027
+Brandon Aguilera|CM|23|1500|CRC|2027
 Ryan Guilherme|CM|23|900|BRA|2030
 Antoine Wenck|CM|20|100|SEN|2027
 Malik Sellouki|AM|26|900|FRA|2029
@@ -337,6 +364,7 @@ Samuel Alves|ST|18|400|BRA|2030` },
     { id: 'santa_clara', name: 'Санта-Клара', city: 'Понта-Делгада', stadium: 'Estádio de São Miguel', cap: 13277, colors: ['#e30613', '#ffffff'], players: `
 Lucas França|GK|30|800|BRA|2028
 Neneca|GK|23|300|BRA|2030
+MT|CB|25|3000|BRA|2028
 Emanuel Moreira|CB|23|800|POR|2029
 Henrique Silva|CB|21|500|BRA|2027
 Pedro Pacheco|CB|29|500|POR|2028
@@ -356,6 +384,7 @@ Afonso Duarte|LW|21|100|POR|2028
 Vinícius Lopes|RW|27|2500|BRA|2028
 Brenner|RW|24|1500|BRA|2028
 Welinton Torrão|RW|27|400|BRA|2028
+Gonçalo Paciência|ST|32|700|POR|2028
 Fernando|ST|21|400|BRA|2029
 Léo Jacó|ST|21|400|BRA|2030` },
     { id: 'nacional', name: 'Насьонал', city: 'Фуншал', stadium: 'Estádio da Madeira', cap: 5200, colors: ['#000000', '#ffffff'], players: `
@@ -363,12 +392,15 @@ Renato Marin|GK|20|1500|ITA|2027
 João Gonçalves|GK|25|500|POR|2028
 Kevyn|GK|21|200|BRA|2030
 Zé Vítor|CB|25|2500|BRA|2027
+Léo Santos|CB|27|1500|BRA|2027
+Ulisses|CB|27|1000|BRA|2028
 Ivanildo Fernandes|CB|30|200|CPV|2027
 Chico Gonçalves|CB|22|200|POR|2029
 José Gomes|LB|30|600|POR|2027
 Matias Silva|LB|17|500|POR|2027
 Wesley Gasolina|RB|26|700|BRA|2028
 Daniel de la Cruz|RB|22|500|ECU|2027
+Matheus Dias|DM|24|1500|BRA|2030
 Liziero|CM|28|1500|BRA|2028
 Chiheb Labidi|CM|25|500|TUN|2027
 Joel Silva|CM|23|400|POR|2029
@@ -392,6 +424,7 @@ Njoya Abdel|ST|23|900|CMR|2031` },
 Léo Linck|GK|25|2500|BRA|2027
 Diogo Pinto|GK|22|300|POR|2028
 David Grilo|GK|30|100|POR|2028
+Stefan Lekovic|CB|22|2500|SRB|2029
 Luan Patrick|CB|24|2000|BRA|2028
 Bernardo Schappo|CB|27|600|BRA|2028
 Atanas Chernev|CB|24|600|BUL|2028
@@ -413,11 +446,13 @@ Bénito|LW|23|300|FRA|2029
 Rodrigo Dudok|LW|19|100|URU|2027
 Alisson Souza|LW|21|100|BRA|2028
 Abraham Marcus|RW|26|3000|NGA|2028
+Jeremy Arévalo|ST|21|7000|ECU|2027
 Leandro Antonetti|ST|23|4000|PUR|2028
 René Mitongo|ST|18|1000|BEL|2027
 Henrique Poniewas|ST|20|500|BRA|2027` },
     { id: 'casa_pia', name: 'Каза Пия', city: 'Лиссабон', stadium: 'Estádio Pina Manique', cap: 3000, colors: ['#000000', '#ffffff'], players: `
 Patrick Sequeira|GK|27|3000|CRC|2027
+André Gomes|GK|22|2500|POR|2030
 Ivan Mandić|GK|23|300|CRO|2029
 Daniel Azevedo|GK|28|200|POR|2027
 João Goulart|CB|26|1500|POR|2027
@@ -427,6 +462,7 @@ Felipe Silva|CB|24|1000|BRA|2027
 Kaly|CB|22|400|ANG|2027
 Abdu Conté|LB|28|700|POR|2028
 Pedro Rosas|LB|25|500|POR|2029
+André Geraldes|RB|35|100|POR|2027
 Selvi Clua|DM|21|500|ESP|2027
 Seba Pérez|DM|33|300|COL|2027
 JP|CM|21|2000|BRA|2030
@@ -448,6 +484,7 @@ Cassiano|ST|37|100|BRA|2028` },
 Fran Vieites|GK|27|1200|ESP|2028
 Gonçalo Tabuaço|GK|25|250|POR|2027
 Alfonso Pastor|GK|26|125|ESP|2027
+Romain Correia|CB|27|1500|POR|2027
 Gábor Szalai|CB|26|1000|HUN|2027
 Rafael Fernandes|CB|24|500|POR|2027
 Nilton|LB|25|800|POR|2028
@@ -493,6 +530,7 @@ Andro Babic|DM|22|400|CRO|2030
 André Ceitil|DM|31|150|POR|2027
 Soufiane Messeguem|CM|25|1500|GER|2028
 Cristian Ferreira|CM|27|200|ARG|2027
+Luís Silva|CM|34|75|POR|2027
 Cihan Kahraman|AM|28|1000|TUR|2027
 Alejandro Mestanza|AM|21|250|ESP|2029
 Álvaro Zamora|LW|24|1600|CRC|2027

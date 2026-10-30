@@ -1193,7 +1193,7 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .seg.sm button { padding: 5px 10px; font-size: 13px; }
 .tf-list { display: grid; }
 .tf-list > h3 { padding: 12px 14px 4px; margin: 0; }
-.tf-row { display: grid; grid-template-columns: 40px minmax(0, 2.2fr) minmax(0, 1.4fr) 48px 44px 70px 90px; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.tf-row { display: grid; grid-template-columns: 26px 40px minmax(0, 2.2fr) minmax(0, 1.4fr) 48px 44px 70px 90px; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .tf-row:last-child { border-bottom: 0; }
 .tf-row:hover { background: rgba(255,255,255,.04); }
 .tf-row.mine { grid-template-columns: 40px minmax(0, 2.4fr) 48px 44px 90px 90px 70px 100px; cursor: default; }
@@ -1247,3 +1247,24 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
   .tf-tabs button { font-size: 13px; }
   .tf-presets { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } .tf-presets button { flex: none; padding: 4px 11px; font-size: 12px; }
 }
+
+/* карточка: 1–3 показателя; один — крупно */
+.fut.kit-card.st1 .kc-st { grid-template-columns: 1fr; } .fut.kit-card.st1 .kc-st b { font-size: 22px; }
+.fut.kit-card.st2 .kc-st { grid-template-columns: 1fr 1fr; }
+.fut.kit-card.sm.st1 .kc-st b { font-size: 18px; }
+.kc-tag span:last-child { text-align: right; }
+
+/* трансферы: строки с формой клуба и полосой его цвета, витрина лучших */
+.tf-row:not(.mine) { position: relative; background: linear-gradient(90deg, color-mix(in srgb, var(--kc) 20%, transparent), transparent 38%); box-shadow: inset 4px 0 0 var(--kc); transition: background .2s, transform .15s; }
+.tf-row:not(.mine):hover { background: linear-gradient(90deg, color-mix(in srgb, var(--kc) 34%, transparent), transparent 55%); transform: translateX(2px); }
+.tf-kit { width: 26px; height: 26px; } .tf-kit svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); }
+.tf-row .ovr { transform: scale(1.12); }
+.tf-spot { display: grid; gap: 8px; padding: 14px 16px 16px; border-radius: var(--r); border: 1px solid var(--stroke);
+  background: radial-gradient(500px 160px at 20% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01)); }
+.tf-spot-row { display: flex; gap: 14px; justify-content: space-around; flex-wrap: wrap; }
+@media (max-width: 760px), (max-height: 500px) and (orientation: landscape) {
+  .tf-row { grid-template-columns: 22px 34px minmax(0, 1fr) 40px 40px 76px !important; } .tf-row.mine { grid-template-columns: 34px minmax(0, 1fr) 40px 76px 86px !important; }
+  .tf-kit { width: 22px; height: 22px; } .tf-spot-row { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+}
+.kc-st b { white-space: nowrap; }
+.fut.kit-card.sm.st1 .kc-st b { font-size: 16px; }
