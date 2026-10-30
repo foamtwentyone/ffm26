@@ -1388,6 +1388,39 @@
         <span class="small muted" id="rt-weeks">≈ ${FM.retrainWeeks(p, opts[0])} нед.</span><button class="btn sm primary" id="rt-go">Начать</button></div></div>`;
   }
 
+  // ================== посадочный талон после подписания ==================
+  // Талон выезжает, самолёт летит по пунктиру от прежнего клуба к новому, в конце — печать «ПОДПИСАН».
+  function ticketModal(p, from, to, d) {
+    const G = g(), s = G.s;
+    // код «аэропорта»: инициалы для названий из нескольких слов, иначе первые три буквы
+    const code = (t) => { if (!t) return 'FA'; const w = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).filter(Boolean); return (w.length > 1 ? w.map((x) => x[0]).join('') : w[0]).slice(0, 3).toUpperCase(); };
+    const fee = d.pre ? 'бесплатно' : d.fee ? FM.money(d.fee) : 'бесплатно';
+    const when = d.pre ? `лето ${s.season + 1}` : FM.fmtDate(s.date);
+    const el = modal(`<div class="tk-wrap">
+      <div class="tk" style="--c1:${glow(to)};--c0:${from ? glow(from) : '#3a4256'}">
+        <div class="tk-main">
+          <div class="tk-top"><span>FM26 · ТРАНСФЕР</span><span>${d.pre ? 'ПРЕДВАРИТЕЛЬНЫЙ КОНТРАКТ' : 'ПОСАДОЧНЫЙ ТАЛОН'}</span></div>
+          <div class="tk-route">
+            <div class="tk-pt">${from ? badge(from, 'lg') : '<span class="ng-free">FA</span>'}<b>${code(from)}</b><small>${from ? esc(from.name) : 'свободный агент'}</small></div>
+            <div class="tk-path"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 32 Q100 -14 196 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/></svg><span class="tk-plane">✈</span></div>
+            <div class="tk-pt">${badge(to, 'lg')}<b>${code(to)}</b><small>${esc(to.name)}</small></div>
+          </div>
+          <div class="tk-pass"><span class="label">Пассажир</span><b>${flag(p.nat)}${esc(p.name)}</b></div>
+          <div class="tk-fields">
+            <div><span>Позиция</span><b>${FM.POS_RU[p.pos]}</b></div><div><span>Место</span><b>№ ${shirtNo(p)}</b></div>
+            <div><span>Сумма</span><b>${fee}</b></div><div><span>Зарплата</span><b>${FM.money(d.terms.wage || p.wage)}/нед</b></div>
+            <div><span>Контракт</span><b>${d.terms.years || '—'} г.</b></div><div><span>Вылет</span><b>${when}</b></div>
+          </div>
+          <div class="tk-bar"></div>
+        </div>
+        <div class="tk-stub"><span>RATING</span><b>${p.ovr}</b><span>${FM.POS_RU[p.pos]} · ${p.age}</span><div class="tk-bar v"></div></div>
+        <div class="tk-stamp"><span>${d.pre ? 'ДОГОВОРЁННОСТЬ' : 'ПОДПИСАН'}</span><b>${esc(to.name.toUpperCase())}</b><span>${when}</span></div>
+      </div>
+      <div class="center tk-msg">${d.pre ? `${esc(p.name)} присоединится к «${esc(to.name)}» летом.` : `${esc(p.name)} — игрок «${esc(to.name)}»!`}</div>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-close>Отлично</button></div></div>`, 'ticket');
+    return el;
+  }
+
   // ================== переговоры ==================
   function negoModal(pid) {
     const G = g(), s = G.s, u = G.userTeam();
@@ -1431,13 +1464,20 @@
           <div><span>Платим сейчас</span><b class="${c.now > u.money ? 'bad' : ''}">${FM.money(c.now)}</b><span>на счёте ${FM.money(u.money)}</span></div></div>
         <div class="row"><button class="btn primary" id="n-sign">${n.precontract ? 'Подписать предварительный контракт' : 'Подписать контракт'}</button></div>`;
     }
-    const el = modal(`<div class="row" style="padding-right:34px">${club ? badge(club, 'lg') : ''}<div class="grow"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}</h2>
-        <div class="muted">${FM.POS_NAME[p.pos]} · ${p.age} лет · ${club ? esc(club.name) : 'свободный агент'} · стоимость ${FM.money(p.value)}</div></div>${ovr(p.ovr)}</div>
-      <div class="interest"><div class="row"><span class="muted">Интерес игрока</span><b style="color:${interestColor(it.score)}">${it.label}</b></div>
-        <div class="bar"><i style="width:${it.score}%;background:${interestColor(it.score)}"></i></div><div class="small muted">${it.why.map(esc).join(' · ')}</div></div>
+    // шапка переговоров: откуда → игрок → куда, интерес игрока шкалой
+    const ic = interestColor(it.score);
+    const el = modal(`<div class="ng-head" style="--hcb:${club ? glow(club) : '#3a4256'};--acb:${glow(u)}">
+        <div class="ng-side">${club ? badge(club, 'xl') : '<span class="ng-free">FA</span>'}<b>${club ? esc(club.name) : 'Свободный агент'}</b><span>${club ? esc(s.leagues[club.league].short) : 'без клуба'}</span></div>
+        <div class="ng-mid"><div class="ng-card">${futCard(p, [[FM.money(p.value), 'стоимость']]).replace('class="fut ', 'class="fut sm ')}</div>
+          <div class="ng-name">${flag(p.nat)}${esc(p.name)}</div><div class="ng-sub">${FM.POS_NAME[p.pos]} · ${p.age} лет</div></div>
+        <div class="ng-side">${badge(u, 'xl')}<b>${esc(u.name)}</b><span>ваш клуб</span></div>
+        <div class="ng-route"><i></i><span>✈</span></div>
+      </div>
+      <div class="ng-int"><span class="label">Интерес игрока</span><div class="ng-gauge"><i style="width:${it.score}%;background:${ic}"></i></div><b style="color:${ic}">${it.label}</b>
+        <div class="small muted ng-why">${it.why.map(esc).join(' · ')}</div></div>
       <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? '✓ ' : ''}${l}</span>` : '')).join('')}</div>
       ${n.precontract ? '<div class="note">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
-      <div class="chat" id="chat">${n.log.map((m) => `<div class="msg ${m.who}"><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
+      <div class="chat ng-chat" id="chat">${n.log.map((m, i) => `<div class="msg ${m.who} ${i === n.log.length - 1 ? 'new' : ''}"><span class="ava">${m.who === 'you' ? badge(u, 'sm') : m.who === 'club' && club ? badge(club, 'sm') : `<span class="ava-kit">${kitSvg(club || { colors: ['#3a4256', '#8f9bcc'] }, p.pos === 'GK')}</span>`}</span><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
       ${form}
       <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn danger sm" id="n-end">Закончить переговоры</button></div>`, 'wide nego');
     el.querySelector('#n-end').onclick = () => {
@@ -1472,12 +1512,12 @@
     };
     const sign = el.querySelector('#n-sign');
     if (sign) sign.onclick = () => {
+      const fromClub = club, pre = !!n.precontract, terms = Object.assign({}, n.terms), cost = G.dealCost(n);
       const r = G.completeDeal(pid);
       if (!r.ok) return toast(esc(r.text));
       save();
-      closeModal();
       render();
-      toast(esc(r.text));
+      ticketModal(p, fromClub, u, { pre, terms, fee: cost.fee || 0 });
     };
   }
 
