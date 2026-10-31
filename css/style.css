@@ -1469,3 +1469,10 @@ body::after { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   .fx-bg, .next-btn, #app main, #app .tile, #app .card, #app .tf-row, #app tr, .bc, .bc *, .modal, .bc-bar i, .meter i, .ng-gauge i { animation: none !important; }
 }
+/* нижнее меню не шире экрана: иначе телефон уменьшает страницу и меню перестаёт нажиматься */
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
+  .mainnav { overflow: hidden; max-width: 100vw; box-sizing: border-box; }
+  .mainnav button { min-width: 0; white-space: nowrap; overflow: hidden; }
+  .mainnav button > span:not(.ni):not(.dot) { overflow: hidden; text-overflow: ellipsis; }
+}
+html, body { overflow-x: hidden; }
