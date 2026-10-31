@@ -132,5 +132,20 @@ FM.Store = (function () {
     return JSON.parse(raw.startsWith('gz:') ? await unpack('gz64', raw.slice(3)) : raw);
   }
 
-  return { ls, init, cloudSave, cloudMeta, cloudLoad, localSave, localLoad };
+  async function localDelete(key) {
+    await idbDo('readwrite', (st) => st.delete(key));
+    ls.del(key);
+    ls.del(key + '_meta');
+  }
+
+  async function cloudDelete(key) {
+    if (!(await init())) return;
+    try {
+      const meta = await cloudMeta(key);
+      for (let i = 0; i < ((meta && meta.n) || 0); i++) await col().doc(`${key}_c${i}`).delete();
+      await col().doc(key).delete();
+    } catch (e) { /* облако недоступно */ }
+  }
+
+  return { ls, init, cloudSave, cloudMeta, cloudLoad, localSave, localLoad, localDelete, cloudDelete };
 })();

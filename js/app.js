@@ -261,8 +261,11 @@
     const str = JSON.stringify(g().packState());
     const info = infoOf(s);
     const ts = s.savedAt;
+    const u = g().userTeam(), L = s.leagues[u.league];
+    const row = g().table(u.league).find((r) => r.id === u.id);
+    const meta = { info, ts, club: u.id, clubName: u.name, colors: u.colors, logo: u.logoData || null, mgr: s.manager, season: s.season, date: s.date, league: L.name, pos: row ? row.pos : null, pts: row ? row.pts : null, money: u.money };
     FM.Store.localSave(key, str).then((ok) => {
-      if (ok) ls.set(key + '_meta', JSON.stringify({ info, ts }));
+      if (ok) ls.set(key + '_meta', JSON.stringify(meta));
       else if (!UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
     }).catch(() => { /* остаётся облачная копия */ });
     FM.Store.cloudSave(key, str, info);
@@ -404,32 +407,54 @@
     const db = customDb() || FM.leagues;
     let lid = db[0].id;
     let metas = {};
+    // Главное меню: заставка FM 26 с анимированным полем и плитками «Продолжить», «Новая карьера», «Сохранения»;
+    // «Новая карьера» и «Сохранения» открываются отдельными экранами с кнопкой «Назад».
+    let view = 'menu';
     const draw = () => {
-      const L = db.find((x) => x.id === lid);
       const auto = metas[SAVE_AUTO];
-      app.innerHTML = `
-      <div class="hero"><h1>Футбольный менеджер <span>26</span></h1>
-        <div class="muted">Сезон 2026/27: 36 лиг — Россия, вся Европа, Америка, Саудовская Аравия и СНГ</div></div>
+      const anyTeam = auto && auto.club ? FM.leagues.flatMap((L) => L.teams).find((x) => x.id === auto.club) : null;
+      const back = '<button class="mm-back" id="mm-back">‹ Главное меню</button>';
+      if (view === 'menu') {
+        const nSlots = [1, 2, 3].filter((i) => metas[SAVE_SLOT + i]).length;
+        app.innerHTML = `<div class="mm">
+          <div class="mm-pitch"><i></i><i></i><i></i><b></b></div><div class="mm-lights"><span></span><span></span><span></span></div>
+          <div class="mm-in">
+            <div class="mm-logo"><span class="mm-fm">FM</span><span class="mm-26">26</span><div class="mm-sub">Футбольный менеджер · сезон 2026/27</div></div>
+            <div class="mm-tiles">
+              ${auto ? `<button class="mm-t big" id="cont" style="--sc:${anyTeam ? glow({ ...anyTeam, colors: auto.colors || anyTeam.colors }) : 'var(--accent)'}"><span class="mm-k">Продолжить карьеру</span>
+                <div class="mm-cont">${anyTeam ? badge(auto.logo ? { ...anyTeam, logoData: auto.logo } : anyTeam, 'xl') : ''}<div><b>${esc(auto.clubName || (auto.info || '').split(' · ')[1] || '')}</b>
+                <span>${esc(auto.mgr || '')}${auto.date ? ` · ${FM.fmtDate(auto.date)}` : ''}${auto.pos ? ` · ${auto.pos}-е место` : ''}</span></div></div><span class="mm-go">▶</span></button>` : ''}
+              <button class="mm-t ${auto ? '' : 'big'}" id="mm-new" style="--sc:#1fbf75"><span class="mm-k">Новая карьера</span><b>Выбрать клуб</b><span>36 лиг · или свой клуб</span><span class="mm-go">▶</span></button>
+              <button class="mm-t" id="mm-saves" style="--sc:#5b8cff"><span class="mm-k">Сохранения</span><b>${nSlots + (auto ? 1 : 0)} из 4</b><span>слоты, загрузка из файла</span><span class="mm-go">▶</span></button>
+            </div>
+            <div class="mm-foot">${UI.cloud ? 'Сохранения синхронизируются между устройствами' : 'Россия, вся Европа, Америка, Саудовская Аравия и СНГ'}</div>
+          </div></div>`;
+        const c = app.querySelector('#cont');
+        if (c) c.onclick = () => loadSlot(SAVE_AUTO);
+        app.querySelector('#mm-new').onclick = () => { view = 'new'; draw(); window.scrollTo(0, 0); };
+        app.querySelector('#mm-saves').onclick = () => { view = 'saves'; draw(); window.scrollTo(0, 0); };
+        return;
+      }
+      if (view === 'saves') {
+        app.innerHTML = `<div class="mm-page"><div class="mm-pagehead">${back}<h1>Сохранения</h1></div><main><div id="sv-root"></div></main></div>`;
+        app.querySelector('#mm-back').onclick = () => { view = 'menu'; draw(); };
+        savesPanel(app.querySelector('#sv-root'), false);
+        return;
+      }
+      app.innerHTML = `<div class="mm-page"><div class="mm-pagehead">${back}<h1>Новая карьера</h1></div>
       <main>
-        ${auto ? `<div class="card" style="margin-bottom:14px"><div class="row"><div class="grow"><b>Продолжить карьеру</b><div class="muted small">${esc(auto.info)}</div></div><button class="btn primary" id="cont">Продолжить</button></div></div>` : ''}
         <div class="card" style="margin-bottom:14px">
           <div class="row">
             <label class="grow">Имя тренера<br><input id="mgr" value="${esc(ls.get('ffm26_mgr') || 'Тренер')}" style="width:100%"></label>
             <label class="row small" style="gap:8px"><input type="checkbox" id="ru-euro" ${ls.get('ffm26_ru_euro') === '0' ? '' : 'checked'}> Российские клубы в еврокубках</label>
-            <button class="btn" id="loadfile">Загрузить из файла</button>
-            ${[1, 2, 3].map((i) => metas[SAVE_SLOT + i] ? `<button class="btn" data-slot="${i}" title="${esc(metas[SAVE_SLOT + i].info)}">Слот ${i}</button>` : '').join('')}
           </div>
-          ${UI.cloud ? '<div class="small muted" style="margin-top:8px">Сохранения синхронизируются между вашими устройствами.</div>' : ''}
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
         <h2>Выберите клуб</h2>
         <div id="pick-area"></div>
-      </main>`;
+      </main></div>`;
+      app.querySelector('#mm-back').onclick = () => { view = 'menu'; draw(); };
       drawPick();
-      const c = app.querySelector('#cont');
-      if (c) c.onclick = () => loadSlot(SAVE_AUTO);
-      app.querySelectorAll('[data-slot]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.slot));
-      app.querySelector('#loadfile').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
     };
     // смена лиги перерисовывает только выбор лиги и список клубов — без перезагрузки всего экрана и анимаций
     const drawPick = () => {
@@ -2169,27 +2194,54 @@
   }
 
   // ================== меню ==================
+  // ================== сохранения: карточки слотов ==================
+  const agoText = (ts) => { if (!ts) return ''; const m = Math.round((Date.now() - ts) / 60000); return m < 1 ? 'только что' : m < 60 ? `${m} мин назад` : m < 1440 ? `${Math.round(m / 60)} ч назад` : `${Math.round(m / 1440)} дн. назад`; };
+  function slotCard(key, title, meta, ingame) {
+    const t = meta && meta.club ? (UI.g && UI.g.teams[meta.club]) || FM.leagues.flatMap((L) => L.teams).find((x) => x.id === meta.club) : null;
+    const col = t ? glow({ ...t, colors: meta.colors || t.colors }) : '#3a4256';
+    const crest = t ? badge(meta.logo ? { ...t, logoData: meta.logo } : t, 'xl') : '<span class="sv-empty-ic">+</span>';
+    const body = meta ? `<div class="sv-club">${esc(meta.clubName || (meta.info || '').split(' · ')[1] || '')}</div>
+        <div class="sv-mgr">${esc(meta.mgr || (meta.info || '').split(' · ')[0] || '')}</div>
+        <div class="sv-facts">${meta.season ? `<span>сезон ${meta.season}/${String(meta.season + 1).slice(2)}</span>` : ''}${meta.date ? `<span>${FM.fmtDate(meta.date)}</span>` : ''}${meta.pos ? `<span>${meta.pos}-е место · ${esc(meta.league || '')}</span>` : ''}</div>
+        <div class="sv-ago">${agoText(meta.ts)}</div>` : '<div class="sv-club muted">Пустой слот</div><div class="sv-mgr">Сохраните сюда текущую карьеру</div>';
+    const acts = [meta ? `<button class="btn primary sm" data-sv-load="${key}">${ingame ? 'Загрузить' : 'Играть'}</button>` : '',
+      ingame && key !== SAVE_AUTO ? `<button class="btn sm" data-sv-save="${key}">${meta ? 'Перезаписать' : 'Сохранить'}</button>` : '',
+      meta && key !== SAVE_AUTO ? `<button class="btn sm danger" data-sv-del="${key}">Удалить</button>` : ''].join('');
+    return `<div class="sv ${meta ? '' : 'empty'}" style="--sc:${col}"><div class="sv-tag">${title}</div><div class="sv-crest">${crest}</div><div class="sv-body">${body}</div><div class="sv-acts">${acts}</div></div>`;
+  }
+  async function savesPanel(root, ingame) {
+    const keys = [[SAVE_AUTO, 'Автосохранение'], [SAVE_SLOT + 1, 'Слот 1'], [SAVE_SLOT + 2, 'Слот 2'], [SAVE_SLOT + 3, 'Слот 3']];
+    const draw = (m) => {
+      root.innerHTML = `<div class="sv-grid">${keys.map(([k, n]) => slotCard(k, n, m[k], ingame)).join('')}</div>
+        <div class="sv-tools"><button class="btn" id="sv-exp" ${ingame ? '' : 'hidden'}>Экспорт в файл</button><button class="btn" id="sv-imp">Загрузить из файла</button>
+        <span class="small muted">${UI.cloud ? 'Сохранения синхронизируются между вашими устройствами.' : 'Сохранения хранятся в этом браузере. Чтобы перенести карьеру на другое устройство, используйте экспорт в файл.'}</span></div>`;
+      root.querySelectorAll('[data-sv-load]').forEach((b) => b.onclick = () => loadSlot(b.dataset.svLoad));
+      root.querySelectorAll('[data-sv-save]').forEach((b) => b.onclick = () => { save(b.dataset.svSave); toast('Сохранено'); setTimeout(() => savesPanel(root, ingame), 400); });
+      root.querySelectorAll('[data-sv-del]').forEach((b) => b.onclick = async () => {
+        if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Точно удалить?'; return; }
+        await FM.Store.localDelete(b.dataset.svDel); FM.Store.cloudDelete(b.dataset.svDel); toast('Сохранение удалено'); savesPanel(root, ingame);
+      });
+      const ex = root.querySelector('#sv-exp'); if (ex && ingame) ex.onclick = () => download(`ffm26_${g().userTeam().id}_${g().s.date}.json`, JSON.stringify(g().packState()));
+      root.querySelector('#sv-imp').onclick = () => pickFile((st) => (st.teams && st.players ? loadState(st) : toast('Это не файл сохранения.')));
+    };
+    const local = {}; for (const [k] of keys) local[k] = localMeta(k);
+    draw(local);
+    const m = await slotMetas();
+    for (const [k] of keys) if (local[k] && m[k] && m[k].ts === local[k].ts) m[k] = local[k];
+    if (root.isConnected) draw(m);
+  }
+
   function viewMenu(main) {
     const G = g();
-    main.innerHTML = `<div class="grid">
-      <div class="card"><h3>Сохранения</h3>
-        ${[1, 2, 3].map((i) => `<div class="list-item"><b>Слот ${i}</b><span class="grow small muted" id="slot${i}">${esc((localMeta(SAVE_SLOT + i) || {}).info || 'пусто')}</span>
-          <button class="btn sm" data-save="${i}">Сохранить</button><button class="btn sm" data-load="${i}">Загрузить</button></div>`).join('')}
-        <div class="small muted" style="margin:8px 0">Игра автоматически сохраняется после каждого матча${UI.cloud ? ' — и в облако, так что продолжить можно с другого устройства' : ''}.</div>
-        <div class="row"><button class="btn" id="exp">Экспорт в файл</button><button class="btn" id="imp">Импорт из файла</button></div></div>
+    main.innerHTML = `<div class="grid menu-grid">
+      <div class="card sv-card"><h3>Сохранения</h3><div id="sv-root"></div></div>
       <div class="card"><h3>База данных</h3>
         <div class="small" style="margin-bottom:10px">Составы РПЛ собраны по заявкам и составам на матчи лета–осени 2026 года, цены — оценка на уровне Transfermarkt. По ФНЛ и Второй лиге открытых данных мало: недостающих игроков игра генерирует, они помечены «*». В редакторе можно исправить любого игрока или клуба.</div>
         <div class="row"><button class="btn primary" id="editor">Редактор базы</button></div></div>
       <div class="card"><h3>Игра</h3>
         <label class="check small" style="margin-bottom:12px"><input type="checkbox" id="set-ru-euro" ${G.s.settings.ruEuro !== false ? 'checked' : ''}> Российские клубы в еврокубках (со следующего сезона)</label>
         <div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
-    main.querySelectorAll('[data-save]').forEach((b) => b.onclick = () => { if (save(SAVE_SLOT + b.dataset.save)) toast('Сохранено'); render(); });
-    main.querySelectorAll('[data-load]').forEach((b) => b.onclick = () => loadSlot(SAVE_SLOT + b.dataset.load));
-    slotMetas().then((m) => {
-      [1, 2, 3].forEach((i) => { const el = main.querySelector('#slot' + i); if (el && m[SAVE_SLOT + i]) el.textContent = m[SAVE_SLOT + i].info; });
-    });
-    main.querySelector('#exp').onclick = () => download(`ffm26_${G.userTeam().id}_${G.s.date}.json`, JSON.stringify(G.packState()));
-    main.querySelector('#imp').onclick = () => pickFile((s) => (s.teams && s.players ? loadState(s) : toast('Это не файл сохранения.')));
+    savesPanel(main.querySelector('#sv-root'), true);
     main.querySelector('#editor').onclick = () => editor();
     main.querySelector('#set-ru-euro').onchange = (e) => { G.s.settings.ruEuro = e.target.checked; save(); };
     const ng = main.querySelector('#newgame');
