@@ -1406,3 +1406,66 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .tk-stamp span:first-child { font-size: 21px; letter-spacing: .02em; white-space: nowrap; }
 @media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { .tk-stamp span:first-child { font-size: 15px; } }
 .tk-stamp { padding: 6px !important; }
+
+/* ===================== EA FC: движение и свет ===================== */
+/* живой фон: медленно плывущие пятна света в цвете турнира/клуба */
+body::after { animation: none; }
+.fx-bg { position: fixed; inset: -20%; z-index: -2; pointer-events: none; opacity: .55;
+  background: radial-gradient(35% 30% at 20% 30%, color-mix(in srgb, var(--accent) 38%, transparent), transparent 70%),
+              radial-gradient(30% 28% at 80% 70%, color-mix(in srgb, var(--accent2) 34%, transparent), transparent 70%),
+              radial-gradient(25% 22% at 60% 15%, rgba(255,255,255,.06), transparent 70%);
+  animation: fxDrift 26s ease-in-out infinite alternate; }
+@keyframes fxDrift { 0% { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(4%, -3%) rotate(6deg); } 100% { transform: translate(-3%, 4%) rotate(-4deg); } }
+
+/* смена раздела: экран въезжает справа, плитки появляются волной */
+#app:not(.calm) main { animation: fxScreen .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fxScreen { from { opacity: 0; transform: translateX(28px) skewX(-1.5deg); } to { opacity: 1; transform: none; } }
+#app:not(.calm) .dash-a > .tile, #app:not(.calm) .grid > .card, #app:not(.calm) .tf-row, #app:not(.calm) table.lt tr { animation: fxIn .5s cubic-bezier(.2,.8,.2,1) both; }
+#app:not(.calm) .dash-a > .tile:nth-child(2), #app:not(.calm) .grid > .card:nth-child(2) { animation-delay: .05s; }
+#app:not(.calm) .dash-a > .tile:nth-child(3), #app:not(.calm) .grid > .card:nth-child(3) { animation-delay: .1s; }
+#app:not(.calm) .dash-a > .tile:nth-child(n+4), #app:not(.calm) .grid > .card:nth-child(n+4) { animation-delay: .15s; }
+
+@keyframes fxIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+#app:not(.calm) .bc { animation: fxHero .6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fxHero { from { opacity: 0; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); } to { opacity: 1; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); } }
+#app:not(.calm) .bc .bc-team:not(.away) { animation: fxL .6s .15s cubic-bezier(.2,.8,.2,1) both; }
+#app:not(.calm) .bc .bc-team.away { animation: fxR .6s .15s cubic-bezier(.2,.8,.2,1) both; }
+#app:not(.calm) .bc .bc-v { animation: fxPop .5s .35s cubic-bezier(.3,1.6,.5,1) both; }
+@keyframes fxL { from { opacity: 0; transform: translateX(-40px); } } @keyframes fxR { from { opacity: 0; transform: translateX(40px); } }
+@keyframes fxPop { from { opacity: 0; transform: scale(2.2); } }
+.bc-bar i, .meter i, .ng-gauge i { animation: fxBar .9s .3s cubic-bezier(.2,.8,.2,1) both; transform-origin: left; }
+@keyframes fxBar { from { transform: scaleX(0); } }
+
+/* блик по кнопкам и плиткам при наведении, как в меню FC */
+.next-btn::after, .btn.primary::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 48%, transparent 66%); transform: translateX(-120%); transition: transform .7s; pointer-events: none; }
+.btn.primary { position: relative; overflow: hidden; }
+.next-btn:hover::after, .btn.primary:hover::after { transform: translateX(120%); }
+.next-btn { animation: fxPulse 2.8s ease-in-out infinite; }
+@keyframes fxPulse { 50% { box-shadow: 0 8px 34px color-mix(in srgb, var(--accent) 70%, transparent), inset 0 1px 0 rgba(255,255,255,.3); } }
+.dash-a > .tile { transition: background .25s, box-shadow .25s; }
+.dash-a > .tile:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), inset -1px -1px 0 var(--stroke); }
+.mainnav button.on { position: relative; }
+.mainnav button.on::after { content: ""; position: absolute; left: 20%; right: 20%; bottom: 2px; height: 3px; border-radius: 2px; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: fxBar .4s both; }
+.modal { animation: fxModal .35s cubic-bezier(.2,.9,.3,1.15) both; }
+.modal.still { animation: none; }
+@keyframes fxModal { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+
+/* вспышка «ГОЛ!» / итог матча */
+.fx-splash { position: fixed; inset: 0; z-index: 95; display: grid; place-items: center; pointer-events: none; }
+.fx-band { position: absolute; left: -10%; right: -10%; top: 50%; height: 170px; transform: translateY(-50%) skewY(-6deg) scaleX(0);
+  background: linear-gradient(90deg, transparent, var(--sc) 15%, var(--sc) 85%, transparent); box-shadow: 0 0 80px var(--sc); animation: fxBand .45s cubic-bezier(.2,.9,.3,1) forwards; }
+.fx-band::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255,255,255,.12) 0 3px, transparent 3px 16px); }
+@keyframes fxBand { to { transform: translateY(-50%) skewY(-6deg) scaleX(1); } }
+.fx-txt { position: relative; display: grid; justify-items: center; gap: 6px; transform: skewY(-6deg); }
+.fx-txt b { font: 800 clamp(64px, 14vw, 150px)/.9 var(--f-display); color: #fff; letter-spacing: .02em; text-shadow: 0 6px 0 rgba(0,0,0,.25), 0 0 40px rgba(255,255,255,.4); animation: fxSlam .5s .1s cubic-bezier(.3,1.5,.5,1) both; }
+.fx-txt span { font: 800 clamp(16px, 2.6vw, 24px) var(--f-display); text-transform: uppercase; letter-spacing: .08em; color: #fff; background: rgba(0,0,0,.35); padding: 4px 14px; border-radius: 6px; animation: fxIn .4s .35s both; }
+@keyframes fxSlam { from { opacity: 0; transform: scale(3) rotate(-4deg); } }
+.fx-splash.theirs .fx-txt b { font-size: clamp(44px, 9vw, 96px); opacity: .9; }
+.fx-splash.loss .fx-band, .fx-splash.draw .fx-band { height: 120px; }
+.fx-splash.out { animation: fxOut .35s forwards; }
+@keyframes fxOut { to { opacity: 0; transform: scale(1.06); } }
+.fx-confetti { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 96; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-bg, .next-btn, #app main, #app .tile, #app .card, #app .tf-row, #app tr, .bc, .bc *, .modal, .bc-bar i, .meter i, .ng-gauge i { animation: none !important; }
+}

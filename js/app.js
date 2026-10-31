@@ -508,6 +508,7 @@
   }
 
   function render() {
+    if (!document.querySelector('.fx-bg')) { const bg = document.createElement('div'); bg.className = 'fx-bg'; document.body.prepend(bg); }
     if (!UI.g) return startScreen();
     const G = g(), s = G.s, u = G.userTeam();
     applyTheme();
@@ -551,6 +552,8 @@
     const main = app.querySelector('#main');
     ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, hall: viewHall, menu: viewMenu })[UI.tab](main);
     if (same) window.scrollTo(0, scrollY);
+    // при входе в раздел крупные числа «добегают» до значения
+    if (!same) document.querySelectorAll('.band-big b, .tf-stat b').forEach((b) => { const m = b.textContent.match(/^([+\u2212-]?)([\d.]+)(.*)$/s); if (!m || b.children.length) return; const v = +m[2], d = (m[2].split('.')[1] || '').length; countUp(b, v, (x) => m[1] + x.toFixed(d) + m[3]); });
     bindCommon(main);
     bindCommon(app.querySelector('.hdr'));
   }
@@ -600,6 +603,7 @@
 
   // Итоги сезона: открываются в конце сезона и доступны с главной, пока не начат новый
   function reviewModal() {
+    setTimeout(() => { const R = g().s.lastReview || null; const el = document.querySelector('.rv-trophies'); if (el) confetti(['#ffd166', '#ffffff', glow(g().userTeam())], 3500); }, 400);
     const G = g(), s = G.s;
     const R = G.seasonReview();
     const U = R.user, ut = T(U.team);
@@ -1630,6 +1634,11 @@
     g().simulateToday();
     save();
     render();
+    const G = g(), uid = G.s.user, my = m.h === uid ? m.hg : m.ag, op = m.h === uid ? m.ag : m.hg;
+    const win = m.winner ? m.winner === uid : my > op, draw = !m.winner && my === op;
+    const big = !!(m.neutral && m.winner) || !!G.derbyOf(m);
+    splash(win ? 'ПОБЕДА' : draw ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ', `${esc(T(m.h).name)} ${m.hg}:${m.ag} ${esc(T(m.a).name)}`, win ? glow(G.userTeam()) : draw ? '#8f9bcc' : '#ff5c6c', win ? 'win' : draw ? 'draw' : 'loss', 1600);
+    if (win && big) setTimeout(() => confetti([glow(G.userTeam()), '#ffd166', '#ffffff'], 3200), 300);
     matchReport(m.id);
   }
 
@@ -1689,6 +1698,46 @@
     const nm = (x) => (x ? `${flag(x.nat)}<b>${esc(x.name)}</b> <span class="muted small">${esc(x.clubName)}</span>` : '—');
     return `<div class="card tight"><table><tr><th>Сезон</th><th>Золотой мяч</th><th class="hide-m">2-е и 3-е места</th><th class="hide-m">Трофей Копа</th><th class="hide-m">Трофей Яшина</th><th></th></tr>
       ${A.map((a) => `<tr><td>${a.year}/${String(a.year + 1).slice(2)}</td><td>${nm(a.ballon[0])}</td><td class="hide-m small">${a.ballon.slice(1, 3).map((x) => esc(x.name)).join(', ')}</td><td class="hide-m">${nm(a.kopa[0])}</td><td class="hide-m">${nm(a.yashin[0])}</td><td><button class="btn sm" data-cer="${a.year}">Церемония</button></td></tr>`).join('')}</table></div>`;
+  }
+
+  // ================== эффекты в стиле FC ==================
+  const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // конфетти на canvas поверх экрана (трофеи, победы в дерби и финалах)
+  function confetti(colors, ms = 2600) {
+    if (reduceMotion()) return;
+    const c = document.createElement('canvas');
+    c.className = 'fx-confetti';
+    document.body.appendChild(c);
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = c.width = innerWidth * dpr, H = c.height = innerHeight * dpr;
+    const ctx = c.getContext('2d');
+    const parts = Array.from({ length: 140 }, () => ({ x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35, vx: (Math.random() - 0.5) * 18 * dpr, vy: (-Math.random() * 16 - 6) * dpr,
+      s: (4 + Math.random() * 6) * dpr, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4, col: colors[Math.floor(Math.random() * colors.length)] }));
+    const t0 = performance.now();
+    const frame = (t) => {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of parts) { p.vy += 0.45 * dpr; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); ctx.restore(); }
+      if (t - t0 < ms) requestAnimationFrame(frame); else c.remove();
+    };
+    requestAnimationFrame(frame);
+  }
+  // полноэкранная вспышка: «ГОЛ!», итог матча — текст влетает, фон в цветах команды
+  function splash(big, small, color, cls = '', ms = 1700) {
+    if (reduceMotion()) return;
+    const el = document.createElement('div');
+    el.className = `fx-splash ${cls}`;
+    el.style.setProperty('--sc', color);
+    el.innerHTML = `<div class="fx-band"></div><div class="fx-txt"><b>${big}</b>${small ? `<span>${small}</span>` : ''}</div>`;
+    document.body.appendChild(el);
+    setTimeout(() => el.classList.add('out'), ms - 350);
+    setTimeout(() => el.remove(), ms);
+  }
+  // число «добегает» до значения
+  function countUp(el, to, fmt, ms = 700) {
+    if (reduceMotion() || !el) return;
+    const t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / ms); el.textContent = fmt(to * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
   }
 
   // ================== живой матч ==================
@@ -1782,6 +1831,11 @@
         return;
       }
       feed.push(...evs);
+      for (const e of evs) if (e.type === 'goal' && e.side) {
+        const t = e.side === 'h' ? h : a, sc = G.players[e.scorer];
+        splash('ГОЛ!', `${esc(sc ? sc.name : '')} · ${sim.home.goals}:${sim.away.goals}`, glow(t), e.side === (m.h === G.s.user ? 'h' : 'a') ? 'mine' : 'theirs', 1500);
+        if (e.side === (m.h === G.s.user ? 'h' : 'a')) confetti([glow(t), '#ffffff', '#ffd166'], 1400);
+      }
       if (sim.done) { stop(); finish(); }
       else if (sim.halfTime || sim.needUserSub) {
         setSpeed(0);
