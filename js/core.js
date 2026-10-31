@@ -144,7 +144,9 @@ FM.altFor = (name, pos) => {
 FM.EU = new Set(['AUT', 'BEL', 'BUL', 'CRO', 'CYP', 'CZE', 'DEN', 'EST', 'FIN', 'FRA', 'GER', 'GRE', 'HUN', 'IRL', 'ITA', 'LVA', 'LTU', 'LUX', 'MLT', 'NED', 'POL', 'POR', 'ROU', 'SVK', 'SVN', 'ESP', 'SWE', 'ISL', 'LIE', 'NOR', 'SUI']);
 FM.EAEU = ['RUS', 'ARM', 'BLR', 'KAZ', 'KGZ'];
 FM.FOREIGN_RULES = {
-  RUS: { tier: 1, squad: 12, pitch: 7, exempt: FM.EAEU, text: 'РПЛ: не больше 12 легионеров в заявке и 7 на поле. Игроки из стран ЕАЭС (Беларусь, Казахстан, Армения, Киргизия) легионерами не считаются.' },
+  RUS: { tier: 1, squad: 12, pitch: 7, exempt: FM.EAEU, text: 'РПЛ: не больше 12 легионеров в заявке и 7 на поле. Легионер — игрок без права играть за сборную России; граждане ЕАЭС (Беларусь, Казахстан, Армения, Киргизия) легионерами не считаются.' },
+  RUS2: { squad: 4, exempt: FM.EAEU, text: 'ФНЛ: не больше 4 легионеров в заявке, на поле без ограничений. Граждане ЕАЭС легионерами не считаются.' },
+  RUS3: { squad: 0, exempt: FM.EAEU, text: 'Вторая лига: легионеров заявлять нельзя. Граждане ЕАЭС легионерами не считаются.' },
   ESP: { tier: 1, squad: 3, nonEU: true, text: 'Ла Лига: не больше 3 игроков не из ЕС в заявке.' },
   FRA: { tier: 1, squad: 4, nonEU: true, text: 'Лига 1: не больше 4 игроков не из ЕС в заявке.' },
   TUR: { squad: 14, text: 'Суперлига: не больше 14 иностранцев в заявке, на поле без ограничений.' },
@@ -156,8 +158,35 @@ FM.FOREIGN_RULES = {
   BRA: { pitch: 9, text: 'Серия A Бразилии: не больше 9 иностранцев в составе на матч.' },
   USA: { squad: 8, text: 'MLS: 8 мест для иностранных игроков в заявке.' },
 };
-FM.foreignRule = (country, tier) => { const r = FM.FOREIGN_RULES[country]; return r && (!r.tier || r.tier === tier) ? r : null; };
-FM.isForeign = (p, country, rule) => !!rule && p.nat !== country && !(rule.exempt || []).includes(p.nat) && !(rule.nonEU && FM.EU.has(p.nat));
+FM.foreignRule = (country, tier) => { if (FM.FOREIGN_RULES[country + tier]) return FM.FOREIGN_RULES[country + tier]; const r = FM.FOREIGN_RULES[country]; return r && (!r.tier || r.tier === tier) ? r : null; };
+// Все гражданства игрока: основное, второе (из базы Transfermarkt) и полученные в карьере (натурализация).
+FM.cits = (p) => [p.nat].concat(p.nat2 ? [p.nat2] : [], p.cit || []);
+// Легионер ли игрок для лиги страны country:
+// — где лимит по ЕС (Испания, Франция) — важен только паспорт: любой паспорт ЕС или этой страны снимает статус;
+// — граждане стран из rule.exempt (ЕАЭС для России) — не легионеры;
+// — иначе легионер — тот, кто не может играть за сборную страны: родное или второе гражданство из базы дают право,
+//   а полученный в карьере паспорт — только после выполнения правил ФИФА (p.elig, см. Game.checkEligibility).
+FM.isForeign = (p, country, rule) => {
+  if (!rule) return false;
+  const cs = FM.cits(p);
+  if (rule.nonEU) return !cs.some((c) => c === country || FM.EU.has(c));
+  if (cs.some((c) => c !== country && (rule.exempt || []).includes(c))) return false;
+  if (p.nat === country || p.nat2 === country) return false;
+  return !(p.elig || []).includes(country);
+};
+// Натурализация: years — лет проживания для обычного порядка; fast — ускоренный порядок для граждан этих стран
+// (fastYears лет); decree — паспорт по указу (Россия: указ президента для ведущих спортсменов);
+// noDual — страна не допускает двойного гражданства (игрок должен отказаться от своего); none — не натурализуют.
+const LATAM = ['ARG', 'BOL', 'BRA', 'CHI', 'COL', 'CRC', 'CUB', 'DOM', 'ECU', 'SLV', 'GUA', 'HON', 'MEX', 'NCA', 'PAN', 'PAR', 'PER', 'URU', 'VEN', 'POR', 'PHI', 'EQG', 'AND'];
+FM.NATURAL = {
+  RUS: { years: 5, decree: true },
+  ESP: { years: 10, fast: LATAM, fastYears: 2 },
+  FRA: { years: 5 }, ITA: { years: 10 }, GER: { years: 5 }, ENG: { years: 5 }, POR: { years: 5 }, NED: { years: 5 }, BEL: { years: 5 },
+  TUR: { years: 5 }, POL: { years: 3 }, ARG: { years: 2 }, BRA: { years: 4 }, USA: { years: 5 },
+  KAZ: { years: 5, noDual: true }, UZB: { years: 5, noDual: true }, AZE: { years: 5, noDual: true }, BLR: { years: 7, noDual: true }, ARM: { years: 3 },
+  KSA: { none: true },
+};
+FM.natRule = (c) => FM.NATURAL[c] || { years: 5 };
 
 // Сколько недель переучиваться: чем дальше позиция и старше игрок, тем дольше.
 FM.retrainWeeks = (p, to) => {

@@ -280,6 +280,25 @@
           p.alt = [...new Set((p.alt || []).concat(FM.altFor(p.name, p.pos)))].filter((x) => x !== p.pos).slice(0, 3);
         }
       }
+      // старые сохранения: второе гражданство и дата переезда (Transfermarkt) появились позже — берём из базы
+      if (!state.citV1) {
+        state.citV1 = true;
+        const info = {};
+        for (const L of FM.leagues || []) for (const T of L.teams) for (const line of (T.players || '').split('\n')) {
+          const f = line.trim().split('|');
+          if (f[0] && f.length > 6) info[f[0]] = { nat2: f[6] || null, joined: f[7] || null };
+        }
+        for (const id in this.players) {
+          const p = this.players[id], t = p.club && this.teams[p.club];
+          const d = info[p.name];
+          if (d && d.nat2 && d.nat2 !== p.nat && !p.nat2) p.nat2 = d.nat2;
+          if (t && !p.res && this.countryOf(t.league) !== p.nat) {
+            let since = state.date;
+            if (d && d.joined) { const j = d.joined.replace('<', ''); since = d.joined.startsWith('<') ? FM.addDays(j, -730) : j; if (since > state.date) since = state.date; }
+            p.res = { c: this.countryOf(t.league), since };
+          }
+        }
+      }
       if (this.migrateMoney) {
         delete this.migrateMoney;
         for (const id in this.players) {
@@ -323,7 +342,7 @@
         for (const line of (T.players || '').split('\n').map((x) => x.trim()).filter(Boolean)) {
           const f = line.split('|');
           if (have.has(f[0])) continue;
-          const d = { name: f[0], pos: f[1], age: +f[2], value: +f[3], nat: f[4] || 'RUS', until: /^\d{4}$/.test(f[5] || '') ? +f[5] : null };
+          const d = { name: f[0], pos: f[1], age: +f[2], value: +f[3], nat: f[4] || 'RUS', until: /^\d{4}$/.test(f[5] || '') ? +f[5] : null, nat2: f[6] || null, joined: f[7] || null };
           const into = team && team.players.length < MAX_SQUAD + 4 ? team : null;
           const p = this.createPlayer(d, into);
           if (!into) { p.club = null; s.freeAgents.push(p.id); }
@@ -442,9 +461,11 @@
             // «Контракт» — год, летом которого он истекает (как на Transfermarkt)
             const f = line.split('|');
             const [name, pos, age, value, nat] = f;
-            const short = /^\d{4}$/.test(f[5] || '');
+            // краткий формат: ...|Контракт|Гражданство2|Пришёл (дата перехода в клуб, «<» — до этого играл в той же стране)
+            const short = /^\d{4}$/.test(f[5] || '') || (f[5] === '' && f.length > 6);
             const [ovr, pot, gen, until] = short ? [null, null, '', f[5]] : f.slice(5);
-            this.createPlayer({ name, pos, age: +age, value: +value, nat: nat || 'RUS', ovr: ovr ? +ovr : null, pot: pot ? +pot : null, gen: gen === 'g', until: until ? +until : null }, team);
+            this.createPlayer({ name, pos, age: +age, value: +value, nat: nat || 'RUS', ovr: ovr ? +ovr : null, pot: pot ? +pot : null, gen: gen === 'g', until: until ? +until : null,
+              nat2: short ? f[6] || null : null, joined: short ? f[7] || null : null }, team);
           }
           // у клубов без заданной репутации (европейские лиги) она считается по стоимости состава
           if (T.rep == null) team.rep = FM.repFromValue(this.squadValue(team));
@@ -480,6 +501,14 @@
         car: { apps: 0, g: 0, a: 0 },
       };
       p.wage = Math.round(FM.wageFor(p.value, tier, p.age, team ? this.countryOf(team.league) : '') * 10) / 10;
+      if (d.nat2 && d.nat2 !== p.nat) p.nat2 = d.nat2;
+      // проживание в стране клуба (для натурализации): с даты перехода; «<» — до этого клуба он уже играл в этой стране,
+      // точная дата неизвестна — считаем на два года раньше; без даты — с начала карьеры в игре
+      if (team && this.countryOf(team.league) !== p.nat) {
+        let since = null;
+        if (d.joined) { const j = d.joined.replace('<', ''); since = d.joined.startsWith('<') ? FM.addDays(j, -730) : j; }
+        p.res = { c: this.countryOf(team.league), since: since && since < s.date ? since : s.date };
+      }
       s.players[id] = p;
       if (team) team.players.push(id);
       return p;
@@ -2284,6 +2313,7 @@
 
     weekly() {
       this.trainWeek();
+      this.naturalWeek();
       this.jobOfferWeek();
       const s = this.s;
       for (const id in this.teams) {
@@ -2441,6 +2471,109 @@
       return n.pid && this.players[n.pid] ? this.foreignBlock(this.userTeam(), this.players[n.pid]) : null;
     }
 
+    // ================== гражданство и натурализация ==================
+    // Игрок сборной: 26 сильнейших игроков каждой страны в базе считаются игроками национальной команды
+    // (сыгравший официальные матчи за одну сборную не может сменить её по правилам ФИФА).
+    isCapped(p) {
+      if (!this._capped || this._capped.season !== this.s.season) {
+        const by = {};
+        for (const id in this.players) { const x = this.players[id]; (by[x.nat] = by[x.nat] || []).push(x); }
+        const set = new Set();
+        for (const n in by) for (const x of by[n].sort((a, b) => b.ovr - a.ovr).slice(0, 26)) if (x.age >= 19) set.add(x.id);
+        this._capped = { season: this.s.season, set };
+      }
+      return this._capped.set.has(p.id);
+    }
+    yearsBetween(a, b) { return Math.max(0, (Date.parse(b) - Date.parse(a)) / (365.25 * 864e5)); }
+    // сколько лет игрок живёт в стране c (всего и после 18 лет — для правил ФИФА)
+    residence(p, c) {
+      if (!p.res || p.res.c !== c) return { total: 0, adult: 0, since: null };
+      const since = p.res.since || this.s.date;
+      const adultFrom = FM.addDays(this.s.date, -Math.round(Math.max(0, p.age - 18) * 365.25));
+      const total = this.yearsBetween(since, this.s.date);
+      return { total, adult: this.yearsBetween(since > adultFrom ? since : adultFrom, this.s.date), since };
+    }
+    // Право играть за сборную страны c после натурализации (правила ФИФА): не играл официальных матчей за другую
+    // сборную и прожил в стране не меньше 5 лет после 18-летия.
+    eligibilityFor(p, c) {
+      if (p.nat === c || p.nat2 === c) return { ok: true, why: 'гражданин по рождению' };
+      if (!FM.cits(p).includes(c)) return { ok: false, why: 'нет гражданства' };
+      if (this.isCapped(p)) return { ok: false, why: `играл за сборную своей страны (${(FM.NAT && FM.NAT[p.nat]) || p.nat}) — сменить сборную нельзя` };
+      const r = this.residence(p, c);
+      if (r.adult < 5) return { ok: false, why: `нужно 5 лет в стране после 18 лет, сейчас ${r.adult.toFixed(1)}` };
+      return { ok: true, why: 'прожил в стране больше 5 лет' };
+    }
+    natInfo(p) {
+      const t = p.club ? this.teams[p.club] : null;
+      if (!t) return null;
+      const c = this.countryOf(t.league), rule = this.foreignRuleOf(t), nr = FM.natRule(c);
+      const res = this.residence(p, c);
+      const has = FM.cits(p).includes(c);
+      const routes = [];
+      if (!has && !nr.none && p.club === this.s.user && !p.loan) {
+        const need = nr.fast && nr.fast.includes(p.nat) ? nr.fastYears : nr.years;
+        routes.push({ id: 'normal', name: 'Обычный порядок', days: 120, cost: FM.roundValue(Math.max(5, p.wage * 2)),
+          ok: res.total >= need, why: res.total >= need ? `прожил в стране ${res.total.toFixed(1)} г. (нужно ${need})` : `нужно прожить в стране ${need} г., сейчас ${res.total.toFixed(1)}` });
+        if (nr.decree) {
+          const key = this.squadRank(p) <= 14 && p.ovr >= 68;
+          routes.push({ id: 'decree', name: 'Указ президента', days: 60, cost: FM.roundValue(Math.max(30, p.wage * 6)),
+            ok: key, why: key ? 'ускоренно для ведущих спортсменов, срок проживания не важен' : 'только для ведущих игроков (рейтинг от 68 и место в основе)' });
+        }
+      }
+      return { c, rule, foreign: rule ? FM.isForeign(p, c, rule) : p.nat !== c, has, res, routes, pending: p.natz || null, elig: this.eligibilityFor(p, c), noDual: !!nr.noDual, none: !!nr.none };
+    }
+    naturalize(pid, route) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      const info = this.natInfo(p);
+      if (!info) return 'Игрок без клуба.';
+      if (p.natz) return 'Документы уже поданы.';
+      if (p.natCool && s.date < p.natCool) return `${p.name} пока не готов возвращаться к этому вопросу — до ${FM.fmtDate(p.natCool)}.`;
+      const r = info.routes.find((x) => x.id === route);
+      if (!r) return 'Этот путь недоступен.';
+      if (!r.ok) return `Нельзя: ${r.why}.`;
+      if (r.cost > u.money) return `Не хватает денег: нужно ${FM.money(r.cost)}.`;
+      // согласие игрока: от настроения, срока жизни в стране, возраста; если страна не допускает двойного
+      // гражданства — придётся отказаться от своего, игрок сборной на это не пойдёт
+      let k = 0.75 + (info.res.total >= 3 ? 0.15 : 0) - ((p.morale || 60) < 40 ? 0.3 : 0) - (p.age >= 33 ? 0.15 : 0);
+      if (info.noDual) k -= this.isCapped(p) ? 1 : 0.35;
+      if (Math.random() > k) {
+        p.natCool = FM.addDays(s.date, 120);
+        return info.noDual ? `${p.name} не готов отказываться от гражданства своей страны.` : `${p.name} пока не хочет менять гражданство.`;
+      }
+      this.pay(u, r.cost, `Натурализация: ${p.name}`);
+      p.natz = { c: info.c, route, done: FM.addDays(s.date, r.days) };
+      return `Документы ${p.name} поданы (${r.name.toLowerCase()}). Решение — к ${FM.fmtDate(p.natz.done)}.`;
+    }
+    naturalWeek() {
+      const s = this.s;
+      for (const id in this.players) {
+        const p = this.players[id];
+        if (p.natz && s.date >= p.natz.done) {
+          const z = p.natz, mine = p.club === s.user;
+          delete p.natz;
+          if (Math.random() < (z.route === 'decree' ? 0.05 : 0.1)) {
+            if (mine) this.msg('Отказ в гражданстве', `Миграционная служба отказала ${p.name} в гражданстве: не хватило документов. Можно подать снова позже.`, 'squad');
+            p.natCool = FM.addDays(s.date, 90);
+            continue;
+          }
+          const nr = FM.natRule(z.c);
+          p.cit = (p.cit || []).concat(z.c);
+          if (nr.noDual) { p.nat2 = null; }
+          const el = this.eligibilityFor(p, z.c);
+          if (mine) this.msg('Новое гражданство', `${p.name} получил гражданство (${(FM.NAT && FM.NAT[z.c]) || z.c}).` + (el.ok ? ' Он больше не считается легионером.' : ` Для лимита он пока легионер: ${el.why}.`), 'squad');
+        }
+        if (p.cit && p.cit.length) {
+          for (const c of p.cit) {
+            if ((p.elig || []).includes(c)) continue;
+            const el = this.eligibilityFor(p, c);
+            if (el.ok) {
+              p.elig = (p.elig || []).concat(c);
+              if (p.club === s.user) this.msg('Статус легионера снят', `${p.name} получил право играть за сборную и больше не считается легионером.`, 'squad');
+            }
+          }
+        }
+      }
+    }
     // ---- лимит на легионеров ----
     foreignRuleOf(team) { const L = this.s.leagues[team.league]; return FM.foreignRule(this.countryOf(team.league), L.tier); }
     isForeignIn(p, team) { const r = this.foreignRuleOf(team); return FM.isForeign(p, this.countryOf(team.league), r); }
@@ -2450,10 +2583,11 @@
     // такой клуб заявить не может, пока не опустится ниже лимита.
     foreignBlock(team, p) {
       const r = this.foreignRuleOf(team);
-      if (!r || !r.squad || p.club === team.id || !FM.isForeign(p, this.countryOf(team.league), r)) return null;
+      if (!r || r.squad == null || p.club === team.id || !FM.isForeign(p, this.countryOf(team.league), r)) return null;
       const n = this.foreignCount(team);
       if (n < r.squad) return null;
       const what = r.nonEU ? 'игроков не из ЕС' : 'легионеров';
+      if (!r.squad) return `Лимит: в лиге «${team.name}» заявлять легионеров нельзя.`;
       return `Лимит: в заявке «${team.name}» уже ${n} ${what} при максимуме ${r.squad}. Чтобы заявить ещё одного, освободите место.`;
     }
     // Ограничение «на поле»: в составе не больше rule.pitch легионеров. Лишних (с наименьшей потерей силы)
@@ -2662,6 +2796,8 @@
     // Статистика сезона за прежний клуб уходит в p.pst: в таблицах лидеров новой лиги учитываются только матчи за новый
     // клуб. Внутри одной лиги матчи продолжают идти в зачёт лиги (как в жизни), кубковые — внутри одной страны.
     stashStats(p, to) {
+      const c = this.countryOf(to.league);
+      if (!p.res || p.res.c !== c) p.res = c === p.nat ? null : { c, since: this.s.date };
       const fromT = p.club ? this.teams[p.club] : null;
       if (!fromT) return;
       const sameLeague = fromT.league === to.league, sameC = this.countryOf(fromT.league) === this.countryOf(to.league);

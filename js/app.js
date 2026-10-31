@@ -922,7 +922,7 @@
           }).join('')}</div>
           ${problems.length ? `<div class="note bad small">${problems.map(esc).join('<br>')}<br>Перед матчем такие места заполнятся автоматически.</div>` : ''}
           ${(() => { const r = G.foreignRuleOf(u); if (!r) return ''; const inXi = u.lineup.filter((id) => id && G.players[id] && G.isForeignIn(G.players[id], u)).length, n = G.foreignCount(u);
-            return `<div class="leg-info small" title="${esc(r.text)}"><b>Л</b> Легионеры${r.nonEU ? ' (не из ЕС)' : ''}: ${r.squad ? `в заявке <span class="${n > r.squad ? 'bad' : n === r.squad ? 'warn' : ''}">${n}/${r.squad}</span>` : `в заявке ${n}`}${r.pitch ? ` · в составе <span class="${inXi > r.pitch ? 'bad' : ''}">${inXi}/${r.pitch}</span>` : ''}<div class="muted">${esc(r.text)}</div></div>`; })()}
+            return `<div class="leg-info small" title="${esc(r.text)}"><b>Л</b> Легионеры${r.nonEU ? ' (не из ЕС)' : ''}: ${r.squad != null ? `в заявке <span class="${n > r.squad ? 'bad' : n === r.squad ? 'warn' : ''}">${n}/${r.squad}</span>` : `в заявке ${n}`}${r.pitch ? ` · в составе <span class="${inXi > r.pitch ? 'bad' : ''}">${inXi}/${r.pitch}</span>` : ''}<div class="muted">${esc(r.text)}</div></div>`; })()}
         </div>
         <div class="card">
           <h3>Тактика</h3>
@@ -1396,6 +1396,7 @@
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div></div></div>
       ${mine && !p.loan ? retrainBlock(p) : ''}
+      ${citBlock(p)}
       ${p.inj ? `<div class="note bad">Травма: ещё ${G.injText(p.inj)}</div>` : ''}${p.sus ? `<div class="note bad">Дисквалификация: ${p.sus} матч(а)</div>` : ''}
       <table class="small"><tr><th></th><th class="num">Игры</th><th class="num">Голы</th><th class="num">Пас</th><th class="num">ЖК</th><th class="num">КК</th><th class="num">Оценка</th></tr>
         <tr><td>Чемпионат</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${p.st.a}</td><td class="num">${p.st.yc}</td><td class="num">${p.st.rc}</td><td class="num">${avg}</td></tr>
@@ -1417,6 +1418,7 @@
         <div class="row" style="margin-top:12px">${club ? '<button class="btn" data-loanin>Взять в аренду</button>' : ''}<button class="btn primary" data-nego>${s.nego && s.nego[pid] && s.nego[pid].log.length ? 'Продолжить переговоры' : G.canPrecontract(p) ? 'Предварительный контракт' : club ? 'Начать переговоры' : 'Предложить контракт'}</button>
           <span class="small muted">${club ? `Окно: ${G.windowText()}` : 'Свободного агента можно подписать в любое время'}</span></div>`}</div>`);
     const res = el.querySelector('#res');
+    el.querySelectorAll('[data-natz]').forEach((b) => b.onclick = () => { toast(esc(G.naturalize(pid, b.dataset.natz)), 5000); save(); playerModal(pid); });
     const rt = el.querySelector('#rt-go');
     if (rt) rt.onclick = () => { toast(esc(G.retrain(pid, el.querySelector('#rt-pos').value))); save(); playerModal(pid); };
     const rtSel = el.querySelector('#rt-pos');
@@ -1480,6 +1482,35 @@
   const interestColor = (v) => (v >= 70 ? 'var(--good)' : v >= 50 ? '#9be36b' : v >= 30 ? 'var(--warn)' : 'var(--bad)');
 
   // Переучивание (как в FC): выбор новой позиции, прогресс по неделям, отмена
+  // Гражданство, статус легионера в лиге клуба и натурализация
+  function citBlock(p) {
+    const G = g(), I = G.natInfo(p);
+    if (!I) return '';
+    const cs = FM.cits(p);
+    const nm = (c) => esc(FM.NAT[c] || c);
+    const ruleTxt = I.rule ? (I.foreign ? `<b class="bad">легионер</b>` : '<b class="good">не легионер</b>') : '<span class="muted">в лиге нет лимита</span>';
+    const live = I.res.since ? `живёт в стране с ${FM.fmtDate(I.res.since, true)} (${I.res.total.toFixed(1)} г.)` : (cs.includes(I.c) ? '' : 'в стране с начала карьеры');
+    let body = '';
+    if (I.pending) body = `<div class="note">Документы на гражданство (${nm(I.pending.c)}) поданы — решение к ${FM.fmtDate(I.pending.done)}.</div>`;
+    else if (I.routes.length) body = `<div class="cit-routes">${I.routes.map((r) => `<button class="btn sm ${r.ok ? '' : 'off'}" data-natz="${r.id}" ${r.ok ? '' : 'disabled'} title="${esc(r.why)}"><b>${esc(r.name)}</b><span>${esc(r.why)} · ${r.days} дн. · ${FM.money(r.cost)}</span></button>`).join('')}</div>
+      ${I.noDual ? '<div class="small muted">Страна не допускает двойного гражданства — игроку придётся отказаться от своего.</div>' : ''}`;
+    else if (I.none) body = '<div class="small muted">В этой стране футболистов не натурализуют.</div>';
+    let after = '';
+    if (I.rule && I.foreign && !I.has && I.routes.length) {
+      if (I.rule.nonEU) after = 'С паспортом сразу перестанет считаться легионером.';
+      else if (G.isCapped(p)) after = `С паспортом останется легионером: играл за сборную своей страны (${nm(p.nat)}), по правилам ФИФА сменить сборную нельзя.`;
+      else if (I.res.adult >= 5) after = 'С паспортом сразу перестанет считаться легионером (больше 5 лет в стране после 18 лет).';
+      else after = `С паспортом перестанет считаться легионером примерно с ${FM.fmtDate(FM.addDays(G.s.date, Math.ceil((5 - I.res.adult) * 365.25)), true)}: по правилам ФИФА нужно 5 лет в стране после 18 лет.`;
+    }
+    const eligTxt = cs.includes(I.c) && I.c !== p.nat && p.nat2 !== I.c ? `<div class="small">Право играть за сборную: ${I.elig.ok ? '<b class="good">есть</b>' : `нет — ${esc(I.elig.why)}`}</div>` : '';
+    return `<div class="cit">
+      <div class="row"><b class="grow">Гражданство</b><span class="small">${I.rule ? 'Для лимита: ' + ruleTxt : ruleTxt}</span></div>
+      <div class="cit-flags">${cs.map((c) => `<span>${flag(c)} ${nm(c)}</span>`).join('')}</div>
+      ${live ? `<div class="small muted">${live}</div>` : ''}${eligTxt}
+      ${body}${after ? `<div class="small muted">${after}</div>` : ''}
+    </div>`;
+  }
+
   function retrainBlock(p) {
     if (p.train) {
       const pct = Math.round(p.train.done / p.train.need * 100);

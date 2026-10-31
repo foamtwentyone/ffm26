@@ -161,32 +161,32 @@ Samuel Edozie|LW|23|2387|ENG
 Kuryu Matsuki|RW|23|2523|JPN
 Divin Mubama|ST|21|5364|ENG` },
     { id: 'birmingham', name: 'Бирмингем Сити', city: 'Бирмингем', stadium: 'St. Andrew\'s @ Knighthead Park', cap: 30009, colors: ['#0000ff', '#ffffff'], players: `
-James Beadle|GK|22|9137|ENG
-Ryan Allsop|GK|34|402|ENG
-Bradley Mayo|GK|22|150|ENG
-Ethan Laird|LB|25|1862|ENG
-Lee Buchanan|LB|25|1173|ENG
-Christoph Klarer|CB|26|7794|AUT
-Phil Neumann|CB|29|1690|GER
-Alex Cochrane|LB|26|1848|ENG
-Dael Fry|CB|29|2420|ENG
-Kristoffer Lund|LB|24|4823|USA
-Bright Osayi-Samuel|RB|28|2376|NGA
-Paik Seung-Ho|DM|29|1483|KOR
-Marc Leonard|DM|24|1639|SCO
-Jhon Solís|DM|22|4111|COL
-Max Bird|DM|26|1840|ENG
-Taylor Gardner-Hickman|DM|24|1564|ENG
-Tomoki Iwata|RB|29|1255|JPN
-Jay Stansfield|AM|23|21253|ENG
-Carlos Vicente|RW|27|6953|ESP
-August Priske|ST|22|5996|DEN
-Demarai Gray|LW|30|2219|JAM
-Scott Wright|LW|29|282|SCO
-Patrick Roberts|RW|29|2369|ENG
-Liam Millar|LW|27|2332|CAN
-Luis Vázquez|ST|25|2294|ARG
-Marvin Ducksch|ST|32|1440|GER` },
+James Beadle|GK|22|9137|ENG|||<2026-07-17
+Ryan Allsop|GK|34|402|ENG|||<2024-07-01
+Bradley Mayo|GK|22|150|ENG|||2024-07-01
+Ethan Laird|LB|25|1862|ENG|||2024-07-20
+Lee Buchanan|LB|25|1173|ENG|||2025-07-01
+Christoph Klarer|CB|26|7794|AUT|||<2026-07-03
+Phil Neumann|CB|29|1690|GER||DEN|2026-07-30
+Alex Cochrane|LB|26|1848|ENG|||2024-07-16
+Dael Fry|CB|29|2420|ENG|||2023-07-26
+Kristoffer Lund|LB|24|4823|USA||ENG|2025-07-04
+Bright Osayi-Samuel|RB|28|2376|NGA||JAM|2023-07-01
+Paik Seung-Ho|DM|29|1483|KOR||IRL|<2025-07-01
+Marc Leonard|DM|24|1639|SCO|||2024-08-30
+Jhon Solís|DM|22|4111|COL|||2026-07-01
+Max Bird|DM|26|1840|ENG|||<2026-08-14
+Taylor Gardner-Hickman|DM|24|1564|ENG|||2024-01-29
+Tomoki Iwata|RB|29|1255|JPN|||<2024-07-25
+Jay Stansfield|AM|23|21253|ENG|||<2026-09-01
+Carlos Vicente|RW|27|6953|ESP||ENG|2025-07-03
+August Priske|ST|22|5996|DEN|||2026-01-27
+Demarai Gray|LW|30|2219|JAM|||<2026-02-02
+Scott Wright|LW|29|282|SCO|||2024-08-30
+Patrick Roberts|RW|29|2369|ENG|||<2024-08-30
+Liam Millar|LW|27|2332|CAN|||2026-01-20
+Luis Vázquez|ST|25|2294|ARG|||2026-07-28
+Marvin Ducksch|ST|32|1440|GER|||2025-08-07` },
     { id: 'qpr', name: 'КПР', city: 'Лондон', stadium: 'MATRADE Loftus Road', cap: 18360, colors: ['#1d5ba4', '#ffffff'], players: `
 Pierce Charles|GK|21|1651|NIR
 Calum Ward|GK|26|582|ENG
@@ -243,31 +243,31 @@ George Hirst|ST|27|10945|SCO
 Sam Gallagher|ST|31|567|ENG
 Million Manhoef|RW|24|4908|NED` },
     { id: 'blackburn', name: 'Блэкберн Роверс', city: 'Блэкберн', stadium: 'Ewood Park', cap: 31367, colors: ['#009ee0', '#ffffff'], players: `
-Aynsley Pears|GK|28|647|ENG
-Balázs Tóth|GK|29|771|HUN
-Harry Pickering|LB|27|1136|ENG
-Tom Atcheson|CB|20|1023|NIR
-Sean McLoughlin|CB|29|703|IRL
-Scott Wharton|CB|29|942|ENG
-Hayden Carter|CB|26|1156|ENG
-Lewis Miller|CB|26|1305|AUS
-Ryan Alebiosu|RB|24|1725|NGA
-Yuri Ribeiro|LB|29|404|POR
-Sam Morsy|DM|35|395|EGY
-Todd Cantwell|AM|28|1369|ENG
-Jayden Fevrier|RB|23|425|ENG
-Dion De Neve|LB|25|837|BEL
-Moussa Baradji|DM|25|1557|FRA
-Ryoya Morishita|AM|29|1500|JPN
-Gady Beyuku|RW|20|2349|FRA
-Adam Forshaw|DM|35|252|ENG
-Jake Garrett|DM|23|336|ENG
-Kristi Montgomery|DM|22|740|SCO
-Augustus Kargbo|LW|27|688|SLE
-Andri Guðjohnsen|ST|24|2284|ISL
-Oladapo Afolayan|LW|29|716|ENG
-Yuki Ohashi|ST|30|1066|JPN
-Mathias Jørgensen|ST|26|2431|DEN` },
+Aynsley Pears|GK|28|647|ENG|||<2020-10-16
+Balázs Tóth|GK|29|771|HUN|||2024-08-30
+Harry Pickering|LB|27|1136|ENG|||2025-07-01
+Tom Atcheson|CB|20|1023|NIR|||2020-01-01
+Sean McLoughlin|CB|29|703|IRL|||2016-07-01
+Scott Wharton|CB|29|942|ENG|||<2025-07-19
+Hayden Carter|CB|26|1156|ENG|||2021-02-01
+Lewis Miller|CB|26|1305|AUS||SUI|2025-02-03
+Ryan Alebiosu|RB|24|1725|NGA||ENG|2025-07-10
+Yuri Ribeiro|LB|29|404|POR||COD|2026-09-01
+Sam Morsy|DM|35|395|EGY|||2025-08-04
+Todd Cantwell|AM|28|1369|ENG|||2022-07-01
+Jayden Fevrier|RB|23|425|ENG|||2025-07-01
+Dion De Neve|LB|25|837|BEL||MLI|2026-07-01
+Moussa Baradji|DM|25|1557|FRA||ENG|<2026-08-10
+Ryoya Morishita|AM|29|1500|JPN|||2025-01-11
+Gady Beyuku|RW|20|2349|FRA|||2025-07-01
+Adam Forshaw|DM|35|252|ENG|||2024-08-30
+Jake Garrett|DM|23|336|ENG|||2025-08-25
+Kristi Montgomery|DM|22|740|SCO|||2026-01-15
+Augustus Kargbo|LW|27|688|SLE||NGA|2026-02-01
+Andri Guðjohnsen|ST|24|2284|ISL||FRA|2026-07-28
+Oladapo Afolayan|LW|29|716|ENG|||2025-01-31
+Yuki Ohashi|ST|30|1066|JPN|||2025-08-31
+Mathias Jørgensen|ST|26|2431|DEN|||2024-07-31` },
     { id: 'portsmouth', name: 'Портсмут', city: 'Портсмут', stadium: 'Fratton Park', cap: 20899, colors: ['#001489', '#ffffff'], players: `
 Nicolas Schmid|GK|29|1498|AUT
 Ben Killip|GK|30|250|ENG
@@ -362,31 +362,31 @@ Zak Lovelace|ST|20|564|ENG
 Yanis Issoufou|LW|19|150|FRA
 Regan Monty|ST|15|150|ENG` },
     { id: 'bristol_city', name: 'Бристоль Сити', city: 'Бристоль', stadium: 'Ashton Gate Stadium', cap: 27000, colors: ['#e21b23', '#ffffff'], players: `
-Sam Tickle|GK|24|1379|ENG
-Lewis Thomas|GK|29|226|WAL
-Bradley Collins|GK|29|811|ENG
-Lisav Eissat|CB|21|1843|ROU
-Cameron Pring|LB|28|1572|ENG
-Rob Atkinson|CB|28|1643|ENG
-Luke McNally|CB|27|1705|IRL
-Rob Dickie|CB|30|1181|ENG
-George Tanner|CB|26|1871|ENG
-Rio Cardines|LB|20|784|TRI
-Noah Eile|CB|24|4079|SWE
-Adam Randell|DM|26|2812|ENG
-Brian De Keersmaecker|DM|26|1527|BEL
-Joe Williams|DM|29|364|ENG
-Scott Twine|AM|27|13265|ENG
-Jason Knight|DM|25|5188|IRL
-Tomi Horvat|AM|27|2340|SVN
-Sam Greenwood|LW|24|1628|ENG
-Gibson Yah|DM|23|1312|NED
-Yu Hirakawa|RW|25|1149|JPN
-Lorent Tolaj|ST|25|1588|SUI
-Sam Bell|LW|24|1209|ENG
-Jed Wallace|RW|32|891|ENG
-Dom Ballard|ST|21|2379|ENG
-Elijah Adebayo|ST|28|1451|ENG` },
+Sam Tickle|GK|24|1379|ENG|||2026-07-01
+Lewis Thomas|GK|29|226|WAL|||2023-09-29
+Bradley Collins|GK|29|811|ENG|||<2026-07-11
+Lisav Eissat|CB|21|1843|ROU||ISR|2026-07-10
+Cameron Pring|LB|28|1572|ENG|||2020-07-01
+Rob Atkinson|CB|28|1643|ENG|||2021-07-03
+Luke McNally|CB|27|1705|IRL|||<2024-08-30
+Rob Dickie|CB|30|1181|ENG|||<2023-07-01
+George Tanner|CB|26|1871|ENG|||2021-08-30
+Rio Cardines|LB|20|784|TRI||ENG|<2026-08-11
+Noah Eile|CB|24|4079|SWE|||2026-02-02
+Adam Randell|DM|26|2812|ENG|||2025-07-01
+Brian De Keersmaecker|DM|26|1527|BEL|||2026-09-01
+Joe Williams|DM|29|364|ENG|||2020-08-20
+Scott Twine|AM|27|13265|ENG|||<2024-08-16
+Jason Knight|DM|25|5188|IRL|||<2023-07-11
+Tomi Horvat|AM|27|2340|SVN|||2026-02-02
+Sam Greenwood|LW|24|1628|ENG|||2026-07-01
+Gibson Yah|DM|23|1312|NED||NGA|2026-07-01
+Yu Hirakawa|RW|25|1149|JPN|||<2025-07-01
+Lorent Tolaj|ST|25|1588|SUI||KVX|2026-07-20
+Sam Bell|LW|24|1209|ENG|||2020-07-01
+Jed Wallace|RW|32|891|ENG|||<2026-07-03
+Dom Ballard|ST|21|2379|ENG|||2026-08-04
+Elijah Adebayo|ST|28|1451|ENG||NGA|2026-08-25` },
     { id: 'lincoln', name: 'Линкольн Сити', city: 'Линкольн', stadium: 'ProAmpac Stadium', cap: 10780, colors: ['#e30613', '#ffffff'], players: `
 George Wickens|GK|24|1490|ENG
 Jamie Pardington|GK|26|359|ENG
@@ -471,31 +471,31 @@ Bailey Cadamarteri|ST|21|2133|JAM
 Kieffer Moore|ST|34|1112|WAL
 Sam Smith|ST|28|1194|ENG` },
     { id: 'bolton', name: 'Болтон Уондерерс', city: 'Болтон', stadium: 'Toughsheet Community Stadium', cap: 28723, colors: ['#ffffff', '#263c7e'], players: `
-Jack Bonham|GK|33|340|IRL
-David Harrington|GK|26|448|WAL
-Gavin Bazunu|GK|24|9237|IRL
-Chris Forino|CB|26|416|STL
-Lewis Brunt|CB|25|484|ENG
-Ben Davies|CB|31|665|ENG
-Akin Famewo|LB|27|832|ENG
-Eoin Toal|CB|27|573|NIR
-Max Conway|LB|23|850|ENG
-Xavier Simons|DM|23|939|ENG
-Josh Sheehan|DM|31|528|WAL
-David Watson|CM|21|1906|SCO
-Atsuki Ito|DM|28|1291|JPN
-Rúben Rodrigues|AM|30|439|POR
-Ethan Erhahon|DM|25|893|SCO
-Gaizka Larrazabal|RW|28|1906|ESP
-Jayden Nelson|LW|24|1669|CAN
-Luca Stephenson|RW|23|1345|ENG
-John McAtee|AM|27|335|ENG
-Kyliane Dong|LW|22|1274|FRA
-Theo Bair|ST|27|1385|CAN
-Sam Dalby|ST|26|1294|ENG
-Thierry Gale|LW|24|685|BRB
-Samuel Iling-Junior|RW|23|9997|ENG
-Ryan Hardie|ST|29|725|SCO` },
+Jack Bonham|GK|33|340|IRL||ENG|<2026-01-14
+David Harrington|GK|26|448|WAL||IRL|2026-01-15
+Gavin Bazunu|GK|24|9237|IRL||NGA|<2026-08-28
+Chris Forino|CB|26|416|STL||ENG|2024-07-01
+Lewis Brunt|CB|25|484|ENG|||<2026-08-12
+Ben Davies|CB|31|665|ENG|||2026-07-01
+Akin Famewo|LB|27|832|ENG||NGA|<2026-07-01
+Eoin Toal|CB|27|573|NIR|||2022-07-20
+Max Conway|LB|23|850|ENG||RSA|2025-07-01
+Xavier Simons|DM|23|939|ENG||SRI|<2025-07-01
+Josh Sheehan|DM|31|528|WAL|||2021-07-01
+David Watson|CM|21|1906|SCO|||2026-07-01
+Atsuki Ito|DM|28|1291|JPN|||2026-08-28
+Rúben Rodrigues|AM|30|439|POR||NED|2026-01-30
+Ethan Erhahon|DM|25|893|SCO||NGA|<2025-07-25
+Gaizka Larrazabal|RW|28|1906|ESP|||2026-07-23
+Jayden Nelson|LW|24|1669|CAN||JAM|2026-08-26
+Luca Stephenson|RW|23|1345|ENG|||2026-07-02
+John McAtee|AM|27|335|ENG|||2024-08-09
+Kyliane Dong|LW|22|1274|FRA||CMR|2026-07-07
+Theo Bair|ST|27|1385|CAN||JAM|2026-09-01
+Sam Dalby|ST|26|1294|ENG|||<2025-07-01
+Thierry Gale|LW|24|685|BRB|||2025-07-04
+Samuel Iling-Junior|RW|23|9997|ENG||COD|<2026-08-14
+Ryan Hardie|ST|29|725|SCO|||<2026-08-11` },
     { id: 'charlton', name: 'Чарльтон Атлетик', city: 'Лондон', stadium: 'The Valley', cap: 27111, colors: ['#d4021d', '#ffffff'], players: `
 Arthur Okonkwo|GK|25|3904|NGA
 Tiernan Brooks|GK|24|204|IRL
