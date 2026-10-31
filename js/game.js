@@ -1999,6 +1999,8 @@
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;
+          // форма: оценки за последние 8 матчей (×10, целые — компактно в сохранении)
+          p.rh = (p.rh || []).concat(Math.round(r * 10)).slice(-8);
           p.fit = Math.round(side.fitness[pid]);
           p.morale = FM.clamp(p.morale + (r >= 7.5 ? 4 : r < 6 ? -3 : 0), 10, 100);
           // сухой матч — вратарю и защитникам, сыгравшим от 60 минут

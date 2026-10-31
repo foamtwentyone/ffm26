@@ -76,6 +76,14 @@
   const rgbHex = (c) => '#' + c.map((v) => Math.round(FM.clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
   const satOf = (h) => { const c = hexRgb(h); return (Math.max(...c) - Math.min(...c)) / 255; };
   const mixHex = (h, to, k) => { const a = hexRgb(h), b = hexRgb(to); return rgbHex(a.map((v, i) => v + (b[i] - v) * k)); };
+  // Цвет гостей, отличимый от цвета хозяев: если основные цвета похожи — второй цвет клуба или светлый оттенок
+  function awayColor(hc, t) {
+    const dist = (x, y) => { const a = hexRgb(x), b = hexRgb(y); return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]); };
+    const ac = glow(t);
+    if (dist(hc, ac) > 110) return ac;
+    for (const c of t.colors) if (/^#[0-9a-f]{6}$/i.test(c) && dist(hc, c) > 140 && lum(c) > 0.08) return c;
+    return dist(hc, '#e8edf7') > 140 ? '#e8edf7' : '#2b2f3a';
+  }
   function glow(t) {
     const cands = t.colors.filter((c) => /^#[0-9a-f]{6}$/i.test(c) && satOf(c) > 0.22).sort((a, b) => satOf(b) - satOf(a));
     let c = cands[0];
@@ -1434,6 +1442,7 @@
         <div><span>Физ. готовность</span><b>${Math.round(p.fit)}%</b></div>
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div></div></div>
+      ${formBlock(p)}
       ${mine && !p.loan ? retrainBlock(p) : ''}
       ${citBlock(p)}
       ${p.inj ? `<div class="note bad">Травма: ещё ${G.injText(p.inj)}</div>` : ''}${p.sus ? `<div class="note bad">Дисквалификация: ${p.sus} матч(а)</div>` : ''}
@@ -1521,6 +1530,17 @@
   const interestColor = (v) => (v >= 70 ? 'var(--good)' : v >= 50 ? '#9be36b' : v >= 30 ? 'var(--warn)' : 'var(--bad)');
 
   // Переучивание (как в FC): выбор новой позиции, прогресс по неделям, отмена
+  // Форма игрока: оценки за последние матчи столбиками (зелёный — от 7.5, красный — ниже 6)
+  function formBlock(p) {
+    const rh = (p.rh || []).map((x) => x / 10);
+    if (!rh.length) return '';
+    const avg = rh.reduce((a, b) => a + b, 0) / rh.length;
+    const lo = 5, hi = 8.5;
+    const trend = rh.length >= 4 ? (rh.slice(-3).reduce((a, b) => a + b, 0) / 3) - (rh.slice(0, -3).reduce((a, b) => a + b, 0) / (rh.length - 3)) : 0;
+    return `<div class="pform"><div class="row"><b class="grow">Форма</b><span class="small muted">последние ${rh.length} матч${rh.length === 1 ? '' : rh.length < 5 ? 'а' : 'ей'} · средняя</span><b class="pf-avg ${avg >= 7.2 ? 'good' : avg < 6.3 ? 'bad' : ''}">${avg.toFixed(2)}</b>${Math.abs(trend) >= 0.25 ? `<span class="pf-tr ${trend > 0 ? 'good' : 'bad'}">${icon(trend > 0 ? 'up' : 'down', 'sm')}</span>` : ''}</div>
+      <div class="pf-bars">${rh.map((r) => `<div class="pf-b ${r >= 7.5 ? 'hi' : r < 6 ? 'lo' : ''}"><span>${r.toFixed(1)}</span><i style="height:${((Math.min(hi, Math.max(lo, r)) - lo) / (hi - lo) * 100).toFixed(0)}%"></i></div>`).join('')}</div></div>`;
+  }
+
   // Гражданство, статус легионера в лиге клуба и натурализация
   function citBlock(p) {
     const G = g(), I = G.natInfo(p);
@@ -1920,8 +1940,9 @@
     const sim = G.createMatch(m, true);
     const root = document.createElement('div');
     root.className = 'match';
-    root.style.setProperty('--hcb', glow(m.h ? T(m.h) : sim.home.team));
-    root.style.setProperty('--acb', glow(m.a ? T(m.a) : sim.away.team));
+    const hc = glow(m.h ? T(m.h) : sim.home.team);
+    root.style.setProperty('--hcb', hc);
+    root.style.setProperty('--acb', awayColor(hc, m.a ? T(m.a) : sim.away.team));
     document.body.appendChild(root);
     let speed = 1, timer = null, tab = 'feed', subSel = null;
     // серия пенальти показывается по одному удару: so — показанные удары, soQueue — ещё не показанные события
@@ -1936,11 +1957,43 @@
       <div class="row mtabs"><div class="seg" id="spd">${[['0', icon('pause')], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="grow"></span><button class="btn" id="mng">Замены и тактика</button><button class="btn" id="fin">До конца</button></div>
+      <div class="mom card"><div class="mom-h"><span class="mom-t" style="color:var(--hcb)">${esc(h.name)}</span><b>Давление</b><span class="mom-t" style="color:var(--acb)">${esc(a.name)}</span></div><div id="momc"></div></div>
       <div id="mgrPanel" class="card hidden" style="margin-bottom:12px"></div>
-      <div class="card" id="body"></div>
+      <div class="m-main"><div class="card" id="body"></div><div class="card m-side" id="mside"></div></div>
       <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary hidden" id="done">Завершить</button></div></div>`;
     const $ = (q) => root.querySelector(q);
     const feed = [];
+    // Давление по ходу матча: каждый шаг — разница xG, ударов, угловых и владения за минуту (плюс — хозяева),
+    // сглаженная; отметки голов и перерыва. last — статистика на прошлом шаге.
+    const mom = [], momGoals = [], momMarks = [];
+    let last = { h: { ...sim.home.stats }, a: { ...sim.away.stats } }, ema = 0;
+    const momStep = (evs) => {
+      const H = sim.home.stats, A = sim.away.stats, d = (k, sd) => (sd === 'h' ? H : A)[k] - last[sd][k];
+      const pt = d('possTicks', 'h') + d('possTicks', 'a') || 1;
+      const v = 4 * (d('xg', 'h') - d('xg', 'a')) + 0.8 * (d('shots', 'h') - d('shots', 'a')) + 0.6 * (d('sot', 'h') - d('sot', 'a')) + 0.4 * (d('corners', 'h') - d('corners', 'a')) + 0.5 * (d('possTicks', 'h') / pt - 0.5);
+      ema = ema * 0.7 + v * 0.3;
+      mom.push(ema);
+      for (const e of evs) { if (e.type === 'goal' && e.side) momGoals.push({ i: mom.length - 1, side: e.side }); if (e.type === 'half') momMarks.push(mom.length - 1); }
+      last = { h: { ...H }, a: { ...A } };
+    };
+    const momChart = () => {
+      const N = Math.max(96, mom.length + (sim.done ? 0 : 4)), W = 1000, Hh = 90, mid = Hh / 2;
+      const mx = Math.max(0.35, ...mom.map(Math.abs));
+      const X = (i) => (i / (N - 1)) * W, Y = (v) => mid - (v / mx) * (mid - 6);
+      const path = (sign) => mom.length < 2 ? '' : `M0,${mid}` + mom.map((v, i) => `L${X(i).toFixed(1)},${Y(sign > 0 ? Math.max(0, v) : Math.min(0, v)).toFixed(1)}`).join('') + `L${X(mom.length - 1).toFixed(1)},${mid}Z`;
+      return `<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none" class="mom-svg">
+        <line x1="0" x2="${W}" y1="${mid}" y2="${mid}" class="mom-axis"/>
+        ${momMarks.map((i) => `<line x1="${X(i)}" x2="${X(i)}" y1="2" y2="${Hh - 2}" class="mom-ht"/>`).join('')}
+        <path d="${path(1)}" class="mom-h-a"/><path d="${path(-1)}" class="mom-a-a"/>
+        ${momGoals.map((g2) => `<circle cx="${X(g2.i)}" cy="${g2.side === 'h' ? 8 : Hh - 8}" r="5" class="mom-goal ${g2.side}"/>`).join('')}
+      </svg>`;
+    };
+    // мини-статистика справа от ленты
+    const miniStats = () => {
+      const H = sim.home.stats, A = sim.away.stats, tp = H.possTicks + A.possTicks || 1, ph = Math.round((H.possTicks / tp) * 100);
+      const bar = (n, x, y, fx = (v) => v) => { const t = (+x) + (+y) || 1; return `<div class="ms-r"><div class="ms-n"><b>${fx(x)}</b><span>${n}</span><b>${fx(y)}</b></div><div class="ms-b"><i style="width:${(x / t * 100).toFixed(1)}%"></i><i style="width:${(y / t * 100).toFixed(1)}%"></i></div></div>`; };
+      return `<div class="ms">${bar('Владение', ph, 100 - ph, (v) => v + '%')}${bar('xG', H.xg, A.xg, (v) => (+v).toFixed(2))}${bar('Удары', H.shots, A.shots)}${bar('В створ', H.sot, A.sot)}${bar('Угловые', H.corners, A.corners)}${bar('Фолы', H.fouls, A.fouls)}</div>`;
+    };
     const draw = () => {
       $('#sc').textContent = `${sim.home.goals}:${sim.away.goals}`;
       if (m.firstLeg) {
@@ -1965,6 +2018,8 @@
       const gl = (sd) => scorerLines(sim.goalsList.filter((x) => x.side === sd), (id) => esc(G.players[id].name)).join('<br>') + redLines(sim.events.filter((e) => e.type === 'red'), sd);
       $('#sh').innerHTML = gl('h');
       $('#sa').innerHTML = gl('a');
+      $('#momc').innerHTML = momChart();
+      $('#mside').innerHTML = miniStats();
       const body = $('#body');
       if (tab === 'feed') {
         body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? icon('ball') : icon('x', 'red')) : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">${icon('square', 'sm')}</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
@@ -2003,6 +2058,7 @@
         return;
       }
       feed.push(...evs);
+      momStep(evs);
       for (const e of evs) if (e.type === 'goal' && e.side) {
         const t = e.side === 'h' ? h : a, sc = G.players[e.scorer];
         splash('ГОЛ!', `${esc(sc ? sc.name : '')} · ${sim.home.goals}:${sim.away.goals}`, glow(t), e.side === (m.h === G.s.user ? 'h' : 'a') ? 'mine' : 'theirs', 1500);
@@ -2074,7 +2130,7 @@
       for (const e of soQueue) { feed.push(e); if (e.type === 'penkick') { so.kicks.push({ side: e.side, ok: e.ok }); so.h = e.ph; so.a = e.pa; } }
       soQueue = [];
       while (!sim.done) {
-        feed.push(...sim.step());
+        { const evs = sim.step(); feed.push(...evs); momStep(evs); }
         if (sim.needUserSub) {
           // без участия тренера травмированного меняет ассистент
           const sd = sim.userSide, o = sd.onPitch.find((x) => x.p.id === sim.needUserSub);

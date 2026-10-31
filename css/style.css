@@ -518,7 +518,9 @@ th { font-size: var(--fs-sm); }
 .mainnav .ni { display: inline-flex; width: 20px; height: 20px; }
 .mainnav .ni svg { width: 20px; height: 20px; }
 .mainnav .dot { margin-left: 2px; }
-.mainnav .more { display: none; }
+/* одна навигация: ряд вкладок с «Ещё» в конце (открывает все разделы); бургер не нужен */
+.mainnav .more { display: inline-flex; }
+.burger { display: none !important; }
 .mdots { font-style: normal; font-size: var(--fs-base); letter-spacing: -1px; line-height: 20px; }
 @media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
   .burger { display: none; }
@@ -1842,3 +1844,38 @@ table tr:has(> td) { transition: background-color .15s; }
 .sk-logo b { color: rgba(46, 240, 143, .35); }
 .sv.sk { min-height: 230px; border: 1px solid var(--line); }
 @media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+
+/* ===================== живой матч: давление и мини-статистика ===================== */
+.mom { padding: 10px 14px !important; margin-bottom: 12px; }
+.mom-h { display: flex; justify-content: space-between; align-items: center; font-size: var(--fs-sm); margin-bottom: 4px; }
+.mom-h b { font: 600 var(--fs-xs) var(--f-body); text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.mom-t { font: 700 var(--fs-md) var(--f-display); text-transform: uppercase; letter-spacing: .04em; }
+.mom-svg { display: block; width: 100%; height: 90px; }
+.mom-axis { stroke: var(--stroke2); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.mom-ht { stroke: rgba(255,255,255,.25); stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.mom-h-a { fill: var(--hcb); opacity: .85; } .mom-a-a { fill: var(--acb); opacity: .85; }
+.mom-goal { fill: #fff; stroke: #0b1030; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.m-main { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--gap); align-items: start; }
+.m-side { position: sticky; top: 12px; }
+.ms { display: grid; gap: 12px; }
+.ms-n { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-sm); margin-bottom: 4px; }
+.ms-n span { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+.ms-n b { font: 700 var(--fs-lg) var(--f-display); }
+.ms-b { display: flex; gap: 3px; height: 6px; }
+.ms-b i { display: block; height: 100%; border-radius: 4px; transition: width .4s var(--ease); min-width: 3px; }
+.ms-b i:first-child { background: var(--hcb); } .ms-b i:last-child { background: var(--acb); }
+@media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+  .m-main { grid-template-columns: 1fr; } .m-side { display: none; }
+  .mom-svg { height: 60px; } .mom { padding: 6px 10px !important; margin-bottom: 8px; }
+}
+/* форма игрока в карточке */
+.pform { margin: 10px 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--glass); border: 1px solid var(--line); }
+.pform .row { gap: 8px; align-items: baseline; }
+.pf-avg { font: 700 var(--fs-xl) var(--f-display); } .pf-avg.good { color: var(--good); } .pf-avg.bad { color: var(--bad); }
+.pf-tr.good { color: var(--good); } .pf-tr.bad { color: var(--bad); }
+.pf-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; height: 90px; margin-top: 8px; }
+.pf-b { display: grid; grid-template-rows: auto 1fr; justify-items: center; gap: 3px; }
+.pf-b span { font: 600 var(--fs-xs) var(--f-display); color: var(--muted); }
+.pf-b i { align-self: end; width: 70%; max-width: 26px; border-radius: var(--r-xs) var(--r-xs) 2px 2px; background: linear-gradient(0deg, #3b5bdb, #6f8cff); animation: gbGrow .5s var(--ease) both; transform-origin: bottom; }
+.pf-b.hi i { background: linear-gradient(0deg, #1fbf75, #2ef08f); } .pf-b.hi span { color: var(--good); }
+.pf-b.lo i { background: linear-gradient(0deg, #c33a4c, #ff5a6e); } .pf-b.lo span { color: var(--bad); }
