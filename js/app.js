@@ -176,12 +176,12 @@
     const r = apps ? ((p.st.rsum + p.cst.rsum) / apps).toFixed(1) : '—';
     stats = stats || (gk ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']]);
     const last = p.name.split(' ').slice(-1)[0];
+    // крупно — рейтинг (настоящих номеров в базе нет), позиция — значком наверху; stats = [] — без строки статистики
     return `<div class="fut kit-card st${stats.length} ${tier}" style="--k1:${k1};--k2:${k2};--ki:${ink}">
       <div class="kc-collar"></div><div class="kc-stitch"></div>
-      <div class="kc-ids">${club ? badge(club, 'sm') : ''}${flag(p.nat)}</div>
-      <div class="kc-sn ${last.length > 10 ? 'long' : ''}">${esc(last)}</div><div class="kc-no">${shirtNo(p)}</div>
-      <div class="kc-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>
-      <div class="kc-tag"><span>${FM.POS_RU[p.pos]}</span><b>${p.ovr}</b><span>${p.age} лет</span></div></div>`;
+      <div class="kc-ids">${club ? badge(club, 'sm') : '<i></i>'}<span class="kc-pos">${FM.POS_RU[p.pos]}</span>${flag(p.nat)}</div>
+      <div class="kc-sn ${last.length > 10 ? 'long' : ''}">${esc(last)}</div><div class="kc-no" title="Рейтинг">${p.ovr}</div>
+      ${stats.length ? `<div class="kc-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>` : ''}</div>`;
   }
 
 
@@ -1431,7 +1431,7 @@
     const mine = p.club === u.id;
     const avg = p.st.apps ? (p.st.rsum / p.st.apps).toFixed(2) : '—';
     const it = mine ? null : G.playerInterest(p, u);
-    const el = modal(`<div class="pl-head">${futCard(p)}<div class="pl-info"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}${p.gen ? ' <span class="gen" title="Сгенерированный игрок">*</span>' : ''}</h2>
+    const el = modal(`<div class="pl-head">${futCard(p, [])}<div class="pl-info"><h2 style="margin:0">${flag(p.nat, 'lg')}${esc(p.name)}${p.gen ? ' <span class="gen" title="Сгенерированный игрок">*</span>' : ''}</h2>
       <div class="muted">${FM.POS_NAME[p.pos]}${(p.alt || []).length ? ` <span class="alt-pos">также: ${p.alt.map((a) => FM.POS_RU[a]).join(', ')}</span>` : ''} · ${p.age} лет</div>
       <div>${club ? tname(club) : '<span class="muted">Свободный агент</span>'}</div>
       <div class="kv">

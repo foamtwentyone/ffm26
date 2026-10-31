@@ -1879,3 +1879,15 @@ table tr:has(> td) { transition: background-color .15s; }
 .pf-b i { align-self: end; width: 70%; max-width: 26px; border-radius: var(--r-xs) var(--r-xs) 2px 2px; background: linear-gradient(0deg, #3b5bdb, #6f8cff); animation: gbGrow .5s var(--ease) both; transform-origin: bottom; }
 .pf-b.hi i { background: linear-gradient(0deg, #1fbf75, #2ef08f); } .pf-b.hi span { color: var(--good); }
 .pf-b.lo i { background: linear-gradient(0deg, #c33a4c, #ff5a6e); } .pf-b.lo span { color: var(--bad); }
+
+/* майка без бирки: рейтинг в центре, позиция значком, статистика у нижнего края */
+.kc-ids { align-items: center; }
+.kc-pos { font: 700 var(--fs-xs)/1 var(--f-display); letter-spacing: .06em; padding: 3px 6px; border-radius: var(--r-xs); background: rgba(0,0,0,.35); color: #fff; border: 1px solid rgba(255,255,255,.25); }
+.fut.kit-card .kc-no { top: 31%; font-size: 84px; }
+.fut.kit-card.st0 { aspect-ratio: 3 / 3.5 !important; }
+.fut.kit-card.st0 .kc-no { top: 38%; font-size: 92px; }
+.fut.kit-card .kc-st { bottom: 14px; }
+.fut.kit-card.sm .kc-no { font-size: 60px; } .fut.kit-card.sm.st0 .kc-no { font-size: 66px; }
+.fut.kit-card.sm .kc-st { bottom: 10px; }
+.fut.kit-card.sm .kc-pos { font-size: 9px; padding: 2px 4px; }
+@media (max-height: 500px) and (orientation: landscape) { .pl-head .fut.kit-card .kc-no { font-size: 64px; } }
