@@ -45,7 +45,10 @@
       this._tables = {};
       // старые сохранения: в базе не хватало игроков с отметкой капитана, травмы или дисквалификации (Винисиус, Вальверде,
       // Акинфеев…) — добавляем их в свои клубы; если в заявке нет места — в свободные агенты
+      // старые сохранения: звёзды, которых из-за ошибки подписали слабые клубы, возвращаются в свой клуб из базы
+      if (state.dbV2 && !state.dbV3 && FM.leagues) { state.dbV3 = true; this.repairStarMoves(); }
       if (!state.dbV2) {
+        state.dbV3 = true;
         state.dbV2 = true;
         if (FM.leagues) this.addMissingRealPlayers();
       }
@@ -63,6 +66,25 @@
       }
     }
 
+    repairStarMoves() {
+      const home = {};
+      for (const L of FM.leagues) for (const T of L.teams) for (const line of (T.players || '').split('\n')) { const nm = line.trim().split('|')[0]; if (nm) home[nm] = T.id; }
+      let n = 0;
+      for (const id in this.players) {
+        const p = this.players[id];
+        if (!p.club || p.club === this.s.user || p.loan) continue;
+        const cur = this.teams[p.club], h = this.teams[home[p.name]];
+        if (!h || h.id === cur.id || h.id === this.s.user) continue;
+        if (p.ovr >= 78 && p.ovr > this.teamBaseOvr(cur) + 12 && h.rep > cur.rep + 10) {
+          this.removeFromTeam(p);
+          p.club = h.id; h.players.push(p.id); p.listed = false;
+          p.wage = Math.round(FM.wageFor(p.value, this.tierOf(h), p.age, this.countryOf(h.league)) * 10) / 10;
+          n++;
+        }
+      }
+      if (n) this.news(`${n} игроков, ошибочно перешедших в клубы намного слабее себя, вернулись в свои клубы.`);
+    }
+
     addMissingRealPlayers() {
       const s = this.s;
       const have = new Set(Object.values(this.players).map((p) => p.name));
@@ -74,7 +96,7 @@
           const f = line.split('|');
           if (have.has(f[0])) continue;
           const d = { name: f[0], pos: f[1], age: +f[2], value: +f[3], nat: f[4] || 'RUS', until: /^\d{4}$/.test(f[5] || '') ? +f[5] : null };
-          const into = team && team.players.length < MAX_SQUAD ? team : null;
+          const into = team && team.players.length < MAX_SQUAD + 4 ? team : null;
           const p = this.createPlayer(d, into);
           if (!into) { p.club = null; s.freeAgents.push(p.id); }
           have.add(f[0]);
@@ -2542,9 +2564,11 @@
           cands.push(p);
         }
       }
+      // свободный агент не пойдёт в клуб намного слабее себя
+      const top = this.teamBaseOvr(buyer) + 8;
       for (const pid of s.freeAgents) {
         const p = this.players[pid];
-        if (p && p.pos === pos && p.ovr >= wv + 2) cands.push(p);
+        if (p && p.pos === pos && p.ovr >= wv + 2 && p.ovr <= wv + 12 && p.ovr <= top) cands.push(p);
       }
       if (!cands.length) return;
       cands.sort((a, b) => b.ovr - a.ovr);
@@ -2638,8 +2662,9 @@
       const pc = p.club ? this.countryOf(this.teams[p.club].league) : p.nat;
       for (const id in info) {
         const x = info[id];
-        if (id === p.club || x.size >= MAX_SQUAD - 3) continue;
-        if (p.ovr < x.base - 7 || p.ovr > x.base + 5 + relax) continue;
+        if (id === p.club || x.size >= MAX_SQUAD - 1) continue;
+        if (p.ovr < x.base - 7 || p.ovr > x.base + 5 + Math.min(relax, 4)) continue;
+        if (p.ovr >= 80 && x.t.rep < 72) continue; // звёзды не уходят в слабые клубы
         const arr = x.pos[p.pos] || [];
         const need = SQUAD_NEED[p.pos] || 2;
         let v = 0;

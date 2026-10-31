@@ -1164,6 +1164,7 @@
       const page = UI.tfPage, per = 48;
       const shown = list.slice(page * per, page * per + per);
       const winter = s.date >= `${s.season + 1}-01-01`;
+      const sh = (key, nm) => `<button class="tf-sort ${UI.sortKey === key ? 'on' : ''}" data-sort="${key}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`;
       const sortBtns = [['ovr', 'Рейтинг'], ['value', 'Цена'], ['age', 'Возраст'], ['pot', 'Потенциал']].map(([key, nm]) => `<button data-sort="${key}" class="${UI.sortKey === key ? 'on' : ''}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`).join('');
       const potBar = (p) => `<span class="potbar" title="Потенциал: ${G.potLabel(p)}"><i style="width:${FM.clamp((p.ovr - 40) * 1.8, 4, 100)}%"></i><i class="room" style="width:${FM.clamp((p.pot - p.ovr) * 1.8, 0, 60)}%"></i></span>`;
       const rowTags = (p) => (p.pre ? '<span class="tag">предв. контракт</span>' : '') + (!p.pre && p.club && p.contract <= s.season ? `<span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : '') + (p.listed ? '<span class="tag warn">на продаже</span>' : '') + (!p.club ? '<span class="tag free">свободен</span>' : '');
@@ -1171,8 +1172,7 @@
           <span class="tf-kit">${kitSvg(p.club ? T(p.club) : { colors: ['#3a4256', '#8f9bcc'] }, p.pos === 'GK')}</span>${pos(p.pos)}<div class="tf-who">${flag(p.nat)}<b>${esc(p.name)}</b>${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}<div class="tf-tags">${rowTags(p)}</div></div>
           <div class="tf-club">${p.club ? tname(T(p.club)) : '<span class="muted small">без клуба</span>'}</div>
           <span class="tf-age">${p.age}<small>лет</small></span>${ovr(p.ovr)}${potBar(p)}<span class="tf-val">${FM.money(p.value)}</span></div>`).join('');
-      body = `<div class="tf-presets">${TF_PRESETS.map(([key, nm]) => `<button data-preset="${key}" class="${preset === key ? 'on' : ''}">${nm}</button>`).join('')}</div>
-      <div class="tf-layout">
+      body = `      <div class="tf-layout">
         <aside class="card tf-filters ${UI.tfFiltersOpen ? 'open' : ''}">
           <h3 id="tf-ftoggle">Фильтры <span class="tf-fcount">${['name', 'league', 'maxPrice', 'minOvr', 'maxAge', 'listed', 'expiring', 'realOnly'].filter((key) => f[key]).length + [].concat(f.pos || []).length || ''}</span><span class="tf-fchev">▾</span></h3>
           <label>Имя<input id="f-name" placeholder="Например, Кисляк" value="${esc(f.name || '')}"></label>
@@ -1187,10 +1187,10 @@
           <div class="small muted">${winter ? 'Сейчас можно подписывать <b>предварительные контракты</b> с игроками, у которых летом истекает контракт.' : 'С 1 января можно подписывать предварительные контракты с игроками, у которых летом истекает контракт.'}</div>
         </aside>
         <div class="tf-results">
-          <div class="tf-bar"><span class="tf-found"><b>${list.length.toLocaleString('ru-RU')}</b> игроков</span><div class="seg sm">${sortBtns}</div><span class="grow"></span>
+          <div class="tf-bar"><span class="tf-found"><b>${list.length.toLocaleString('ru-RU')}</b> игроков</span><span class="grow"></span>
             <div class="seg sm"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div></div>
           ${!UI.tfCards && page === 0 && shown.length >= 4 ? `<div class="tf-spot"><span class="label">В центре внимания</span><div class="tf-spot-row">${shown.slice(0, 4).map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : ''}
-          ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight tf-list">${rows || '<div class="muted" style="padding:16px">Никого не нашли — ослабьте фильтры.</div>'}</div>`}
+          ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight tf-list"><div class="tf-row tf-head"><span></span><span></span>${sh('name', 'Игрок')}<span class="tf-club">Клуб</span>${sh('age', 'Возр')}${sh('ovr', 'Рейт')}${sh('pot', 'Потенц.')}${sh('value', 'Цена')}</div>${rows || '<div class="muted" style="padding:16px">Никого не нашли — ослабьте фильтры.</div>'}</div>`}
           <div class="row tf-pages"><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹ Назад</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>Дальше ›</button></div>
         </div>
       </div>`;
@@ -1388,6 +1388,16 @@
         <span class="small muted" id="rt-weeks">≈ ${FM.retrainWeeks(p, opts[0])} нед.</span><button class="btn sm primary" id="rt-go">Начать</button></div></div>`;
   }
 
+  // Шкала торга: где ваше последнее предложение относительно запроса другой стороны
+  function gapMeter(mine, ask, l1, l2, fmt) {
+    if (!ask) return '';
+    const max = Math.max(ask, mine) * 1.25;
+    const pm = Math.min(100, (mine / max) * 100), pa = Math.min(100, (ask / max) * 100);
+    const close = mine && mine >= ask * 0.97 ? 'ok' : mine >= ask * 0.85 ? 'near' : 'far';
+    return `<div class="gap ${close}"><div class="gap-track"><i class="gap-fill" style="width:${pm}%"></i><span class="gap-ask" style="left:${pa}%"><b>${fmt(ask)}</b><em>${l2}</em></span>${mine ? `<span class="gap-me" style="left:${pm}%"><b>${fmt(mine)}</b><em>${l1}</em></span>` : ''}</div>
+      <div class="gap-say">${!mine ? 'Сделайте первое предложение' : close === 'ok' ? 'Позиции сошлись' : close === 'near' ? 'Почти договорились' : `Разница ${fmt(ask - mine)}`}</div></div>`;
+  }
+
   // ================== посадочный талон после подписания ==================
   // Талон выезжает, самолёт летит по пунктиру от прежнего клуба к новому, в конце — печать «ПОДПИСАН».
   function ticketModal(p, from, to, d) {
@@ -1442,6 +1452,7 @@
           <label>Оплата<select id="n-inst"><option value="0">Сразу</option><option value="1">Рассрочка 40/30/30</option></select></label>
           <label>% с перепродажи<select id="n-sell"><option value="0">нет</option><option value="10">10%</option><option value="20">20%</option></select></label>
           <button class="btn primary" id="n-bid">Отправить</button></div>
+        ${gapMeter(n.lastFee || 0, hint, 'Ваше предложение', `Запрос «${esc(club.name)}»`, FM.money)}
         <div class="small muted" style="margin-top:8px">Ориентир: около ${FM.money(hint)} · терпение клуба ${dots(n.patience, p.listed ? 6 : 5)} · бюджет ${FM.money(u.money)}</div>`;
     } else if (n.stage === 'player') {
       const role = it.starter ? 'starter' : 'rotation';
@@ -1453,6 +1464,7 @@
           <label>Роль<select id="n-role">${Object.entries(ROLE_NAME).map(([k, v]) => `<option value="${k}" ${k === role ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
           ${moneyField('n-release', 'Отступные (0 — нет)', 0, 'млн')}
           <button class="btn primary" id="n-offer">Предложить</button></div>
+        ${gapMeter(n.lastWage || 0, d.wage, 'Ваше предложение', 'Запрос агента', (v) => `${FM.money(v)}/нед`)}
         <div class="small muted" style="margin-top:8px">Агент ориентируется примерно на ${FM.money(d.wage)}/нед для роли «${ROLE_NAME[role]}», удобный срок — ${d.prefYears.join(' или ')} г. Роль «ключевой игрок» снижает запрос, «запасной» — повышает. Отступные немного снижают запрос. Терпение игрока ${dots(n.pPatience, 4)}</div>`;
     } else {
       const c = G.dealCost(n);

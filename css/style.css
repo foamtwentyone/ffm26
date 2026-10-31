@@ -405,7 +405,7 @@ tr.sel td { background: rgba(255, 201, 60, .14) !important; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-@media (max-width: 860px) {
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
   .squad-layout { grid-template-columns: 1fr; }
   .pitch { max-width: 430px; margin: 0 auto; }
   .hide-m { display: none; }
@@ -515,7 +515,7 @@ th { font-size: 12px; }
 .mainnav .dot { margin-left: 2px; }
 .mainnav .more { display: none; }
 .mdots { font-style: normal; font-size: 14px; letter-spacing: -1px; line-height: 20px; }
-@media (max-width: 860px) {
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
   .burger { display: none; }
   .mainnav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; margin: 0; gap: 0; flex-wrap: nowrap; padding: 6px max(6px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(6, 10, 28, .94); backdrop-filter: blur(14px); border-top: 1px solid var(--stroke); }
   .mainnav button { flex: 1; flex-direction: column; gap: 3px; padding: 6px 2px; border: 0; background: none; font-size: 12px; border-radius: 12px; }
@@ -530,7 +530,7 @@ th { font-size: 12px; }
 }
 @media (max-width: 620px) { .strip .chip[data-tab="inbox"] { display: inline-flex; } }
 .card.tight { overflow-x: auto; }
-@media (max-width: 860px) { #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); } }
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) { #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); } }
 
 /* плотные шрифты: Montserrat в заголовках, Manrope в тексте */
 body { font-weight: 500; }
@@ -544,10 +544,10 @@ th { font-weight: 700; letter-spacing: .04em; }
 .btn, .seg button, .mainnav button, .chip, .next-btn { font-weight: 700; }
 .mainnav button { font-size: 13px; padding: 7px 12px; border-radius: 12px; }
 .mainnav .ni, .mainnav .ni svg { width: 17px; height: 17px; }
-@media (max-width: 860px) { .mainnav button { font-size: 11px; letter-spacing: 0; } }
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) { .mainnav button { font-size: 11px; letter-spacing: 0; } }
 .kv span:first-child { font-weight: 700; }
 input, select { font-weight: 600; }
-@media (max-width: 860px) { .mainnav button { font-size: 11px; padding: 6px 2px; } .mainnav .ni, .mainnav .ni svg { width: 22px; height: 22px; } }
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) { .mainnav button { font-size: 11px; padding: 6px 2px; } .mainnav .ni, .mainnav .ni svg { width: 22px; height: 22px; } }
 .trlist .arr { width: 20px; height: 20px; border-radius: 6px; } .trlist .arr svg { width: 13px; height: 13px; }
 
 /* линии состава: вратарь, защита, полузащита, атака — свой цвет везде (поле, скамейка, таблицы, сила состава) */
@@ -1360,3 +1360,44 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .ng-chat .msg .ava span, .ng-chat .msg .ava { padding: 0 !important; border: 0 !important; max-width: none !important; border-radius: 50% !important; box-shadow: none; }
 .ng-chat .msg .ava .badge.logo { background: #fff !important; }
 .ng-chat .msg .ava .ava-kit { border-radius: 0 !important; background: none !important; }
+/* шапка списка трансферов: нажатие на колонку — сортировка */
+.tf-row.tf-head { cursor: default; background: rgba(0,0,0,.25) !important; box-shadow: none !important; padding-block: 6px; position: sticky; top: 0; z-index: 2; }
+.tf-row.tf-head:hover { transform: none; }
+.tf-sort { background: none; border: 0; padding: 4px 0; font: 800 12px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); cursor: pointer; text-align: right; }
+.tf-sort:first-of-type { text-align: left; }
+.tf-row.tf-head .tf-club { font: 800 12px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.tf-sort.on { color: var(--text); }
+@media (max-width: 760px), (max-height: 500px) and (orientation: landscape) { .tf-row.tf-head > :nth-child(7) { display: none; } }
+
+/* ===== крупные кнопки на телефоне (палец, а не курсор) ===== */
+#done:not(.hidden) { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 70; min-width: 220px; min-height: 52px; font-size: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.55); }
+.match .inner { padding-bottom: 90px; }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  .next-btn { min-height: 44px; padding: 10px 18px !important; font-size: 15px !important; }
+  .hdr-in .next-btn::before { content: ""; position: absolute; inset: -8px -8px -8px -14px; }
+  .pv-actions .btn, .prematch .btn { min-height: 46px; font-size: 14px; flex: 1 1 0; }
+  .pv-actions .btn.primary { flex: 1.4 1 0; font-size: 16px; }
+  .btn { min-height: 38px; }
+  .btn.sm { min-height: 32px; }
+  .mtabs .seg button, #spd button { min-height: 36px; min-width: 40px; }
+}
+
+/* превью на узком экране: составы в две колонки без вылезания, длинные названия не переносятся по слогам */
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
+  .pv-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+  .pv-xi, .pv-row { min-width: 0; } .pv-row .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bc.pv .bc-tn b, .bc.rep .rep-t > b { hyphens: none; overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .bc.pv .bc-tn { min-width: 0; } .bc.pv .bc-tn span { white-space: nowrap; }
+}
+@media (max-width: 440px) { .bc.pv .bc-tn b { font-size: 16px !important; } .bc.pv .badge.xl { width: 34px !important; height: 34px !important; } .pv-row { font-size: 11px; } }
+/* шкала торга */
+.gap { margin: 14px 0 4px; display: grid; gap: 6px; }
+.gap-track { position: relative; height: 12px; border-radius: 6px; background: rgba(255,255,255,.07); margin: 30px 0 26px; }
+.gap-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .6s var(--ease); }
+.gap-ask, .gap-me { position: absolute; transform: translateX(-50%); display: grid; justify-items: center; white-space: nowrap; transition: left .6s var(--ease); }
+.gap-ask { top: -32px; } .gap-me { top: 16px; }
+.gap-ask::after { content: ""; position: absolute; bottom: -18px; width: 3px; height: 16px; border-radius: 2px; background: var(--warn); }
+.gap-ask b, .gap-me b { font: 800 15px var(--f-display); } .gap-ask b { color: var(--warn); }
+.gap-ask em, .gap-me em { font-style: normal; font-size: 10px; color: var(--muted); }
+.gap-say { font: 800 14px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.gap.near .gap-say { color: var(--warn); } .gap.ok .gap-say { color: var(--good); } .gap.ok .gap-fill { background: var(--good); }
