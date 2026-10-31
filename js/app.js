@@ -176,10 +176,10 @@
     const r = apps ? ((p.st.rsum + p.cst.rsum) / apps).toFixed(1) : '—';
     stats = stats || (gk ? [[p.st.cs + p.cst.cs, 'сух.'], [apps, 'игр'], [r, 'оц.']] : [[p.st.g + p.cst.g, 'голы'], [p.st.a + p.cst.a, 'пасы'], [r, 'оц.']]);
     const last = p.name.split(' ').slice(-1)[0];
-    // крупно — рейтинг (настоящих номеров в базе нет), позиция — значком наверху; stats = [] — без строки статистики
+    // крупно — рейтинг (настоящих номеров в базе нет); stats = [] — без строки статистики
     return `<div class="fut kit-card st${stats.length} ${tier}" style="--k1:${k1};--k2:${k2};--ki:${ink}">
       <div class="kc-collar"></div><div class="kc-stitch"></div>
-      <div class="kc-ids">${club ? badge(club, 'sm') : '<i></i>'}<span class="kc-pos">${FM.POS_RU[p.pos]}</span>${flag(p.nat)}</div>
+      <div class="kc-ids">${club ? badge(club, 'sm') : '<i></i>'}${flag(p.nat)}</div>
       <div class="kc-sn ${last.length > 10 ? 'long' : ''}">${esc(last)}</div><div class="kc-no" title="Рейтинг">${p.ovr}</div>
       ${stats.length ? `<div class="kc-st">${stats.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join('')}</div>` : ''}</div>`;
   }
