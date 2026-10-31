@@ -188,6 +188,17 @@ FM.NATURAL = {
 };
 FM.natRule = (c) => FM.NATURAL[c] || { years: 5 };
 
+// Статья доходов или расходов по записи в журнале финансов
+FM.FIN_CATS = { sponsor: 'Спонсоры', wages: 'Зарплаты', tickets: 'Билеты', transfers: 'Трансферы', prizes: 'Призовые', other: 'Прочее' };
+FM.finCat = (what, amount) => {
+  if (what === 'Спонсоры') return 'sponsor';
+  if (what === 'Зарплаты') return 'wages';
+  if (what === 'Билеты') return 'tickets';
+  if (/^(Покупка|Продажа|Рассрочка|Агент|Аренда|Расторжение|\d+% с перепродажи)/.test(what)) return 'transfers';
+  if (/Призов|участие|Лига|Кубок|победа|выход|премия/i.test(what)) return 'prizes';
+  return 'other';
+};
+
 // Сколько недель переучиваться: чем дальше позиция и старше игрок, тем дольше.
 FM.retrainWeeks = (p, to) => {
   const f = FM.pfit(p, to);

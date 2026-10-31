@@ -705,6 +705,8 @@
         const t = this.teams[id];
         t.form = [];
         if (id !== s.user) this.pickFormation(t);
+        // финансы сезона: итоги прошлого — в prev, счётчики с нуля
+        if (id === s.user && t.fin && !first) { t.fin.prev = { income: t.fin.income, expense: t.fin.expense, cat: t.fin.cat || {} }; t.fin.income = 0; t.fin.expense = 0; t.fin.cat = {}; }
       }
       this.setExpectation();
       s.board.conf = first ? 60 : FM.clamp(s.board.conf, 35, 80);
@@ -1035,7 +1037,7 @@
           if (cup.winner === s.user) {
             this.msg(`${cup.name} наш!`, `Команда выиграла ${cup.name}! Руководство в восторге.`, 'board');
             s.board.conf = Math.min(100, s.board.conf + 20);
-            this.userTeam().money += 1500;
+            this.earn(this.userTeam(), 1500, `Премия за ${cup.name}`);
           }
           continue;
         }
@@ -1515,6 +1517,7 @@
         summary.tables[lid] = tab.slice(0, 3).map((r) => r.id);
         tab.forEach((r) => {
           const t = this.teams[r.id];
+          if (r.id === s.user) this.finLog(t, `Призовые: ${r.pos}-е место`, L.prize[r.pos - 1] || 0);
           t.money += L.prize[r.pos - 1] || 0;
           if (r.id === s.user) { summary.userPos = r.pos; summary.userLeague = lid; }
         });
@@ -2078,7 +2081,7 @@
       if (FM.isCup(m.comp)) {
         for (const id of [m.h, m.a]) {
           const bonus = [0, 30, 15, 8][this.tierOf(this.teams[id])] || 5;
-          this.teams[id].money += bonus;
+          if (id === this.s.user) this.earn(this.teams[id], bonus, 'Кубковая премия'); else this.teams[id].money += bonus;
         }
       }
 
@@ -2323,6 +2326,8 @@
         if (id === s.user) {
           this.finLog(t, 'Спонсоры', t.sponsor);
           this.finLog(t, 'Зарплаты', -wages);
+          // баланс по неделям — для графика
+          t.fin.hist = (t.fin.hist || []).concat({ d: s.date, m: Math.round(t.money) }).slice(-104);
         }
       }
       for (const id in this.players) {
@@ -2363,6 +2368,10 @@
       if (t.fin.log.length > 80) t.fin.log.length = 80;
       if (amount > 0) t.fin.income += amount;
       else t.fin.expense -= amount;
+      // суммы за сезон по статьям (для диаграмм в «Финансах»)
+      const k = FM.finCat(what, amount);
+      t.fin.cat = t.fin.cat || {};
+      t.fin.cat[k] = Math.round(((t.fin.cat[k] || 0) + amount) * 10) / 10;
     }
 
     contractReminder() {

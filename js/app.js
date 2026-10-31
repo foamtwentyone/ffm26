@@ -529,7 +529,7 @@
   // ================== каркас ==================
   const TABS = [
     ['home', 'Главная'], ['squad', 'Состав и тактика'], ['fixtures', 'Расписание'], ['tables', 'Турниры'], ['stats', 'Статистика'],
-    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Почта'], ['news', 'Новости'], ['coach', 'Тренер'], ['hall', 'Зал славы'], ['menu', 'Сохранения и база'],
+    ['transfers', 'Трансферы'], ['finance', 'Финансы'], ['club', 'Клуб'], ['inbox', 'Сообщения'], ['news', 'Новости'], ['coach', 'Тренер'], ['hall', 'Зал славы'], ['menu', 'Сохранения и база'],
   ];
   // постоянная панель разделов: сверху на компьютере, снизу на телефоне (там — первые четыре и «Ещё»)
   const NAV = ['home', 'squad', 'tables', 'transfers', 'stats', 'fixtures', 'finance', 'inbox', 'coach'];
@@ -543,7 +543,7 @@
     transfers: 'Найдите игрока и нажмите на него, чтобы начать переговоры. Суммы вводятся в миллионах €.',
     finance: 'Деньги клуба, зарплаты и все поступления и расходы.',
     club: 'Стадион, задача от руководства и ваша тренерская история.',
-    inbox: 'Письма руководства и предложения за ваших игроков: их можно принять, отклонить или попросить больше.',
+    inbox: 'Письма руководства, штаба и агентов. Предложения и события ждут вашего решения.',
     menu: 'Сохранения карьеры, экспорт в файл и редактор базы.',
     news: 'Все трансферы, отставки и события футбольного мира.',
     coach: 'Ваша карьера: турниры и результаты по сезонам и итоги за всё время.',
@@ -1163,6 +1163,39 @@
 
   // ================== статистика ==================
   // Подробная статистика игроков своей команды с сортировкой
+  // Сезон команды в чемпионате: итоги, очки по турам, голы по матчам, форма
+  function seasonPanel() {
+    const G = g(), s = G.s, u = G.userTeam();
+    const ms = Object.values(s.matches).filter((m) => m.played && m.comp === u.league && (m.h === u.id || m.a === u.id)).sort((a, b) => (a.date < b.date ? -1 : 1));
+    const all = Object.values(s.matches).filter((m) => m.played && (m.h === u.id || m.a === u.id));
+    if (!all.length) return '';
+    const res = (m) => { const f = m.h === u.id ? m.hg : m.ag, a = m.h === u.id ? m.ag : m.hg; return { f, a, r: f > a ? 'W' : f < a ? 'L' : 'D', opp: T(m.h === u.id ? m.a : m.h) }; };
+    const R = all.map(res);
+    const w = R.filter((x) => x.r === 'W').length, d = R.filter((x) => x.r === 'D').length, l = R.length - w - d;
+    const gf = R.reduce((a, x) => a + x.f, 0), ga = R.reduce((a, x) => a + x.a, 0), cs = R.filter((x) => !x.a).length;
+    let pts = 0;
+    const line = ms.map((m, i) => { const x = res(m); pts += x.r === 'W' ? 3 : x.r === 'D' ? 1 : 0; return { y: pts, label: `${i + 1}-й тур · ${x.opp.name} ${x.f}:${x.a}`, short: String(i + 1), cls: x.r }; });
+    const row = G.table(u.league).find((r) => r.id === u.id);
+    const last = all.sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-12).map(res);
+    const mx = Math.max(3, ...last.map((x) => Math.max(x.f, x.a)));
+    const tile = (n, v, sub, cls = '') => `<div class="sp-t ${cls}"><span>${n}</span><b>${v}</b>${sub ? `<em>${sub}</em>` : ''}</div>`;
+    return `<div class="sp">
+      <div class="sp-tiles">
+        ${tile('Матчи', R.length, `<i class="good">${w}В</i> <i>${d}Н</i> <i class="bad">${l}П</i>`)}
+        ${tile('Место', row ? `${row.pos}-е` : '—', row ? `${row.pts} очк. · ${s.leagues[u.league].short}` : '')}
+        ${tile('Забито', gf, `${(gf / R.length).toFixed(1)} за матч`, 'good')}
+        ${tile('Пропущено', ga, `${(ga / R.length).toFixed(1)} за матч`, 'bad')}
+        ${tile('Сухие', cs, `${Math.round(cs / R.length * 100)}% матчей`)}
+        ${tile('Очки за матч', line.length ? (pts / line.length).toFixed(2) : '—', 'в чемпионате')}
+      </div>
+      <div class="sp-charts">
+        <div class="card sp-pts" style="--chc:${glow(u)}"><h3>Очки по турам</h3>${lineChart(line, { id: 'sp', min: 0, max: Math.max(3, Math.ceil(pts / 5) * 5), ticks: [0, Math.max(3, Math.ceil(pts / 5) * 5) / 2, Math.max(3, Math.ceil(pts / 5) * 5)], fmt: (v) => Math.round(v), title: 'Очки по турам', empty: 'График появится после двух туров чемпионата.' })}
+          <div class="sp-leg"><span><i class="W"></i>победа</span><span><i class="D"></i>ничья</span><span><i class="L"></i>поражение</span></div></div>
+        <div class="card sp-goals"><h3>Последние матчи</h3><div class="gbars">${last.map((x) => `<div class="gb ${x.r}" title="${esc(x.opp.name)} ${x.f}:${x.a}"><div class="gb-up"><i style="height:${x.f / mx * 100}%"></i></div><span class="gb-r">${x.r === 'W' ? 'В' : x.r === 'D' ? 'Н' : 'П'}</span><div class="gb-dn"><i style="height:${x.a / mx * 100}%"></i></div><span class="gb-s">${x.f}:${x.a}</span></div>`).join('')}</div>
+          <div class="sp-leg"><span><i class="W"></i>забито</span><span><i class="L"></i>пропущено</span></div></div>
+      </div></div>`;
+  }
+
   function teamStats(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const scope = UI.tsScope || 'all';
@@ -1183,6 +1216,7 @@
     main.innerHTML = `<div class="row" style="margin-bottom:12px">${statsTabs()}
         <div class="seg">${[['all', 'Все турниры'], ['league', 'Чемпионат'], ['cups', 'Кубки и еврокубки']].map(([k, n]) => `<button data-sc="${k}" class="${k === scope ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="small muted">Голов: <b>${tot.g}</b> · передач: <b>${tot.a}</b> · нажмите на заголовок столбца, чтобы отсортировать</span></div>
+      ${seasonPanel()}
       ${(() => { const top = rows.filter(([, t]) => t[key] > 0).slice(0, 3); const lbl = (cols.find((c) => c[0] === key) || ['', ''])[1].toLowerCase();
         return top.length ? `<div class="podium">${top.map(([p, t], i) => `<div class="pod p${i + 1}"><span class="pod-n">${i + 1}</span>${futMini(p, null, [[key === 'r' ? t.r.toFixed(2) : t[key], esc(lbl)]])}</div>`).join('')}</div>` : ''; })()}
       <div class="sortbar">${cols.filter(([k]) => ['apps', 'g', 'a', 'r', 'cs'].includes(k)).map(([k, n]) => `<button data-ts="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div>
@@ -2057,46 +2091,126 @@
   }
 
   // ================== финансы ==================
+  // ================== графики (SVG) ==================
+  // Линия по точкам pts = [{ y, label, cls? }]: area — заливка под линией, invert — меньше лучше (места в таблице),
+  // marks — подписи значений у точек, zero — горизонталь нуля.
+  function lineChart(pts, o = {}) {
+    const W = o.w || 640, H = o.h || 200, P = { l: 44, r: 14, t: 14, b: 26 };
+    if (pts.length < 2) return `<div class="ch-empty">${esc(o.empty || 'Данных пока мало — график появится позже.')}</div>`;
+    const ys = pts.map((p) => p.y);
+    let lo = o.min ?? Math.min(...ys), hi = o.max ?? Math.max(...ys);
+    if (hi === lo) { hi += 1; lo -= 1; }
+    const pad = (hi - lo) * 0.08; if (o.min == null) lo -= pad; if (o.max == null) hi += pad;
+    const X = (i) => P.l + (W - P.l - P.r) * (i / (pts.length - 1));
+    const Y = (v) => { const k = (v - lo) / (hi - lo); return P.t + (H - P.t - P.b) * (o.invert ? k : 1 - k); };
+    const line = pts.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)},${Y(p.y).toFixed(1)}`).join('');
+    const base = o.invert ? P.t : H - P.b;
+    const area = `${line}L${X(pts.length - 1).toFixed(1)},${base}L${X(0).toFixed(1)},${base}Z`;
+    const ticks = o.ticks || [lo + (hi - lo) * 0.1, (lo + hi) / 2, hi - (hi - lo) * 0.1];
+    const fmt = o.fmt || ((v) => Math.round(v));
+    const step = Math.max(1, Math.ceil(pts.length / 8));
+    return `<svg class="ch" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${esc(o.title || 'график')}">
+      <defs><linearGradient id="g${o.id || 'a'}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--chc, var(--accent))" stop-opacity=".45"/><stop offset="1" stop-color="var(--chc, var(--accent))" stop-opacity="0"/></linearGradient></defs>
+      ${ticks.map((v) => `<line class="ch-grid" x1="${P.l}" x2="${W - P.r}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="ch-ax" x="${P.l - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end">${esc(String(fmt(v)))}</text>`).join('')}
+      ${o.zero && lo < 0 && hi > 0 ? `<line class="ch-zero" x1="${P.l}" x2="${W - P.r}" y1="${Y(0)}" y2="${Y(0)}"/>` : ''}
+      ${o.area !== false ? `<path class="ch-area" d="${area}" fill="url(#g${o.id || 'a'})"/>` : ''}
+      <path class="ch-line" d="${line}"/>
+      ${pts.map((p, i) => `<circle class="ch-dot ${p.cls || ''}" cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${pts.length > 40 ? 0 : 3.5}"><title>${esc(p.label || '')}: ${esc(String(fmt(p.y)))}</title></circle>`).join('')}
+      ${pts.map((p, i) => (i % step === 0 ? (pts.length - 1 - i >= step / 2 || i === pts.length - 1) : i === pts.length - 1) && p.label ? `<text class="ch-ax" x="${X(i).toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(p.short || p.label)}</text>` : '').join('')}
+    </svg>`;
+  }
+  // Кольцевая диаграмма: parts = [[название, значение, цвет]]
+  function donut(parts, center, sub) {
+    const tot = parts.reduce((a, x) => a + Math.max(0, x[1]), 0);
+    const R = 52, C = 2 * Math.PI * R;
+    let off = 0;
+    const arcs = tot ? parts.filter((x) => x[1] > 0).map(([n, v, c]) => { const len = C * v / tot; const a = `<circle r="${R}" cx="70" cy="70" fill="none" stroke="${c}" stroke-width="18" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"><title>${esc(n)}: ${FM.money(v)}</title></circle>`; off += len; return a; }).join('') : `<circle r="${R}" cx="70" cy="70" fill="none" stroke="var(--line)" stroke-width="18"/>`;
+    return `<div class="donut"><svg viewBox="0 0 140 140"><g transform="rotate(-90 70 70)">${arcs}</g><text x="70" y="68" text-anchor="middle" class="dn-c">${esc(center)}</text><text x="70" y="86" text-anchor="middle" class="dn-s">${esc(sub || '')}</text></svg>
+      <div class="dn-leg">${parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${esc(n)}</span><b>${tot ? Math.round(Math.max(0, v) / tot * 100) : 0}%</b><em>${FM.money(Math.max(0, v))}</em></div>`).join('')}</div></div>`;
+  }
+  // Кольцо-индикатор 0–100
+  const ring = (v, cls, label) => { const R = 44, C = 2 * Math.PI * R; return `<div class="ring ${cls}"><svg viewBox="0 0 110 110"><circle r="${R}" cx="55" cy="55" class="rg-bg"/><circle r="${R}" cx="55" cy="55" class="rg-v" stroke-dasharray="${(C * Math.max(0, Math.min(100, v)) / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 55 55)"/></svg><div class="ring-c"><b>${Math.round(v)}%</b><span>${esc(label)}</span></div></div>`; };
+  const CAT_COL = { sponsor: '#3d8bff', tickets: '#2ef08f', transfers: '#f2c14e', prizes: '#b07cff', wages: '#ff5a6e', other: '#8f9bcc' };
+  const CAT_ICON = { sponsor: 'coin', tickets: 'shirt', transfers: 'swap', prizes: 'trophy', wages: 'user', other: 'mail' };
+
+  // ================== финансы ==================
   function viewFinance(main) {
-    const G = g(), u = G.userTeam();
+    const G = g(), s = G.s, u = G.userTeam();
     const wages = G.wageBill(u);
     const net = u.sponsor - wages;
     const top = G.squad(u).sort((a, b) => b.wage - a.wage).slice(0, 10);
-    // недельный баланс: доля зарплат от спонсорских денег — наглядная шкала
     const ratio = u.sponsor ? Math.round((wages / u.sponsor) * 100) : 0;
+    const cat = u.fin.cat || {};
+    const inc = Object.keys(FM.FIN_CATS).map((k) => [FM.FIN_CATS[k], Math.max(0, cat[k] || 0), CAT_COL[k], k]).filter((x) => x[1] > 0 && x[3] !== 'wages');
+    const exp = Object.keys(FM.FIN_CATS).map((k) => [FM.FIN_CATS[k], Math.max(0, -(cat[k] || 0)), CAT_COL[k], k]).filter((x) => x[1] > 0);
+    const incT = inc.reduce((a, x) => a + x[1], 0), expT = exp.reduce((a, x) => a + x[1], 0);
+    const hist = (u.fin.hist || []).map((h) => ({ y: h.m, label: FM.fmtDate(h.d), short: FM.fmtDate(h.d).replace(/^(\d+) (\S{3})\S*.*/, '$1 $2') }));
+    const money = (v) => FM.money(v).replace(' млн €', 'м').replace(' тыс. €', 'к');
+    const maxW = top.length ? top[0].wage : 1;
+    const trend = hist.length >= 2 ? hist[hist.length - 1].y - hist[Math.max(0, hist.length - 5)].y : 0;
     main.innerHTML = `<div class="band" style="--hcb:${glow(u)}">${badge(u, 'lg')}
         <div class="band-big"><span class="label">Деньги клуба</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
         <div class="band-big"><span class="label">Итог недели</span><b class="${net < 0 ? 'bad' : 'good'}">${net >= 0 ? '+' : ''}${FM.money(net)}</b></div>
         <div class="band-meter"><span class="label">Зарплаты — ${ratio}% спонсорских денег</span><div class="meter"><i class="${ratio > 100 ? 'bad' : ratio > 85 ? 'warn' : 'good'}" style="width:${Math.min(100, ratio)}%"></i></div></div>
       </div>
-      <div class="grid">
-      <div class="card"><h3>Баланс</h3><div class="kv">
-        <div><span>Деньги клуба</span><b class="${u.money < 0 ? 'bad' : ''}">${FM.money(u.money)}</b></div>
-        <div><span>Спонсоры, в неделю</span><b>${FM.money(u.sponsor)}</b></div>
-        <div><span>Зарплаты, в неделю</span><b>${FM.money(wages)}</b></div>
-        <div><span>Итог недели (без билетов)</span><b class="${net < 0 ? 'bad' : 'good'}">${FM.money(net)}</b></div>
-        <div><span>Стоимость состава</span><b>${FM.money(G.squadValue(u))}</b></div>
-        <div><span>Доходы / расходы за сезон</span><b>${FM.money(u.fin.income)} / ${FM.money(u.fin.expense)}</b></div></div>
-        <div class="small muted">Доходы: спонсоры (каждый понедельник), билеты на домашние матчи, призовые по итогам сезона, кубковые премии и продажи игроков. Долг больше 3 млн € раздражает руководство.</div></div>
-      <div class="card"><h3>Самые высокие зарплаты</h3>${top.map((p) => `<div class="row small">${pos(p.pos)} <span class="grow">${pname(p)}</span><b>${FM.money(p.wage)}</b><span class="muted">до ${p.contract + 1}</span></div>`).join('')}</div>
-      <div class="card"><h3>Движение средств</h3>${u.fin.log.slice(0, 30).map((x) => `<div class="row small"><span class="muted" style="width:56px;flex:none">${FM.fmtDate(x.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow">${esc(x.what)}</span><b class="${x.amount < 0 ? 'bad' : 'good'}">${FM.money(x.amount)}</b></div>`).join('') || '<div class="muted small">Пока пусто</div>'}</div></div>`;
+      <div class="fin-grid">
+        <div class="card fin-chart" style="--chc:${u.money < 0 ? 'var(--bad)' : 'var(--good)'}"><div class="row"><h3 class="grow">Баланс по неделям</h3>${hist.length >= 2 ? `<span class="pill ${trend >= 0 ? 'good' : 'bad'}">${trend >= 0 ? '+' : ''}${FM.money(trend)} за месяц</span>` : ''}</div>
+          ${lineChart(hist, { id: 'fin', fmt: money, zero: true, title: 'Баланс клуба', empty: 'График появится через пару недель: баланс записывается каждый понедельник.' })}</div>
+        <div class="card fin-week"><h3>Каждую неделю</h3>
+          <div class="fw-row"><span>Спонсоры</span><div class="fw-bar"><i style="width:${Math.min(100, u.sponsor / Math.max(u.sponsor, wages) * 100)}%;background:${CAT_COL.sponsor}"></i></div><b class="good">+${FM.money(u.sponsor)}</b></div>
+          <div class="fw-row"><span>Зарплаты</span><div class="fw-bar"><i style="width:${Math.min(100, wages / Math.max(u.sponsor, wages) * 100)}%;background:${CAT_COL.wages}"></i></div><b class="bad">−${FM.money(wages)}</b></div>
+          <div class="fw-total"><span>Итог без билетов</span><b class="${net < 0 ? 'bad' : 'good'}">${net >= 0 ? '+' : ''}${FM.money(net)}</b></div>
+          <div class="kv small"><div><span>Стоимость состава</span><b>${FM.money(G.squadValue(u))}</b></div>
+          ${u.fin.prev ? `<div><span>Прошлый сезон</span><b class="${u.fin.prev.income - u.fin.prev.expense < 0 ? 'bad' : 'good'}">${FM.money(u.fin.prev.income - u.fin.prev.expense)}</b></div>` : ''}</div>
+          <div class="small muted">Долг больше 3 млн € раздражает руководство.</div></div>
+        <div class="card"><h3>Доходы сезона</h3>${donut(inc, FM.money(incT), 'доходы')}</div>
+        <div class="card"><h3>Расходы сезона</h3>${donut(exp, FM.money(expT), 'расходы')}</div>
+        <div class="card"><h3>Самые высокие зарплаты</h3><div class="wbars">${top.map((p) => `<div class="wb">${pos(p.pos)}<span class="wb-n">${pname(p)}</span><div class="wb-bar"><i style="width:${(p.wage / maxW * 100).toFixed(1)}%"></i></div><b>${FM.money(p.wage)}</b><em>до ${p.contract + 1}</em></div>`).join('')}</div></div>
+        <div class="card wide"><h3>Движение средств</h3><div class="flow">${u.fin.log.slice(0, 30).map((x) => { const k = FM.finCat(x.what, x.amount); return `<div class="fl-row"><span class="fl-ic" style="--c:${CAT_COL[k]}">${icon(CAT_ICON[k])}</span><span class="fl-w"><b>${esc(x.what)}</b><em>${FM.fmtDate(x.date)}</em></span><b class="${x.amount < 0 ? 'bad' : 'good'}">${x.amount > 0 ? '+' : ''}${FM.money(x.amount)}</b></div>`; }).join('') || '<div class="muted small">Пока пусто</div>'}</div></div>
+      </div>`;
   }
 
   // ================== клуб ==================
   function viewClub(main) {
     const G = g(), s = G.s, u = G.userTeam();
-    main.innerHTML = `<div class="band" style="--hcb:${glow(u)}">${badge(u, 'xl')}
-        <div class="band-name"><b>${esc(u.name)}</b><span>${esc(u.city)} · ${esc(u.stadium)} · ${u.cap.toLocaleString('ru-RU')} мест</span></div>
-        <div class="band-big"><span class="label">Задача</span><b>${esc(G.expectText())}</b></div>
-        <div class="band-meter"><span class="label">Доверие руководства — ${Math.round(s.board.conf)}%</span><div class="meter"><i class="${s.board.conf < 45 ? 'bad' : s.board.conf < 75 ? 'warn' : 'good'}" style="width:${Math.round(s.board.conf)}%"></i></div></div>
+    const H = G.hall();
+    const row = G.table(u.league).find((r) => r.id === u.id);
+    const conf = Math.round(s.board.conf);
+    // трофеи клуба за время карьеры
+    const tro = { league: [], cup: [], euro: [] };
+    for (const x of H.seasons || []) {
+      for (const lid in x.champs) if (x.champs[lid] === u.id) tro.league.push([x.year, s.leagues[lid] ? s.leagues[lid].name : lid]);
+      for (const c in x.cups) if (x.cups[c] === u.id) tro.cup.push([x.year, s.cups[c] ? s.cups[c].name : 'Кубок']);
+      for (const e in x.euro) if (x.euro[e] === u.id) tro.euro.push([x.year, euroOf(e) ? euroOf(e).name : e]);
+    }
+    const nT = tro.league.length + tro.cup.length + tro.euro.length;
+    const shelf = [['Чемпионат', tro.league, 'gold'], ['Кубок', tro.cup, 'silver'], ['Еврокубки', tro.euro, 'euro']];
+    // места по сезонам (история тренера в этом клубе)
+    const hist = s.history.filter((x) => x.team === u.id).slice().reverse();
+    const pts = hist.map((x) => ({ y: x.pos, label: `${x.year}/${String(x.year + 1).slice(2)}`, short: `${String(x.year).slice(2)}/${String(x.year + 1).slice(2)}`, cls: x.pos === 1 ? 'gold' : '' }));
+    if (row && row.p) pts.push({ y: row.pos, label: 'сейчас', short: 'сейчас', cls: 'now' });
+    const recs = H.clubs[u.id] || {};
+    const best = (key) => Object.values(recs).sort((a, b) => b[key] - a[key]).filter((x) => x[key] > 0).slice(0, 3);
+    const diff = row ? s.board.expect - row.pos : 0;
+    main.innerHTML = `<div class="band club-hero" style="--hcb:${glow(u)}">${badge(u, 'xl')}
+        <div class="band-name"><b>${esc(u.name)}</b><span>${esc(u.city)} · ${esc(s.leagues[u.league].name)}</span></div>
+        <div class="stad"><div class="stad-pic" aria-hidden="true"><i></i><i></i><i></i></div><div><span class="label">Стадион</span><b>${esc(u.stadium)}</b><em>${u.cap.toLocaleString('ru-RU')} мест</em></div></div>
+        <div class="band-big"><span class="label">Репутация</span><b>${u.rep}</b></div>
       </div>
-      <div class="grid">
-      <div class="card"><h3>Клуб</h3>
-        <div class="kv"><div><span>Стадион</span><b>${esc(u.stadium)}</b></div><div><span>Вместимость</span><b>${u.cap.toLocaleString('ru-RU')}</b></div>
-        <div><span>Репутация</span><b>${u.rep}</b></div><div><span>Лига</span><b>${esc(s.leagues[u.league].name)}</b></div></div>
-        <button class="btn" data-team="${u.id}">Весь состав</button></div>
-      <div class="card"><h3>Руководство</h3><div>Ориентир — <b>${s.board.expect}-е место</b> в лиге.</div><div class="small muted" style="margin-top:6px">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
-      <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? `<span class="good">${icon('up', 'sm')}</span>` : x.moved === 'down' ? `<span class="bad">${icon('down', 'sm')}</span>` : ''}${x.cup ? ' ' + icon('trophyF', 'tro') : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} ${icon('trophyF', 'tro')}</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
+      <div class="club-grid">
+        <div class="card board-card"><h3>Руководство</h3>
+          <div class="brd-row">${ring(conf, conf < 45 ? 'bad' : conf < 75 ? 'warn' : 'good', 'доверие')}
+            <div class="bd-task"><span class="label">Задача на сезон</span><b>${esc(G.expectText())}</b>
+              ${row && row.p ? `<div class="bd-vs"><span>Сейчас <b>${row.pos}-е</b></span><span class="${diff >= 0 ? 'good' : 'bad'}">${diff > 0 ? `на ${diff} выше плана` : diff < 0 ? `на ${-diff} ниже плана` : 'ровно по плану'}</span></div>` : '<div class="small muted">Сезон ещё не начался.</div>'}</div></div>
+          <div class="small muted">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
+        <div class="card"><h3>Трофеи <span class="muted small">· за карьеру: ${nT}</span></h3>
+          <div class="shelf">${shelf.map(([n, list, cls]) => `<div class="sh-col ${list.length ? '' : 'empty'}"><div class="sh-cups">${list.length ? list.map(([y, nm]) => `<span class="sh-cup ${cls}" title="${esc(nm)} · ${y}/${String(y + 1).slice(2)}">${icon('trophyF')}</span>`).join('') : `<span class="sh-cup none">${icon('trophyF')}</span>`}</div><b>${list.length}</b><span>${n}</span></div>`).join('')}</div></div>
+        <div class="card club-chart" style="--chc:${glow(u)}"><h3>Места по сезонам</h3>${lineChart(pts, { id: 'cl', invert: true, min: 1, max: Math.max(...pts.map((p) => p.y), 6), fmt: (v) => `${Math.round(v)}-е`, ticks: [1, Math.round((1 + Math.max(...pts.map((p) => p.y), 6)) / 2), Math.max(...pts.map((p) => p.y), 6)], area: false, title: 'Места по сезонам', empty: 'Здесь появятся места команды по итогам ваших сезонов в клубе.' })}</div>
+        <div class="card"><h3>Рекорды клуба при вас</h3>
+          <div class="recs">${[['Бомбардиры', 'g', 'гол.'], ['Больше всех матчей', 'a', 'матч.'], ['Ассистенты', 'as', 'пас.']].map(([n, k, u2]) => `<div class="rec"><span class="label">${n}</span>${best(k).map((x, i) => `<div class="rec-r"><i>${i + 1}</i>${flag(x.nat)}<span title="${esc(x.n)}">${esc(x.n.split(' ').slice(-1)[0])}</span><b>${x[k]}</b><em>${u2}</em></div>`).join('') || '<div class="muted small">Пока нет данных</div>'}</div>`).join('')}</div></div>
+        <div class="card wide"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? `<span class="good">${icon('up', 'sm')}</span>` : x.moved === 'down' ? `<span class="bad">${icon('down', 'sm')}</span>` : ''}${x.cup ? ' ' + icon('trophyF', 'tro') : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} ${icon('trophyF', 'tro')}</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}
+          <div class="row" style="margin-top:10px"><button class="btn" data-team="${u.id}">Весь состав</button></div></div>
+      </div>`;
   }
 
   // ================== почта ==================
@@ -2259,19 +2373,49 @@
     });
   }
 
+  // отправитель письма по его типу
+  const SENDER = {
+    board: ['Совет директоров', 'shield', '#f2c14e'], squad: ['Тренерский штаб', 'shirt', '#2ef08f'], transfer: ['Трансферный отдел', 'swap', '#3d8bff'],
+    offer: ['Предложение по игроку', 'coin', '#3d8bff'], job: ['Агент тренера', 'user', '#b07cff'], cup: ['Федерация', 'trophy', '#ff9f43'],
+    event: ['Событие в клубе', 'alert', '#ff5a6e'], awards: ['Церемония', 'medal', '#f2c14e'], info: ['Клуб', 'mail', '#8f9bcc'],
+  };
+  const senderOf = (m) => SENDER[m.type] || SENDER.info;
+  const IB_FILTERS = [['all', 'Все'], ['unread', 'Непрочитанные'], ['board', 'Руководство'], ['squad', 'Команда'], ['transfer', 'Трансферы'], ['event', 'События']];
+  const ibMatch = (m, f) => f === 'all' || (f === 'unread' ? !m.read || (m.data && !m.data.closed && ['offer', 'event', 'job'].includes(m.type)) : f === 'transfer' ? ['transfer', 'offer'].includes(m.type) : f === 'board' ? ['board', 'job', 'cup', 'awards'].includes(m.type) : m.type === f);
+  // действия письма: предложения, вакансии, события, церемонии
+  function msgActions(m) {
+    if (m.type === 'offer' && m.data) return m.data.closed ? `<div class="ib-res">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row ib-acts"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
+        <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), un = moneyUnit(k), mm = un === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${un}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${un} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`;
+    if (m.type === 'job' && m.data) return m.data.closed ? (m.data.result ? `<div class="ib-res">${esc(m.data.result)}</div>` : '') : `<div class="row ib-acts"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>`;
+    if (m.type === 'awards' && m.data) return `<div class="row ib-acts"><button class="btn sm primary" data-cer="${m.data.year}">Смотреть церемонию</button></div>`;
+    if (m.type === 'event' && m.data) return m.data.closed ? `<div class="ib-res">${esc(m.data.result || '')}</div>` : `<div class="row ib-acts" style="flex-wrap:wrap">${m.data.opts.map((o, i) => `<button class="btn sm ${i === 0 ? 'primary' : ''}" data-evm="${m.id}" data-evo="${i}" title="${esc(o.h)}">${esc(o.t)}${o.cost ? ` · ${FM.money(o.cost)}` : ''}</button>`).join('')}<span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`;
+    return '';
+  }
+  const msgOpen = (m) => !!(m.data && !m.data.closed && ['offer', 'event', 'job'].includes(m.type));
+
   function viewInbox(main) {
     const G = g(), s = G.s;
-    main.innerHTML = `<div class="card tight">${s.inbox.map((m) => `<div class="inbox-item ${m.read ? '' : 'unread'}" data-msg="${m.id}">
-      <div class="row"><span class="t grow">${esc(m.title)}</span><span class="small muted">${FM.fmtDate(m.date)}</span></div>
-      <div class="small">${esc(m.text)}</div>
-      ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
-        <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
-      ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>` : ''}
-      ${m.type === 'event' && m.data ? (m.data.closed ? `<div class="ev-res small">${esc(m.data.result || '')}</div>` : `<div class="row" style="margin-top:6px;flex-wrap:wrap">${m.data.opts.map((o, i) => `<button class="btn sm ${i === 0 ? 'primary' : ''}" data-evm="${m.id}" data-evo="${i}" title="${esc(o.h)}">${esc(o.t)}${o.cost ? ` · ${FM.money(o.cost)}` : ''}</button>`).join('')}<span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
-      ${m.type === 'awards' && m.data ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-cer="${m.data.year}">Смотреть церемонию</button></div>` : ''}
-      ${m.type === 'job' && m.data && m.data.closed && m.data.result ? `<div class="small muted">${esc(m.data.result)}</div>` : ''}
-    </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
-    s.inbox.forEach((m) => { if ((m.type !== 'offer' && m.type !== 'event') || (m.data && m.data.closed)) m.read = true; });
+    const f = UI.ibFilter || 'all';
+    const list = s.inbox.filter((m) => ibMatch(m, f));
+    let sel = s.inbox.find((m) => m.id === UI.ibSel);
+    if (!sel || !list.includes(sel)) sel = list.find((m) => !m.read || msgOpen(m)) || list[0] || null;
+    if (sel) { UI.ibSel = sel.id; if (!msgOpen(sel)) sel.read = true; }
+    const wide = window.matchMedia('(min-width: 900px)').matches;
+    const cnt = (k) => s.inbox.filter((m) => ibMatch(m, k) && (k === 'all' || k === 'unread' || !m.read || msgOpen(m))).length;
+    const detail = (m) => { const [who, ic, col] = senderOf(m); return `<div class="ib-detail" style="--sc:${col}"><div class="ib-dh"><span class="ib-av">${icon(ic)}</span><div><span class="ib-from">${who}</span><h2>${esc(m.title)}</h2><span class="small muted">${FM.fmtDate(m.date, true)}</span></div></div>
+      <div class="ib-body">${esc(m.text)}</div>${msgActions(m)}</div>`; };
+    main.innerHTML = `<div class="ib-top"><div class="ib-filters">${IB_FILTERS.map(([k, n]) => { const c = cnt(k); return `<button class="${k === f ? 'on' : ''}" data-ibf="${k}">${n}${k !== 'all' && c ? `<i>${c}</i>` : ''}</button>`; }).join('')}</div>
+        <button class="btn sm" id="ib-readall">Прочитать все</button></div>
+      <div class="ib ${wide ? 'wide' : ''}">
+        <div class="ib-list card tight">${list.map((m) => { const [who, ic, col] = senderOf(m); const on = sel && m.id === sel.id; return `<div class="ib-item ${m.read && !msgOpen(m) ? '' : 'unread'} ${on ? 'on' : ''}" data-msg-id="${m.id}" style="--sc:${col}">
+            <span class="ib-av">${icon(ic)}</span><div class="ib-txt"><div class="row"><b class="grow">${esc(m.title)}</b><span class="ib-date">${FM.fmtDate(m.date).replace(/^(\d+) (\S{3})\S*.*/, '$1 $2')}</span></div>
+            <div class="ib-prev"><span>${who}</span> · ${esc(m.text.slice(0, 90))}${m.text.length > 90 ? '…' : ''}</div>${msgOpen(m) ? '<span class="ib-need">Нужно решение</span>' : ''}</div></div>
+            ${!wide && on ? detail(m) : ''}`; }).join('') || '<div class="ib-empty">Писем нет</div>'}</div>
+        ${wide ? `<div class="ib-panel card">${sel ? detail(sel) : '<div class="ib-empty">Выберите письмо</div>'}</div>` : ''}
+      </div>`;
+    main.querySelectorAll('[data-ibf]').forEach((b) => b.onclick = () => { UI.ibFilter = b.dataset.ibf; UI.ibSel = null; render(); });
+    main.querySelectorAll('[data-msg-id]').forEach((b) => b.onclick = () => { UI.ibSel = +b.dataset.msgId; render(); });
+    main.querySelector('#ib-readall').onclick = () => { s.inbox.forEach((m) => { if (!msgOpen(m)) m.read = true; }); save(); render(); };
     main.querySelectorAll('[data-evm]').forEach((b) => b.onclick = () => { toast(esc(G.answerEvent(+b.dataset.evm, +b.dataset.evo)), 5000); save(); render(); });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
     main.querySelectorAll('[data-haggle]').forEach((b) => b.onclick = () => {
