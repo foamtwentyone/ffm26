@@ -654,8 +654,26 @@
     if (r === 'sacked') { save(); render(); return sackedModal(); }
     if (r === 'awards') { save(); render(); return ceremonyModal(G.s.awards[G.s.awards.length - 1].year); }
     if (r === 'offer') { toast('Новое предложение по игроку — загляните в почту.'); }
+    if (r === 'event') { const id = G.evShow; G.evShow = null; save(); render(); return eventModal(id); }
     save();
     render();
+  }
+
+  // Случайное событие: окно с выбором; после решения — итог и «Продолжить»
+  const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar' };
+  function eventModal(id) {
+    const G = g(), u = G.userTeam(), m = G.s.inbox.find((x) => x.id === id);
+    if (!m || !m.data) return;
+    const d = m.data;
+    const el = modal(`<div class="evm" style="--c1:${glow(u)}">
+      <div class="evm-head"><span class="evm-ic">${icon(EV_ICON[d.ev] || 'alert')}</span><div><div class="evm-k">Событие в клубе · ${FM.fmtDate(m.date)}</div><h2>${esc(m.title)}</h2></div></div>
+      <p class="evm-text">${esc(m.text)}</p>
+      <div class="evm-opts">${d.closed ? `<div class="evm-res">${icon('check')}<span>${esc(d.result)}</span></div><button class="btn primary" id="evm-ok">Продолжить</button>`
+        : d.opts.map((o, i) => `<button class="evm-o" data-evo="${i}"><b>${esc(o.t)}</b>${o.h ? `<span>${esc(o.h)}</span>` : ''}${o.cost ? `<em>${FM.money(o.cost)}</em>` : ''}</button>`).join('')}</div>
+      ${d.closed ? '' : `<div class="small muted" style="margin-top:10px">Можно решить позже в «Сообщениях» — до ${FM.fmtDate(d.until)}.</div>`}</div>`);
+    el.querySelectorAll('[data-evo]').forEach((b) => b.onclick = () => { G.answerEvent(id, +b.dataset.evo); save(); render(); eventModal(id); });
+    const ok = el.querySelector('#evm-ok');
+    if (ok) ok.onclick = () => closeModal();
   }
 
   // короткое окно после перехода в новый сезон: итог для руководства и задача
@@ -2215,10 +2233,12 @@
       ${m.type === 'offer' && m.data ? (m.data.closed ? `<div class="small muted">${esc(m.data.result || 'Закрыто')}</div>` : `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-acc="${m.id}">Принять</button><button class="btn sm" data-dec="${m.id}">Отклонить</button>
         <span class="haggle">${(() => { const k = FM.roundValue(m.data.fee * 1.2), u = moneyUnit(k), mm = u === 'млн'; return `<input class="sm" type="number" min="0" step="${mm ? 0.05 : 5}" data-unit="${u}" data-ask="${m.id}" value="${mm ? Math.round(k / 10) / 100 : k}" title="Ваша цена"><span class="small muted">${u} €</span>`; })()}<button class="btn sm" data-haggle="${m.id}">Попросить больше</button></span><span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
       ${m.type === 'job' && m.data && !m.data.closed ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-job="${m.id}">Принять предложение</button><button class="btn sm" data-jobno="${m.id}">Отказаться</button></div>` : ''}
+      ${m.type === 'event' && m.data ? (m.data.closed ? `<div class="ev-res small">${esc(m.data.result || '')}</div>` : `<div class="row" style="margin-top:6px;flex-wrap:wrap">${m.data.opts.map((o, i) => `<button class="btn sm ${i === 0 ? 'primary' : ''}" data-evm="${m.id}" data-evo="${i}" title="${esc(o.h)}">${esc(o.t)}${o.cost ? ` · ${FM.money(o.cost)}` : ''}</button>`).join('')}<span class="small muted">до ${FM.fmtDate(m.data.until)}</span></div>`) : ''}
       ${m.type === 'awards' && m.data ? `<div class="row" style="margin-top:6px"><button class="btn sm primary" data-cer="${m.data.year}">Смотреть церемонию</button></div>` : ''}
       ${m.type === 'job' && m.data && m.data.closed && m.data.result ? `<div class="small muted">${esc(m.data.result)}</div>` : ''}
     </div>`).join('') || '<div style="padding:14px" class="muted">Писем нет</div>'}</div>`;
-    s.inbox.forEach((m) => { if (m.type !== 'offer' || (m.data && m.data.closed)) m.read = true; });
+    s.inbox.forEach((m) => { if ((m.type !== 'offer' && m.type !== 'event') || (m.data && m.data.closed)) m.read = true; });
+    main.querySelectorAll('[data-evm]').forEach((b) => b.onclick = () => { toast(esc(G.answerEvent(+b.dataset.evm, +b.dataset.evo)), 5000); save(); render(); });
     main.querySelectorAll('[data-acc]').forEach((b) => b.onclick = () => { toast(esc(G.answerOffer(+b.dataset.acc, true))); save(); render(); });
     main.querySelectorAll('[data-haggle]').forEach((b) => b.onclick = () => {
       const v = readMoney(main.querySelector(`[data-ask="${b.dataset.haggle}"]`));

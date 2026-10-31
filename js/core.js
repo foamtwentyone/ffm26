@@ -7,6 +7,7 @@ FM.addLeague = (def) => FM.leagues.push(def);
 // ---------- случайные числа ----------
 FM.rnd = Math.random;
 FM.ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+FM.rf = (a, b) => a + Math.random() * (b - a);
 FM.pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 FM.chance = (p) => Math.random() < p;
 FM.gauss = (m = 0, s = 1) => {
