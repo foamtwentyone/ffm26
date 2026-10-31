@@ -1425,7 +1425,7 @@
           <div class="tk-bar"></div>
         </div>
         <div class="tk-stub"><span>RATING</span><b>${p.ovr}</b><span>${FM.POS_RU[p.pos]} · ${p.age}</span><div class="tk-bar v"></div></div>
-        <div class="tk-stamp"><span>${d.pre ? 'ДОГОВОРЁННОСТЬ' : 'ПОДПИСАН'}</span><b>${esc(to.name.toUpperCase())}</b><span>${when}</span></div>
+        <div class="tk-stamp"><span>ПОДПИСАН</span></div>
       </div>
       <div class="center tk-msg">${d.pre ? `${esc(p.name)} присоединится к «${esc(to.name)}» летом.` : `${esc(p.name)} — игрок «${esc(to.name)}»!`}</div>
       <div class="row" style="justify-content:center"><button class="btn primary" data-close>Отлично</button></div></div>`, 'ticket');
@@ -1484,7 +1484,6 @@
         <div class="ng-mid"><div class="ng-card">${futCard(p, [[FM.money(p.value), 'стоимость']]).replace('class="fut ', 'class="fut sm ')}</div>
           <div class="ng-name">${flag(p.nat)}${esc(p.name)}</div><div class="ng-sub">${FM.POS_NAME[p.pos]} · ${p.age} лет</div></div>
         <div class="ng-side">${badge(u, 'xl')}<b>${esc(u.name)}</b><span>ваш клуб</span></div>
-        <div class="ng-route"><i></i><span>✈</span></div>
       </div>
       <div class="ng-int"><span class="label">Интерес игрока</span><div class="ng-gauge"><i style="width:${it.score}%;background:${ic}"></i></div><b style="color:${ic}">${it.label}</b>
         <div class="small muted ng-why">${it.why.map(esc).join(' · ')}</div></div>

@@ -1403,3 +1403,6 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .gap.near .gap-say { color: var(--warn); } .gap.ok .gap-say { color: var(--good); } .gap.ok .gap-fill { background: var(--good); }
 .tf-table td { white-space: nowrap; }
 .tf-table .tag { margin-left: 4px; }
+.tk-stamp span:first-child { font-size: 21px; letter-spacing: .02em; white-space: nowrap; }
+@media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { .tk-stamp span:first-child { font-size: 15px; } }
+.tk-stamp { padding: 6px !important; }
