@@ -52,6 +52,14 @@
         state.dbV2 = true;
         if (FM.leagues) this.addMissingRealPlayers();
       }
+      // старые сохранения: дополнительных позиций не было (только выученные переучиванием) — раздаём, выученные сохраняем
+      if (!state.altV1) {
+        state.altV1 = true;
+        for (const id in this.players) {
+          const p = this.players[id];
+          p.alt = [...new Set((p.alt || []).concat(FM.altFor(p.name, p.pos)))].filter((x) => x !== p.pos).slice(0, 3);
+        }
+      }
       if (this.migrateMoney) {
         delete this.migrateMoney;
         for (const id in this.players) {
@@ -124,6 +132,7 @@
         for (const k in p) {
           const v = p[k];
           if (v === null || v === undefined || (k in PLAYER_DEFAULTS && v === PLAYER_DEFAULTS[k])) continue;
+          if (k === 'alt' && !v.length) continue;
           if (k === 'st' || k === 'cst' || k === 'car') {
             const x = {};
             for (const j in v) if (v[j]) x[j] = v[j];
@@ -242,6 +251,7 @@
       const tier = team ? this.tierOf(team) : 2;
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
+        alt: d.alt || FM.altFor(d.name, d.pos),
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
         wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,

@@ -193,6 +193,7 @@
   const pos = (p) => `<span class="pos ${FM.GROUP[p]}" title="${FM.POS_NAME[p]}">${FM.POS_RU[p]}</span>`;
   const form = (f) => `<span class="form">${f.map((x) => `<i class="${x}">${{ W: 'В', D: 'Н', L: 'П' }[x]}</i>`).join('')}</span>`;
   const pname = (p) => `<span class="pl" data-player="${p.id}" style="cursor:pointer">${esc(p.name)}</span>${p.gen ? '<span class="gen" title="Сгенерированный игрок — замените реальным в редакторе базы">*</span>' : ''}`;
+  const posAlt = (p) => pos(p.pos) + ((p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : '');
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
@@ -1233,7 +1234,7 @@
       let list = Object.values(G.players).filter((p) => p.club !== u.id);
       if (f.name) list = list.filter((p) => p.name.toLowerCase().includes(f.name.toLowerCase()));
       const posSel = [].concat(f.pos || []);
-      if (posSel.length) list = list.filter((p) => posSel.includes(p.pos));
+      if (posSel.length) list = list.filter((p) => posSel.includes(p.pos) || (p.alt || []).some((x) => posSel.includes(x)));
       if (f.league === 'free') list = list.filter((p) => !p.club);
       else if (f.league) list = list.filter((p) => p.club && T(p.club).league === f.league);
       if (f.maxPrice) list = list.filter((p) => p.value <= f.maxPrice * 1000);
@@ -1276,7 +1277,7 @@
           <div class="tf-bar"><span class="tf-found"><b>${list.length.toLocaleString('ru-RU')}</b> игроков</span><span class="grow"></span>
             <div class="seg sm"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div></div>
           ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight"><div class="tbl-wrap"><table class="lt tf-table"><tr><th></th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенциал')}${th('value', 'Цена')}</tr>
-            ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)} ${rowTags(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small">${G.potLabel(p)}</td><td class="num"><b>${FM.money(p.value)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Никого не нашли — ослабьте фильтры.</td></tr>'}</table></div></div>`}
+            ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)} ${rowTags(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small">${G.potLabel(p)}</td><td class="num"><b>${FM.money(p.value)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Никого не нашли — ослабьте фильтры.</td></tr>'}</table></div></div>`}
           <div class="row tf-pages"><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹ Назад</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>Дальше ›</button></div>
         </div>
       </div>`;
@@ -1287,7 +1288,7 @@
       const out = (s.loans || []).map((id) => G.players[id]).filter((p) => p && p.loan && p.loan.from === u.id);
       const inc = Object.values(G.players).filter((p) => p.pre && p.pre.team === u.id);
       const chip = (n, t, cls) => `<div class="tf-stat ${cls || ''}"><b>${n}</b><span>${t}</span></div>`;
-      const mrow = (p) => `<div class="tf-row mine">${pos(p.pos)}<div class="tf-who" data-player="${p.id}">${flag(p.nat)}<b>${esc(p.name)}</b>${status(p)}</div>
+      const mrow = (p) => `<div class="tf-row mine"><span class="nowrap">${posAlt(p)}</span><div class="tf-who" data-player="${p.id}">${flag(p.nat)}<b>${esc(p.name)}</b>${status(p)}</div>
           <span class="tf-age">${p.age}<small>лет</small></span>${ovr(p.ovr)}<span class="tf-val">${FM.money(p.value)}</span><span class="tf-wage">${FM.money(p.wage)}<small>/нед</small></span>
           <span class="tf-cont ${p.contract <= s.season ? 'bad' : ''}">до ${p.contract + 1}</span>
           ${p.loan ? '<span class="small muted">аренда</span>' : `<button class="btn sm ${p.listed ? 'on' : ''}" data-list="${p.id}">${p.listed ? 'На продаже' : 'Продать'}</button>`}</div>`;
@@ -1630,7 +1631,7 @@
         return `<div class="note job-note"><div class="row"><span class="grow">Интерес к вам как к тренеру: <span class="lvl ${lc}">${m && m.refused ? 'отказал в этом сезоне' : lt}</span>${m && m.vacancy ? ' · <span class="warn">ищут тренера</span>' : ''}</span>${m && m.level >= 1 && !m.refused ? `<button class="btn sm ${m.level >= 2 ? 'primary' : ''}" data-apply="${tid}">${m.level >= 2 ? 'Возглавить команду' : 'Подать заявку'}</button>` : ''}</div></div>`; })()}
       <div class="kv"><div><span>Стоимость состава</span><b>${FM.money(G.squadValue(t))}</b></div><div><span>Репутация</span><b>${t.rep}</b></div><div><span>Схема</span><b>${t.formation}</b></div><div><span>Игроков</span><b>${t.players.length}</b></div></div>
       <div class="tbl-wrap"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">И</th><th class="num">Г</th><th class="num">Цена</th></tr>
-      ${sq.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}</table></div>`, 'wide');
+      ${sq.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}</table></div>`, 'wide');
     const el = document.getElementById('modal');
     el.querySelectorAll('[data-apply]').forEach((b) => b.onclick = () => {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Точно уйти из клуба? Нажмите ещё раз'; b.classList.add('danger'); return; }
