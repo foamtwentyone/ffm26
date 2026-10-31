@@ -520,7 +520,7 @@ th { font-size: 12px; }
   .mainnav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; margin: 0; gap: 0; flex-wrap: nowrap; padding: 6px max(6px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(6, 10, 28, .94); backdrop-filter: blur(14px); border-top: 1px solid var(--stroke); }
   .mainnav button { flex: 1; flex-direction: column; gap: 3px; padding: 6px 2px; border: 0; background: none; font-size: 12px; border-radius: 12px; }
   .mainnav button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
-  .mainnav button:nth-child(n+5):not(.more) { display: none; }
+  .mainnav button:nth-child(n+5):not(.more):not([data-tab="inbox"]) { display: none; }
   .mainnav .more { display: inline-flex; }
   .mainnav .ni, .mainnav .ni svg { width: 24px; height: 24px; }
   .mainnav .dot { position: absolute; top: 2px; right: 18%; min-width: 18px; height: 18px; line-height: 18px; font-size: 11px; }
@@ -1523,3 +1523,7 @@ html, body { overflow-x: hidden; }
 .feed .ev.sub { border-left-color: var(--accent); } .feed .ev.injury { border-left-color: var(--warn); }
 .feed .ev.save .i, .feed .ev.miss .i { opacity: .8; }
 .feed .ev:first-child { animation: msgIn .4s var(--ease) both; }
+@media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
+  .mainnav [data-tab="inbox"] .dot { position: absolute; top: 2px; right: 14%; margin: 0; }
+}
+@media (max-width: 420px) { .mainnav button { font-size: 10px !important; } }
