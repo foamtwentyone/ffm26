@@ -726,7 +726,20 @@
       else { const R = e.ko[e.ko.length - 1]; st = e.final ? 'финал' : R ? esc(R.name) : ''; }
       cupRows.push(`<div class="kvl"><span>${esc(euroMine.name)}</span><b>${st}</b></div>`);
     }
-    main.innerHTML = `${s.seasonOver ? '' : hero}<div class="dash dash-a">
+    // плитки разделов в стиле меню FC: крупная иконка, название и живая подпись
+    const inj = sq.filter((p) => p.inj || p.sus).length;
+    const unread = s.inbox.filter((x) => !x.read).length;
+    const winOpen = G.inWindow();
+    const hub = [
+      ['squad', 'shirt', 'Состав', `${sq.length} игроков${inj ? ` · ${inj} не готовы` : ''} · ${u.formation}`, 'c1'],
+      ['transfers', 'swap', 'Трансферы', winOpen ? `окно открыто · ${FM.money(u.money)}` : esc(G.windowText()), winOpen ? 'c2 live' : 'c2'],
+      ['tables', 'trophy', 'Турниры', `${myRow.pos}-е место · ${myRow.pts} очк.`, 'c3'],
+      ['stats', 'chart', 'Статистика', leaders[0] ? `${leaders[0][1].toLowerCase()}: ${esc(leaders[0][2].p.name.split(' ').slice(-1)[0])} · ${leaders[0][2].v}` : 'игроки и лидеры лиг', 'c4'],
+      ['inbox', 'mail', 'Почта', unread ? `${unread} новых` : 'новых писем нет', unread ? 'c5 live' : 'c5'],
+      ['club', 'shield', 'Клуб', `доверие ${conf}%`, 'c6'],
+    ];
+    const hubHtml = `<div class="hub">${hub.map(([tab, ic, nm, sub, cls]) => `<button class="hub-t ${cls}" data-go="${tab}"><span class="hub-ic">${icon(ic)}</span><b>${nm}</b><span class="hub-sub">${sub}</span><span class="hub-arrow">›</span></button>`).join('')}</div>`;
+    main.innerHTML = `${s.seasonOver ? '' : hero}${hubHtml}<div class="dash dash-a">
       ${s.seasonOver ? `<section class="tile w2 season-over" data-go="review"><header><span class="hic">${icon('trophy')}</span><span class="tt">Сезон ${seasonLabel(s)} завершён</span><span class="chev">›</span></header>
         <div class="tb"><div>Посмотрите итоги: чемпионы, кубки, лучшие игроки. Таблицы и статистика сезона ещё доступны.</div>
         <div class="row" style="margin-top:10px"><button class="btn primary" id="rv-open">Итоги сезона</button><span class="small muted">Новый сезон — кнопкой «Новый сезон» вверху</span></div></div></section>` : ''}
