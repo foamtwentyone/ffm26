@@ -264,13 +264,27 @@
     const u = g().userTeam(), L = s.leagues[u.league];
     const row = g().table(u.league).find((r) => r.id === u.id);
     const meta = { info, ts, club: u.id, clubName: u.name, colors: u.colors, logo: u.logoData || null, mgr: s.manager, season: s.season, date: s.date, league: L.name, pos: row ? row.pos : null, pts: row ? row.pts : null, money: u.money };
-    FM.Store.localSave(key, str).then((ok) => {
+    const done = FM.Store.localSave(key, str).then((ok) => {
       if (ok) ls.set(key + '_meta', JSON.stringify(meta));
       else if (!UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
     }).catch(() => { /* остаётся облачная копия */ });
     FM.Store.cloudSave(key, str, info);
-    return true;
+    return done;
   }
+  // Выход в главное меню: сначала автосохранение, потом стартовый экран.
+  async function exitToMenu() {
+    closeModal();
+    await save();
+    UI.g = null;
+    UI.lastTab = null;
+    window.scrollTo(0, 0);
+    startScreen();
+    toast('Карьера сохранена');
+  }
+  // Автосохранение, когда приложение сворачивают, переключают вкладку или закрывают.
+  const autoSave = () => { if (UI.g) try { save(); } catch (e) { /* не мешаем закрытию */ } };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autoSave(); });
+  window.addEventListener('pagehide', autoSave);
   function loadState(state) {
     UI.g = new FM.Game(state);
     UI.tab = 'home';
@@ -565,9 +579,14 @@
       ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><div><h1>${esc(title)}</h1>${TAB_HINTS[UI.tab] ? `<div class="crumb-hint">${TAB_HINTS[UI.tab]}</div>` : ''}</div></div>` : ''}
       <main id="main"></main>
       <div class="drawer hidden" id="drawer"><nav>
-        <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div></div>
+        <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div><button class="dh-exit" data-exit title="Выйти в главное меню" aria-label="Выйти в главное меню">⏏</button></div>
         ${TABS.map(([id, n]) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="di">${icon(TAB_ICONS[id])}</span>${esc(n)}${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
+        <div class="drawer-foot">
+          <div class="small muted" id="as-status">${(() => { const m = localMeta(SAVE_AUTO); return m ? 'Автосохранение: ' + agoText(m.ts) : 'Автосохранение включено'; })()}</div>
+          <button id="exit" class="drawer-exit" data-exit><span class="di">⏏</span>Выйти в главное меню</button>
+        </div>
       </nav></div>`;
+    app.querySelectorAll('[data-exit]').forEach((b) => b.onclick = exitToMenu);
     const drawer = app.querySelector('#drawer');
     app.querySelector('#burger').onclick = () => drawer.classList.remove('hidden');
     app.querySelector('#more').onclick = () => drawer.classList.remove('hidden');
@@ -2240,22 +2259,12 @@
         <div class="row"><button class="btn primary" id="editor">Редактор базы</button></div></div>
       <div class="card"><h3>Игра</h3>
         <label class="check small" style="margin-bottom:12px"><input type="checkbox" id="set-ru-euro" ${G.s.settings.ruEuro !== false ? 'checked' : ''}> Российские клубы в еврокубках (со следующего сезона)</label>
-        <div class="row"><button class="btn danger" id="newgame">Новая игра</button></div></div></div>`;
+        <div class="small" style="margin-bottom:10px">Игра сохраняется автоматически после каждого дня, каждого действия и при сворачивании приложения.</div>
+        <div class="row"><button class="btn primary" id="exitmenu">Выйти в главное меню</button></div></div></div>`;
     savesPanel(main.querySelector('#sv-root'), true);
     main.querySelector('#editor').onclick = () => editor();
     main.querySelector('#set-ru-euro').onchange = (e) => { G.s.settings.ruEuro = e.target.checked; save(); };
-    const ng = main.querySelector('#newgame');
-    ng.onclick = () => {
-      // подтверждение вторым нажатием: системные диалоги на странице claude.ai не показываются
-      if (!ng.dataset.sure) {
-        ng.dataset.sure = '1';
-        ng.textContent = 'Точно? Нажмите ещё раз';
-        return;
-      }
-      save();
-      UI.g = null;
-      startScreen();
-    };
+    main.querySelector('#exitmenu').onclick = exitToMenu;
   }
 
   // ================== редактор базы ==================

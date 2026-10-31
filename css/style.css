@@ -1609,3 +1609,11 @@ html, body { overflow-x: hidden; }
 .sv-tools .small { flex: 1 1 260px; }
 /* на телефоне html масштабирован (zoom .86), поэтому 100vh не закрывает экран */
 @media (max-width: 620px), (max-height: 500px) and (orientation: landscape) { .mm, .mm-page { min-height: calc(100dvh / .86); } }
+.drawer nav { display: flex; flex-direction: column; }
+.drawer-foot { margin-top: auto; border-top: 1px solid var(--stroke); padding: 12px 0 14px; }
+.drawer-foot #as-status { padding: 0 24px 6px; }
+.drawer nav button.drawer-exit { color: var(--text); }
+.drawer nav button.drawer-exit .di { color: #ff6b6b; }
+.drawer nav button.drawer-exit:hover { background: rgba(255, 90, 90, .14); }
+.drawer nav .dh-exit { margin: 0 0 0 auto; padding: 0; display: grid; place-items: center; letter-spacing: 0; width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--stroke); background: var(--glass); color: #ff8a8a; font-size: 18px; cursor: pointer; }
+.drawer nav .dh-exit:hover { background: rgba(255, 90, 90, .16); }
