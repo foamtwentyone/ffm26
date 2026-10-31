@@ -1617,3 +1617,27 @@ html, body { overflow-x: hidden; }
 .drawer nav button.drawer-exit:hover { background: rgba(255, 90, 90, .14); }
 .drawer nav .dh-exit { margin: 0 0 0 auto; padding: 0; display: grid; place-items: center; letter-spacing: 0; width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--stroke); background: var(--glass); color: #ff8a8a; font-size: 18px; cursor: pointer; }
 .drawer nav .dh-exit:hover { background: rgba(255, 90, 90, .16); }
+
+/* ===================== SVG-иконки вместо смайликов ===================== */
+.ic.sm { width: 12px; height: 12px; }
+.ic.red { color: var(--bad); } .ic.yel { color: #f5c518; }
+.ic.gold { color: #f2c14e; } .ic.silver { color: #c9d2e6; } .ic.bronze { color: #d08a4e; }
+.ic.tro { color: var(--gold); width: 1.05em; height: 1.05em; vertical-align: -.15em; }
+.next-btn span .ic { width: 13px; height: 13px; vertical-align: -1px; }
+.mm-go .ic { width: 16px; height: 16px; margin-left: 2px; }
+.chip .ic { width: 14px; height: 14px; vertical-align: -2px; }
+.ico .ic { width: 12px; height: 12px; vertical-align: -1px; }
+.derby-tag .ic { width: 12px; height: 12px; vertical-align: -2px; }
+.ev .i { display: inline-flex; justify-content: center; align-items: center; }
+.ev .i .ic { width: 16px; height: 16px; }
+.ev.goal .i { color: #fff; } .ev.save .i, .ev.pen .i, .ev.pens .i, .ev.penkick .i { color: var(--accent); } .ev.half .i, .ev.end .i, .ev.start .i { color: var(--muted); } .ev.sub .i { color: #6fb6ff; }
+.pat { display: inline-flex; gap: 3px; align-items: center; }
+.pat .ic { width: 10px; height: 10px; }
+.tk-plane .ic { width: 26px; height: 26px; }
+.tf-fchev .ic { width: 16px; height: 16px; }
+.seg .ic { width: 14px; height: 14px; vertical-align: -2px; }
+.rv-comp .ic, .good .ic.sm, .bad .ic.sm { vertical-align: -1px; }
+.stars { position: relative; display: inline-flex; gap: 1px; background: none !important; -webkit-background-clip: border-box !important; background-clip: border-box !important; color: rgba(255,255,255,.18) !important; letter-spacing: 0 !important; vertical-align: middle; }
+.stars .ic { width: 15px; height: 15px; }
+.tp .stars .ic { width: 12px; height: 12px; }
+.stars-on { position: absolute; left: 0; top: 0; bottom: 0; display: inline-flex; gap: 1px; overflow: hidden; width: calc(var(--v) / 5 * 100%); color: var(--gold); }

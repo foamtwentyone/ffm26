@@ -44,8 +44,32 @@
     medal: '<circle cx="12" cy="15" r="5"/><path d="M8 3l4 7 4-7"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/>',
+    play: '<path d="M8 5.5v13a1 1 0 0 0 1.5.9l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5z" fill="currentColor" stroke="none"/>',
+    medic: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z" fill="currentColor" stroke="none"/>',
+    card: '<rect x="6" y="3" width="12" height="18" rx="2" fill="currentColor" stroke="none"/>',
+    pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+    fire: '<path d="M12 2.5c.6 3.6 5.5 5.6 5.5 11a5.5 5.5 0 0 1-11 0c0-2.6 1.4-4.2 2.2-5.6.6 1.7 1.6 2.8 2.6 3.2C11.2 8.6 11.7 5 12 2.5z"/>',
+    up: '<path d="M12 5l8 12H4z" fill="currentColor" stroke="none"/>',
+    down: '<path d="M12 19L4 7h16z" fill="currentColor" stroke="none"/>',
+    chevDown: '<path d="M6 9l6 6 6-6"/>',
+    chevUp: '<path d="M6 15l6-6 6 6"/>',
+    plane: '<path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z" fill="currentColor" stroke="none"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    pause: '<rect x="6.5" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="13.5" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>',
+    glove: '<path d="M7 21v-4.5L4.2 12a1.6 1.6 0 0 1 2.7-1.7L8.5 13V5.5a1.5 1.5 0 0 1 3 0V11V4a1.5 1.5 0 0 1 3 0v7V5.5a1.5 1.5 0 0 1 3 0V12v-2a1.5 1.5 0 0 1 3 0v4.5c0 3.6-2.9 6.5-6.5 6.5z"/>',
+    alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.2"/>',
+    clock: '<circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v3.5l2.5 2M9.5 2.5h5M12 2.5V6"/>',
+    exit: '<path d="M14 4h4.5a1.5 1.5 0 0 1 1.5 1.5v13a1.5 1.5 0 0 1-1.5 1.5H14"/><path d="M9.5 8l-4 4 4 4M5.5 12H15"/>',
+    dots: '<circle cx="5" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="2" fill="currentColor" stroke="none"/>',
+    dot: '<circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/>',
+    ring: '<circle cx="12" cy="12" r="5.5"/>',
+    square: '<rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor" stroke="none"/>',
+    starF: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" fill="currentColor" stroke="none"/>',
+    trophyF: '<path d="M7 3h10v6a5 5 0 0 1-4 4.9V17h3v3H8v-3h3v-3.1A5 5 0 0 1 7 9z" fill="currentColor" stroke="none"/><path d="M7 5.5H4.5A3 3 0 0 0 7.5 10.5M17 5.5h2.5a3 3 0 0 1-3 5"/>',
   };
-  const icon = (n) => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SVG[n] || ''}</svg>`;
+  const icon = (n, cls = '') => `<svg class="ic${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SVG[n] || ''}</svg>`;
 
   // Цвет клуба, который читается на тёмном фоне: насыщенный из двух цветов клуба, при необходимости осветлённый.
   const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
@@ -169,14 +193,14 @@
   const pos = (p) => `<span class="pos ${FM.GROUP[p]}" title="${FM.POS_NAME[p]}">${FM.POS_RU[p]}</span>`;
   const form = (f) => `<span class="form">${f.map((x) => `<i class="${x}">${{ W: 'В', D: 'Н', L: 'П' }[x]}</i>`).join('')}</span>`;
   const pname = (p) => `<span class="pl" data-player="${p.id}" style="cursor:pointer">${esc(p.name)}</span>${p.gen ? '<span class="gen" title="Сгенерированный игрок — замените реальным в редакторе базы">*</span>' : ''}`;
-  const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">✚${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">▮${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? '<span class="ico warn" title="Контракт истекает летом">✎</span>' : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
+  const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
   const compName = (c) => (FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
   const compShort = (c) => (FM.isCup(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
   // пометка особого матча: дерби или матч лидеров
-  const bigTag = (m) => { const d = g().derbyOf(m) || (g().s.leagues[m.comp] && !m.played ? g().bigMatchOf(m) : null); return d ? `<span class="derby-tag">🔥 ${esc(d)}</span>` : ''; };
+  const bigTag = (m) => { const d = g().derbyOf(m) || (g().s.leagues[m.comp] && !m.played ? g().bigMatchOf(m) : null); return d ? `<span class="derby-tag">${icon('fire')} ${esc(d)}</span>` : ''; };
   const roundText = (m) => (m.label ? m.label : g().s.leagues[m.comp] ? `${m.round}-й тур` : FM.isCup(m.comp) && g().cupOf(m.comp) && g().cupOf(m.comp).rounds[m.round - 1] ? g().cupOf(m.comp).rounds[m.round - 1].name : m.leg ? `${m.leg}-й матч` : '');
   const fitBar = (f) => `<div class="bar ${f < 70 ? 'bad' : f < 88 ? 'warn' : ''}" style="width:48px;display:inline-block;vertical-align:middle"><i style="width:${f}%"></i></div>`;
   const ovrCell = (p) => ovr(p.ovr);
@@ -437,9 +461,9 @@
             <div class="mm-tiles">
               ${auto ? `<button class="mm-t big" id="cont" style="--sc:${anyTeam ? glow({ ...anyTeam, colors: auto.colors || anyTeam.colors }) : 'var(--accent)'}"><span class="mm-k">Продолжить карьеру</span>
                 <div class="mm-cont">${anyTeam ? badge(auto.logo ? { ...anyTeam, logoData: auto.logo } : anyTeam, 'xl') : ''}<div><b>${esc(auto.clubName || (auto.info || '').split(' · ')[1] || '')}</b>
-                <span>${esc(auto.mgr || '')}${auto.date ? ` · ${FM.fmtDate(auto.date)}` : ''}${auto.pos ? ` · ${auto.pos}-е место` : ''}</span></div></div><span class="mm-go">▶</span></button>` : ''}
-              <button class="mm-t ${auto ? '' : 'big'}" id="mm-new" style="--sc:#1fbf75"><span class="mm-k">Новая карьера</span><b>Выбрать клуб</b><span>36 лиг · или свой клуб</span><span class="mm-go">▶</span></button>
-              <button class="mm-t" id="mm-saves" style="--sc:#5b8cff"><span class="mm-k">Сохранения</span><b>${nSlots + (auto ? 1 : 0)} из 4</b><span>слоты, загрузка из файла</span><span class="mm-go">▶</span></button>
+                <span>${esc(auto.mgr || '')}${auto.date ? ` · ${FM.fmtDate(auto.date)}` : ''}${auto.pos ? ` · ${auto.pos}-е место` : ''}</span></div></div><span class="mm-go">${icon('play')}</span></button>` : ''}
+              <button class="mm-t ${auto ? '' : 'big'}" id="mm-new" style="--sc:#1fbf75"><span class="mm-k">Новая карьера</span><b>Выбрать клуб</b><span>36 лиг · или свой клуб</span><span class="mm-go">${icon('play')}</span></button>
+              <button class="mm-t" id="mm-saves" style="--sc:#5b8cff"><span class="mm-k">Сохранения</span><b>${nSlots + (auto ? 1 : 0)} из 4</b><span>слоты, загрузка из файла</span><span class="mm-go">${icon('play')}</span></button>
             </div>
             <div class="mm-foot">${UI.cloud ? 'Сохранения синхронизируются между устройствами' : 'Россия, вся Европа, Америка, Саудовская Аравия и СНГ'}</div>
           </div></div>`;
@@ -564,26 +588,26 @@
         <button class="burger" id="burger" aria-label="Разделы"><i></i><i></i><i></i></button>
         <span class="crest" data-team="${u.id}">${badge(u, 'lg')}</span>
         <b class="club-name">${esc(u.name)}</b>
-        <button class="next-btn" id="go">${s.seasonOver ? 'Новый сезон' : 'Далее'} <span>▶</span></button>
+        <button class="next-btn" id="go">${s.seasonOver ? 'Новый сезон' : 'Далее'} <span>${icon('play')}</span></button>
       </div></header>
       <div class="strip"><div class="strip-in">
         <div class="when">Сезон ${seasonLabel(s)}<span class="hide-m"> · Неделя ${weekNo(s)} · ${FM.fmtDateWd(s.date)}</span></div>
         <div class="chips">
-          <button class="chip" data-tab="squad" title="Травмированные игроки"><b class="cross">✚</b>${injured}</button>
-          <button class="chip" data-tab="inbox" title="Непрочитанные письма">✉ ${unread}</button>
+          <button class="chip" data-tab="squad" title="Травмированные игроки"><b class="cross">${icon('medic')}</b>${injured}</button>
+          <button class="chip" data-tab="inbox" title="Непрочитанные письма">${icon('mail')} ${unread}</button>
           <button class="chip cash" data-tab="finance" title="Деньги клуба"><b>€</b>${FM.money(u.money).replace(' €', '')}</button>
         </div>
       </div></div>
       <nav class="mainnav">${NAV.map((id) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="ni">${icon(TAB_ICONS[id])}</span><span>${NAV_NAME[id] || esc(TABS.find((t) => t[0] === id)[1])}</span>${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
-        <button class="more" id="more"><span class="ni"><i class="mdots">•••</i></span><span>Ещё</span></button></nav>
+        <button class="more" id="more"><span class="ni">${icon('dots')}</span><span>Ещё</span></button></nav>
       ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><div><h1>${esc(title)}</h1>${TAB_HINTS[UI.tab] ? `<div class="crumb-hint">${TAB_HINTS[UI.tab]}</div>` : ''}</div></div>` : ''}
       <main id="main"></main>
       <div class="drawer hidden" id="drawer"><nav>
-        <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div><button class="dh-exit" data-exit title="Выйти в главное меню" aria-label="Выйти в главное меню">⏏</button></div>
+        <div class="drawer-head">${badge(u)}<div><b>${esc(u.name)}</b><div class="small muted">${esc(s.manager)} · ${esc(s.leagues[u.league].name)}</div></div><button class="dh-exit" data-exit title="Выйти в главное меню" aria-label="Выйти в главное меню">${icon('exit')}</button></div>
         ${TABS.map(([id, n]) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="di">${icon(TAB_ICONS[id])}</span>${esc(n)}${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
         <div class="drawer-foot">
           <div class="small muted" id="as-status">${(() => { const m = localMeta(SAVE_AUTO); return m ? 'Автосохранение: ' + agoText(m.ts) : 'Автосохранение включено'; })()}</div>
-          <button id="exit" class="drawer-exit" data-exit><span class="di">⏏</span>Выйти в главное меню</button>
+          <button id="exit" class="drawer-exit" data-exit><span class="di">${icon('exit')}</span>Выйти в главное меню</button>
         </div>
       </nav></div>`;
     app.querySelectorAll('[data-exit]').forEach((b) => b.onclick = exitToMenu);
@@ -652,7 +676,7 @@
     const R = G.seasonReview();
     const U = R.user, ut = T(U.team);
     const L = s.leagues;
-    const medal = (i) => ['🥇', '🥈', '🥉'][i] || '';
+    const medal = (i) => i < 3 ? icon('medal', ['gold', 'silver', 'bronze'][i]) : '';
     const score = (f) => (f ? `${esc(T(f.h).name)} ${f.hg}:${f.ag}${f.pens ? ` (пен. ${f.pens[0]}:${f.pens[1]})` : ''} ${esc(T(f.a).name)}` : '');
     const pl = (x, fmt) => (x ? `<span data-player="${x[0].id}" class="link">${esc(x[0].name)}</span> <span class="muted">${esc(T(x[0].club) ? T(x[0].club).name : '')}</span> <b>${fmt(x[1])}</b>` : '<span class="muted">—</span>');
     const verdict = U.pos === 1 ? 'Чемпионы!' : U.pos <= U.expect ? 'Задача выполнена' : 'Ниже ожиданий';
@@ -667,7 +691,7 @@
         <div class="rv-main">${badge(ut, 'xl')}<div class="grow"><h2>${esc(ut.name)}</h2>
           <div class="rv-place"><span class="rv-pos">${U.pos}</span><span>место · ${esc(L[U.league].name)}</span></div>
           <div class="rv-verdict ${U.pos <= U.expect ? 'good' : 'bad'}">${verdict}${myMove ? (myMove.up ? ' · повышение в классе!' : ' · вылет') : ''} <span class="muted">(задача — ${U.expect}-е место)</span></div></div></div>
-        ${trophies.length ? `<div class="rv-trophies">${trophies.map((t) => `<span>🏆 ${esc(t)}</span>`).join('')}</div>` : ''}
+        ${trophies.length ? `<div class="rv-trophies">${trophies.map((t) => `<span>${icon('trophyF', 'tro')} ${esc(t)}</span>`).join('')}</div>` : ''}
         <div class="rv-stats">
           <div><b>${U.row.pts}</b><span>очков</span></div><div><b>${rec.w}-${rec.d}-${rec.l}</b><span>В-Н-П, все матчи</span></div>
           <div><b>${rec.gf}:${rec.ga}</b><span>мячи</span></div>
@@ -686,9 +710,9 @@
       <div class="card tight"><table class="rv-table"><tr><th>Лига</th><th>Бомбардир</th><th class="hide-m">Ассистент</th><th class="hide-m">Лучшая оценка</th></tr>
         ${R.leagues.map((x) => `<tr><td><b>${esc(L[x.lid].short)}</b></td><td>${pl(x.scorer, (v) => v)}</td><td class="hide-m">${pl(x.assist, (v) => v)}</td><td class="hide-m">${pl(x.best, (v) => v.toFixed(2))}</td></tr>`).join('')}</table></div>
       ${R.moves.length ? `<h3>Повышения и вылеты</h3><div class="rv-moves">
-        <div><div class="rv-comp good">▲ Повышаются</div>${R.moves.filter((m) => m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div>
-        <div><div class="rv-comp bad">▼ Вылетают</div>${R.moves.filter((m) => !m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div></div>` : ''}
-      <div class="row" style="margin-top:16px"><button class="btn" data-close>Посмотреть таблицы и статистику</button><span class="grow"></span><button class="btn primary" id="rv-next">Начать новый сезон ▶</button></div>
+        <div><div class="rv-comp good">${icon('up')} Повышаются</div>${R.moves.filter((m) => m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div>
+        <div><div class="rv-comp bad">${icon('down')} Вылетают</div>${R.moves.filter((m) => !m.up).map((m) => `<div class="mini">${badge(T(m.id), 'sm')}<span class="grow">${esc(T(m.id).name)}</span><span class="muted small">→ ${esc(L[m.to].short)}</span></div>`).join('')}</div></div>` : ''}
+      <div class="row" style="margin-top:16px"><button class="btn" data-close>Посмотреть таблицы и статистику</button><span class="grow"></span><button class="btn primary" id="rv-next">Начать новый сезон ${icon('play')}</button></div>
       <div class="small muted" style="margin-top:6px">Новый сезон начнётся только по кнопке «Новый сезон» — до этого можно спокойно изучить таблицы, кубки и статистику.</div>`, 'wide review');
     document.getElementById('rv-next').onclick = () => { closeModal(); goOn(); };
   }
@@ -711,7 +735,7 @@
     const st = teamStrength(t, lineup);
     return { def: Math.round(st.def), mid: Math.round(st.mid), att: Math.round(st.att) };
   }
-  const stars = (v) => `<span class="stars" style="--v:${v}" title="${v} из 5">★★★★★</span>`;
+  const stars = (v) => `<span class="stars" style="--v:${v}" title="${v} из 5">${icon('starF').repeat(5)}<span class="stars-on">${icon('starF').repeat(5)}</span></span>`;
   const tile = (title, target, body, cls = '', ic = '') => `<section class="tile ${cls}" data-go="${target}"><header>${ic ? `<span class="hic">${icon(ic)}</span>` : ''}<span class="tt">${title}</span><span class="chev">›</span></header><div class="tb">${body}</div></section>`;
   const shortDate = (d) => { const x = FM.parseDate(d); return `${x.getUTCDate()}.${String(x.getUTCMonth() + 1).padStart(2, '0')}`; };
   const cmpRow = (label, a, b) => {
@@ -761,11 +785,11 @@
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
-    if (c) cupRows.push(`<div class="kvl"><span>${esc(c.name)}</span><b>${c.winner ? (c.winner === u.id ? '🏆 победа!' : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (c) cupRows.push(`<div class="kvl"><span>${esc(c.name)}</span><b>${c.winner ? (c.winner === u.id ? `${icon('trophyF', 'tro')} победа!` : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
-      if (e.winner) st = e.winner === u.id ? '🏆 победа!' : `победил ${esc(T(e.winner).name)}`;
+      if (e.winner) st = e.winner === u.id ? `${icon('trophyF', 'tro')} победа!` : `победил ${esc(T(e.winner).name)}`;
       else if (e.phase === 'league') st = `${G.euroTable(euroMine.id).find((r) => r.id === u.id).pos}-е место`;
       else { const R = e.ko[e.ko.length - 1]; st = e.final ? 'финал' : R ? esc(R.name) : ''; }
       cupRows.push(`<div class="kvl"><span>${esc(euroMine.name)}</span><b>${st}</b></div>`);
@@ -1052,10 +1076,10 @@
       const m = s.matches[id];
       return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`;
     };
-    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}${c.winner ? ` · 🏆 ${esc(T(c.winner).name)}` : ''}</h3>
+    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}${c.winner ? ` · ${icon('trophyF', 'tro')} ${esc(T(c.winner).name)}` : ''}</h3>
       <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(400px,100%),1fr))">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
       ${R.matches.length ? R.matches.map(line).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
-      ${i === c.rounds.length - 1 && c.winner ? `<div class="note">🏆 ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
+      ${i === c.rounds.length - 1 && c.winner ? `<div class="note">${icon('trophyF', 'tro')} ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
   }
 
   function euroView(id) {
@@ -1070,7 +1094,7 @@
     UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
     const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
     const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
-    const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">🏆 ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
+    const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">${icon('trophyF', 'tro')} ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
     return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
         <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
@@ -1141,7 +1165,7 @@
       ${(() => { const top = rows.filter(([, t]) => t[key] > 0).slice(0, 3); const lbl = (cols.find((c) => c[0] === key) || ['', ''])[1].toLowerCase();
         return top.length ? `<div class="podium">${top.map(([p, t], i) => `<div class="pod p${i + 1}"><span class="pod-n">${i + 1}</span>${futMini(p, null, [[key === 'r' ? t.r.toFixed(2) : t[key], esc(lbl)]])}</div>`).join('')}</div>` : ''; })()}
       <div class="sortbar">${cols.filter(([k]) => ['apps', 'g', 'a', 'r', 'cs'].includes(k)).map(([k, n]) => `<button data-ts="${k}" class="${k === key ? 'on' : ''}">${n}</button>`).join('')}</div>
-      <div class="card tight"><div class="tbl-wrap"><table class="ts"><tr><th>#</th><th>Поз</th><th>Игрок</th>${cols.map(([k, n, sh]) => `<th class="num sort ${k === key ? 'on' : ''} ${hideM.has(k) ? 'hide-m' : ''}" data-ts="${k}" title="${n}">${sh}${k === key ? ' ▾' : ''}</th>`).join('')}</tr>
+      <div class="card tight"><div class="tbl-wrap"><table class="ts"><tr><th>#</th><th>Поз</th><th>Игрок</th>${cols.map(([k, n, sh]) => `<th class="num sort ${k === key ? 'on' : ''} ${hideM.has(k) ? 'hide-m' : ''}" data-ts="${k}" title="${n}">${sh}${k === key ? ' ' + icon('chevDown', 'sm') : ''}</th>`).join('')}</tr>
         ${rows.map(([p, t], i) => `<tr><td class="num muted">${i + 1}</td><td>${pos(p.pos)}</td><td>${pname(p)}${status(p)}</td>${cols.map(([k]) => `<td class="num ${k === key ? 'hl' : ''} ${hideM.has(k) ? 'hide-m' : ''}">${k === 'r' ? (t.apps ? rt(t.r) : '—') : k === 'cs' && !['G', 'D'].includes(FM.GROUP[p.pos]) ? '<span class="muted">—</span>' : t[k]}</td>`).join('')}</tr>`).join('')}
       </table></div><div class="small muted" style="padding:10px">Сухой матч засчитывается вратарю и защитникам, сыгравшим от 60 минут без пропущенных мячей.</div></div>`;
     main.querySelectorAll('[data-ts]').forEach((b) => b.onclick = () => { UI.tsKey = b.dataset.ts; render(); });
@@ -1225,9 +1249,9 @@
       const page = UI.tfPage, per = 48;
       const shown = list.slice(page * per, page * per + per);
       const winter = s.date >= `${s.season + 1}-01-01`;
-      const th = (key, nm, cls = 'num') => `<th class="sort ${cls}" data-sort="${key}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
-      const sh = (key, nm) => `<button class="tf-sort ${UI.sortKey === key ? 'on' : ''}" data-sort="${key}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`;
-      const sortBtns = [['ovr', 'Рейтинг'], ['value', 'Цена'], ['age', 'Возраст'], ['pot', 'Потенциал']].map(([key, nm]) => `<button data-sort="${key}" class="${UI.sortKey === key ? 'on' : ''}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`).join('');
+      const th = (key, nm, cls = 'num') => `<th class="sort ${cls}" data-sort="${key}">${nm}${UI.sortKey === key ? ' ' + icon(UI.sortDir < 0 ? 'chevDown' : 'chevUp', 'sm') : ''}</th>`;
+      const sh = (key, nm) => `<button class="tf-sort ${UI.sortKey === key ? 'on' : ''}" data-sort="${key}">${nm}${UI.sortKey === key ? ' ' + icon(UI.sortDir < 0 ? 'chevDown' : 'chevUp', 'sm') : ''}</button>`;
+      const sortBtns = [['ovr', 'Рейтинг'], ['value', 'Цена'], ['age', 'Возраст'], ['pot', 'Потенциал']].map(([key, nm]) => `<button data-sort="${key}" class="${UI.sortKey === key ? 'on' : ''}">${nm}${UI.sortKey === key ? ' ' + icon(UI.sortDir < 0 ? 'chevDown' : 'chevUp', 'sm') : ''}</button>`).join('');
       const potBar = (p) => `<span class="potbar" title="Потенциал: ${G.potLabel(p)}"><i style="width:${FM.clamp((p.ovr - 40) * 1.8, 4, 100)}%"></i><i class="room" style="width:${FM.clamp((p.pot - p.ovr) * 1.8, 0, 60)}%"></i></span>`;
       const rowTags = (p) => (p.pre ? '<span class="tag">предв. контракт</span>' : '') + (!p.pre && p.club && p.contract <= s.season ? `<span class="tag free">${winter ? 'бесплатно летом' : 'контракт до лета'}</span>` : '') + (p.listed ? '<span class="tag warn">на продаже</span>' : '') + (!p.club ? '<span class="tag free">свободен</span>' : '');
       const rows = shown.map((p) => `<div class="tf-row" data-player="${p.id}" style="--kc:${p.club ? glow(T(p.club)) : 'transparent'}">
@@ -1236,7 +1260,7 @@
           <span class="tf-age">${p.age}<small>лет</small></span>${ovr(p.ovr)}${potBar(p)}<span class="tf-val">${FM.money(p.value)}</span></div>`).join('');
       body = `      <div class="tf-layout">
         <aside class="card tf-filters ${UI.tfFiltersOpen ? 'open' : ''}">
-          <h3 id="tf-ftoggle">Фильтры <span class="tf-fcount">${['name', 'league', 'maxPrice', 'minOvr', 'maxAge', 'listed', 'expiring', 'realOnly'].filter((key) => f[key]).length + [].concat(f.pos || []).length || ''}</span><span class="tf-fchev">▾</span></h3>
+          <h3 id="tf-ftoggle">Фильтры <span class="tf-fcount">${['name', 'league', 'maxPrice', 'minOvr', 'maxAge', 'listed', 'expiring', 'realOnly'].filter((key) => f[key]).length + [].concat(f.pos || []).length || ''}</span><span class="tf-fchev">${icon('chevDown')}</span></h3>
           <label>Имя<input id="f-name" placeholder="Например, Кисляк" value="${esc(f.name || '')}"></label>
           <div><span class="tf-lbl">Позиции</span><div class="pos-pick">${FM.POS.map((p) => `<button class="pos-chip ${[].concat(f.pos || []).includes(p) ? 'on' : ''}" data-fpos="${p}" title="${FM.POS_NAME[p]}">${pos(p)}</button>`).join('')}</div></div>
           <label>Лига<select id="f-league"><option value="">Все лиги</option>${[...new Set(s.order.map((id) => G.countryOf(id)))].map((c) => `<optgroup label="${esc(FM.NAT[c] || c)}">${s.order.filter((id) => G.countryOf(id) === c).map((id) => `<option value="${id}" ${f.league === id ? 'selected' : ''}>${esc(s.leagues[id].name)}</option>`).join('')}</optgroup>`).join('')}<option value="free" ${f.league === 'free' ? 'selected' : ''}>Свободные агенты</option></select></label>
@@ -1474,7 +1498,7 @@
           <div class="tk-top"><span>FM26 · ТРАНСФЕР</span><span>${d.pre ? 'ПРЕДВАРИТЕЛЬНЫЙ КОНТРАКТ' : 'ПОСАДОЧНЫЙ ТАЛОН'}</span></div>
           <div class="tk-route">
             <div class="tk-pt">${from ? badge(from, 'lg') : '<span class="ng-free">FA</span>'}<b>${code(from)}</b><small>${from ? esc(from.name) : 'свободный агент'}</small></div>
-            <div class="tk-path"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 32 Q100 -14 196 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/></svg><span class="tk-plane">✈</span></div>
+            <div class="tk-path"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 32 Q100 -14 196 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/></svg><span class="tk-plane">${icon('plane')}</span></div>
             <div class="tk-pt">${badge(to, 'lg')}<b>${code(to)}</b><small>${esc(to.name)}</small></div>
           </div>
           <div class="tk-pass"><span class="label">Пассажир</span><b>${flag(p.nat)}${esc(p.name)}</b></div>
@@ -1502,7 +1526,7 @@
     const it = G.playerInterest(p, u);
     const blocked = G.negoBlocked(n);
     const stage = { club: 0, player: 1, done: 2 }[n.stage];
-    const dots = (k, max) => `<span class="pat">${'●'.repeat(Math.max(0, k))}${'○'.repeat(Math.max(0, max - k))}</span>`;
+    const dots = (k, max) => `<span class="pat">${icon('dot').repeat(Math.max(0, k))}${icon('ring').repeat(Math.max(0, max - k))}</span>`;
     let form = '';
     if (blocked) form = `<div class="note bad">${esc(blocked)}</div>`;
     else if (n.stage === 'club') {
@@ -1548,7 +1572,7 @@
       </div>
       <div class="ng-int"><span class="label">Интерес игрока</span><div class="ng-gauge"><i style="width:${it.score}%;background:${ic}"></i></div><b style="color:${ic}">${it.label}</b>
         <div class="small muted ng-why">${it.why.map(esc).join(' · ')}</div></div>
-      <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? '✓ ' : ''}${l}</span>` : '')).join('')}</div>
+      <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? icon('check', 'sm') + ' ' : ''}${l}</span>` : '')).join('')}</div>
       ${n.precontract ? '<div class="note">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
       <div class="chat ng-chat" id="chat">${n.log.map((m, i) => `<div class="msg ${m.who} ${i === n.log.length - 1 ? 'new' : ''}"><span class="ava">${m.who === 'you' ? badge(u, 'sm') : m.who === 'club' && club ? badge(club, 'sm') : `<span class="ava-kit">${kitSvg(club || { colors: ['#3a4256', '#8f9bcc'] }, p.pos === 'GK')}</span>`}</span><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
       ${form}
@@ -1722,7 +1746,7 @@
     const finish = () => {
       clearTimeout(ceremonyTimer);
       const w = A.ballon[0];
-      stage.innerHTML = w ? `<div class="bd-winner">${G.teams[w.club] ? badge(G.teams[w.club], 'xl') : ''}<div><div class="bd-k">🏆 Обладатель «Золотого мяча»</div><div class="bd-wname">${flag(w.nat, 'lg')}${esc(w.name)}</div>
+      stage.innerHTML = w ? `<div class="bd-winner">${G.teams[w.club] ? badge(G.teams[w.club], 'xl') : ''}<div><div class="bd-k">${icon('trophyF', 'tro')} Обладатель «Золотого мяча»</div><div class="bd-wname">${flag(w.nat, 'lg')}${esc(w.name)}</div>
         <div class="muted">${esc(w.clubName)} · ${FM.POS_NAME[w.pos]} · ${w.age} лет</div><div class="small" style="margin-top:4px">${stat(w)}</div></div></div>` : '';
       list.innerHTML = A.ballon.map(row).join('');
       extra.innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));margin-top:12px">${card('Трофей Копа · лучший молодой игрок (до 21 года)', A.kopa[0], 'kopa')}${card('Трофей Яшина · лучший вратарь', A.yashin[0], 'yashin')}</div>`;
@@ -1798,7 +1822,7 @@
   }
 
   // ================== живой матч ==================
-  const ICONS = { penkick: '🎯', goal: '⚽', yellow: '🟨', red: '🟥', sub: '⇄', injury: '✚', save: '🧤', miss: '·', pen: '❗', half: '⏱', end: '⏱', start: '⏱', pens: '🎯', info: '' };
+  const ICONS = { penkick: icon('target'), goal: icon('ball'), yellow: icon('card', 'yel'), red: icon('card', 'red'), sub: icon('swap'), injury: icon('medic', 'red'), save: icon('glove'), miss: icon('ring', 'sm'), pen: icon('alert'), half: icon('clock'), end: icon('clock'), start: icon('clock'), pens: icon('target'), info: '' };
 
   function liveMatch(m) {
     const G = g();
@@ -1818,7 +1842,7 @@
         <div><div class="sc" id="sc">0:0</div><div class="min" id="mn">0'</div>${m.firstLeg ? '<div class="agg" id="agg"></div>' : ''}<div id="so" class="so hidden"></div></div>
         <div class="tm">${badge(a, 'lg')}<b>${esc(a.name)}</b><div class="scorers" id="sa"></div></div></div>
       <div class="prog"><i id="pg" style="width:0"></i></div>
-      <div class="row mtabs"><div class="seg" id="spd">${[['0', '⏸'], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
+      <div class="row mtabs"><div class="seg" id="spd">${[['0', icon('pause')], ['1', '×1'], ['2', '×2'], ['4', '×4']].map(([v, n]) => `<button data-s="${v}" class="${+v === speed ? 'on' : ''}">${n}</button>`).join('')}</div>
         <div class="seg" id="tabs">${[['feed', 'Ход матча'], ['stats', 'Статистика'], ['lu', 'Составы']].map(([v, n]) => `<button data-tab="${v}" class="${v === tab ? 'on' : ''}">${n}</button>`).join('')}</div>
         <span class="grow"></span><button class="btn" id="mng">Замены и тактика</button><button class="btn" id="fin">До конца</button></div>
       <div id="mgrPanel" class="card hidden" style="margin-bottom:12px"></div>
@@ -1852,14 +1876,14 @@
       $('#sa').innerHTML = gl('a');
       const body = $('#body');
       if (tab === 'feed') {
-        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? '⚽' : '❌') : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">■</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
+        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? icon('ball') : icon('x', 'red')) : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">${icon('square', 'sm')}</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
       } else if (tab === 'stats') {
         const H = sim.home.stats, A = sim.away.stats;
         const tp = H.possTicks + A.possTicks || 1;
         const ph = Math.round((H.possTicks / tp) * 100);
         body.innerHTML = statRow('Владение, %', ph, 100 - ph) + statRow('Удары', H.shots, A.shots) + statRow('В створ', H.sot, A.sot) + statRow('xG', H.xg.toFixed(2), A.xg.toFixed(2)) + statRow('Угловые', H.corners, A.corners) + statRow('Фолы', H.fouls, A.fouls) + statRow('Жёлтые', H.yc, A.yc) + statRow('Красные', H.rc, A.rc);
       } else {
-        const side = (sd) => `<div><h3>${esc(sd.team.name)}</h3><table class="lu small">${sd.onPitch.map((o) => `<tr><td>${pos(o.slot)}</td><td>${esc(o.p.name)}${sd.yellows[o.p.id] ? ' 🟨' : ''}</td><td>${fitBar(Math.round(sd.fitness[o.p.id]))}</td><td class="num">${rt(sd.rating[o.p.id])}</td></tr>`).join('')}
+        const side = (sd) => `<div><h3>${esc(sd.team.name)}</h3><table class="lu small">${sd.onPitch.map((o) => `<tr><td>${pos(o.slot)}</td><td>${esc(o.p.name)}${sd.yellows[o.p.id] ? ' ' + icon('card', 'yel') : ''}</td><td>${fitBar(Math.round(sd.fitness[o.p.id]))}</td><td class="num">${rt(sd.rating[o.p.id])}</td></tr>`).join('')}
           <tr><td colspan="4" class="muted">Запас (замен осталось: ${sd.subsLeft})</td></tr>${sd.bench.map((p) => `<tr class="muted"><td>${pos(p.pos)}</td><td>${esc(p.name)}${sd.used.has(p.id) ? ' (вышел)' : ''}</td><td></td><td></td></tr>`).join('')}</table></div>`;
         body.innerHTML = `<div class="grid" style="grid-template-columns:1fr 1fr">${side(sim.home)}${side(sim.away)}</div>`;
       }
@@ -2019,7 +2043,7 @@
         <div><span>Репутация</span><b>${u.rep}</b></div><div><span>Лига</span><b>${esc(s.leagues[u.league].name)}</b></div></div>
         <button class="btn" data-team="${u.id}">Весь состав</button></div>
       <div class="card"><h3>Руководство</h3><div>Ориентир — <b>${s.board.expect}-е место</b> в лиге.</div><div class="small muted" style="margin-top:6px">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
-      <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? '<span class="good">▲</span>' : x.moved === 'down' ? '<span class="bad">▼</span>' : ''}${x.cup ? ' 🏆' : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} 🏆</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
+      <div class="card"><h3>История тренера</h3>${s.history.length ? `<table><tr><th>Сезон</th><th>Клуб</th><th>Турнир</th><th class="num">Место</th><th></th></tr>${s.history.map((x) => `<tr><td>${x.year}/${String(x.year + 1).slice(2)}</td><td>${esc(T(x.team).name)}</td><td>${esc(s.leagues[x.league] ? s.leagues[x.league].short : x.league)}</td><td class="num">${x.pos}</td><td>${x.moved === 'up' ? `<span class="good">${icon('up', 'sm')}</span>` : x.moved === 'down' ? `<span class="bad">${icon('down', 'sm')}</span>` : ''}${x.cup ? ' ' + icon('trophyF', 'tro') : ''}${(x.euro || []).map((id) => ` <span class="tag">${euroOf(id) ? euroOf(id).short : id} ${icon('trophyF', 'tro')}</span>`).join('')}</td></tr>`).join('')}</table>` : '<div class="muted small">Первый сезон в карьере.</div>'}</div></div>`;
   }
 
   // ================== почта ==================
@@ -2064,7 +2088,7 @@
     } else if (view === 'seasons') {
       const tops = s.order.filter((id) => s.leagues[id].tier === 1).slice(0, 12);
       body = H.seasons.length ? H.seasons.map((x) => `<div class="card tight" style="margin-bottom:12px"><h3>Сезон ${x.year}/${String(x.year + 1).slice(2)}</h3><table>
-          ${FM.EURO.filter((E) => x.euro[E.id]).map((E) => `<tr><td><b>${esc(E.name)}</b></td><td>🏆 ${tname(T(x.euro[E.id]))}</td></tr>`).join('')}
+          ${FM.EURO.filter((E) => x.euro[E.id]).map((E) => `<tr><td><b>${esc(E.name)}</b></td><td>${icon('trophyF', 'tro')} ${tname(T(x.euro[E.id]))}</td></tr>`).join('')}
           ${tops.filter((lid) => x.champs[lid]).map((lid) => `<tr><td>${flag(G.countryOf(lid))}${esc(s.leagues[lid].name)}</td><td>${tname(T(x.champs[lid]))}${x.cups[G.countryOf(lid)] && T(x.cups[G.countryOf(lid)]) ? ` <span class="small muted">· кубок: ${esc(T(x.cups[G.countryOf(lid)]).name)}</span>` : ''}</td></tr>`).join('')}
           ${(s.awards || []).filter((a) => a.year === x.year && a.ballon[0]).map((a) => `<tr><td><b>Золотой мяч</b></td><td>${flag(a.ballon[0].nat)}${esc(a.ballon[0].name)} <span class="small muted">${esc(a.ballon[0].clubName)}</span></td></tr>`).join('')}
         </table></div>`).join('') : '<div class="card muted" style="padding:14px">Чемпионы появятся здесь после первого сезона.</div>';
@@ -2096,7 +2120,7 @@
       if (s.leagues[comp] || (!c && e.final)) {
         const pos = cur ? G.positionOf(G.userTeam().id) : e.final && e.final.league === comp ? e.final.pos : null;
         if (!pos) return '—';
-        return pos === 1 && !cur ? '<b class="win">🏆 Чемпион</b>' : `${pos}-е место`;
+        return pos === 1 && !cur ? `<b class="win">${icon('trophyF', 'tro')} Чемпион</b>` : `${pos}-е место`;
       }
       if (c.md) {
         const row = cur && s.euro && s.euro[comp] && G.euroTable(comp).find((r) => r.id === s.user);
@@ -2105,7 +2129,7 @@
       }
       const base = c.label || 'стыки';
       if (!c.ko) return `${base} · в борьбе`;
-      if (c.won && c.final) return '<b class="win">🏆 Победа</b>';
+      if (c.won && c.final) return `<b class="win">${icon('trophyF', 'tro')} Победа</b>`;
       if (c.won) return `${base} · ${comp === 'po' && !/полуфинал/.test(base) ? 'выиграли' : 'прошли дальше'}`;
       return `<span class="bad">вылет · ${base}</span>`;
     };
@@ -2408,7 +2432,7 @@
       <td><input data-k="age" type="number" value="${p.age}" style="width:56px"></td><td><input data-k="nat" value="${esc(p.nat)}" style="width:56px"></td>
       <td><input data-k="ovr" type="number" value="${p.ovr}" style="width:56px"></td><td><input data-k="pot" type="number" value="${p.pot}" style="width:56px"></td>
       <td><input data-k="value" type="number" value="${p.value}" style="width:90px"></td><td class="center"><input data-k="gen" type="checkbox" ${p.gen ? 'checked' : ''}></td>
-      <td><button class="btn sm danger" data-del>✕</button></td></tr>`;
+      <td><button class="btn sm danger" data-del>${icon('x')}</button></td></tr>`;
   }
 
   // ================== запуск ==================
