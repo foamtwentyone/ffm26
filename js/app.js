@@ -1164,6 +1164,7 @@
       const page = UI.tfPage, per = 48;
       const shown = list.slice(page * per, page * per + per);
       const winter = s.date >= `${s.season + 1}-01-01`;
+      const th = (key, nm, cls = 'num') => `<th class="sort ${cls}" data-sort="${key}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
       const sh = (key, nm) => `<button class="tf-sort ${UI.sortKey === key ? 'on' : ''}" data-sort="${key}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`;
       const sortBtns = [['ovr', 'Рейтинг'], ['value', 'Цена'], ['age', 'Возраст'], ['pot', 'Потенциал']].map(([key, nm]) => `<button data-sort="${key}" class="${UI.sortKey === key ? 'on' : ''}">${nm}${UI.sortKey === key ? (UI.sortDir < 0 ? ' ▾' : ' ▴') : ''}</button>`).join('');
       const potBar = (p) => `<span class="potbar" title="Потенциал: ${G.potLabel(p)}"><i style="width:${FM.clamp((p.ovr - 40) * 1.8, 4, 100)}%"></i><i class="room" style="width:${FM.clamp((p.pot - p.ovr) * 1.8, 0, 60)}%"></i></span>`;
@@ -1189,8 +1190,8 @@
         <div class="tf-results">
           <div class="tf-bar"><span class="tf-found"><b>${list.length.toLocaleString('ru-RU')}</b> игроков</span><span class="grow"></span>
             <div class="seg sm"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div></div>
-          ${!UI.tfCards && page === 0 && shown.length >= 4 ? `<div class="tf-spot"><span class="label">В центре внимания</span><div class="tf-spot-row">${shown.slice(0, 4).map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : ''}
-          ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight tf-list"><div class="tf-row tf-head"><span></span><span></span>${sh('name', 'Игрок')}<span class="tf-club">Клуб</span>${sh('age', 'Возр')}${sh('ovr', 'Рейт')}${sh('pot', 'Потенц.')}${sh('value', 'Цена')}</div>${rows || '<div class="muted" style="padding:16px">Никого не нашли — ослабьте фильтры.</div>'}</div>`}
+          ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight"><div class="tbl-wrap"><table class="lt tf-table"><tr><th></th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенциал')}${th('value', 'Цена')}</tr>
+            ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td>${pos(p.pos)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)} ${rowTags(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small">${G.potLabel(p)}</td><td class="num"><b>${FM.money(p.value)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Никого не нашли — ослабьте фильтры.</td></tr>'}</table></div></div>`}
           <div class="row tf-pages"><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹ Назад</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>Дальше ›</button></div>
         </div>
       </div>`;

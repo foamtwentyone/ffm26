@@ -1401,3 +1401,5 @@ table.lt td:first-child { font: 800 15px var(--f-display); }
 .gap-ask em, .gap-me em { font-style: normal; font-size: 10px; color: var(--muted); }
 .gap-say { font: 800 14px var(--f-display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .gap.near .gap-say { color: var(--warn); } .gap.ok .gap-say { color: var(--good); } .gap.ok .gap-fill { background: var(--good); }
+.tf-table td { white-space: nowrap; }
+.tf-table .tag { margin-left: 4px; }
