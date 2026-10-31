@@ -192,6 +192,15 @@
       this.att = (0.6 * f + 0.4 * m) * lack * (1 + 0.05 * t.ment);
     }
 
+    // лимит легионеров на поле: может ли inn выйти вместо out
+    canEnter(inn, out) {
+      const r = this.game.foreignRuleOf(this.team);
+      if (!r || !r.pitch) return true;
+      const c = this.game.countryOf(this.team.league), fr = (p) => FM.isForeign(p, c, r);
+      if (!fr(inn) || (out && fr(out))) return true;
+      return this.onPitch.filter((o) => fr(o.p)).length < r.pitch;
+    }
+
     gkPlayer() {
       const o = this.onPitch.find((x) => x.slot === 'GK');
       return o ? o.p : this.onPitch[0].p;
@@ -506,7 +515,8 @@
     bestSub(s, slot) {
       const avail = s.bench.filter((b) => !s.used.has(b.id) && this.game.isAvailable(b));
       if (!avail.length) return null;
-      const cands = slot === 'GK' ? avail.filter((b) => b.pos === 'GK') : avail.filter((b) => b.pos !== 'GK');
+      const outP = (s.onPitch.find((o) => o.slot === slot) || {}).p;
+      const cands = (slot === 'GK' ? avail.filter((b) => b.pos === 'GK') : avail.filter((b) => b.pos !== 'GK')).filter((b) => s.canEnter(b, outP));
       if (!cands.length) return null;
       return cands.sort((a, b) => b.ovr * FM.pfit(b, slot) * (0.78 + 0.22 * s.fitness[b.id] / 100) - a.ovr * FM.pfit(a, slot) * (0.78 + 0.22 * s.fitness[a.id] / 100))[0];
     }
@@ -514,6 +524,7 @@
     doSub(s, out, inn, slotOverride) {
       const idx = s.onPitch.findIndex((o) => o.p === out);
       if (idx < 0 || s.subsLeft <= 0 || s.used.has(inn.id)) return false;
+      if (!s.canEnter(inn, out)) return false;
       const slot = slotOverride || s.onPitch[idx].slot;
       s.onPitch[idx] = { p: inn, slot };
       s.used.add(inn.id);

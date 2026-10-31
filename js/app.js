@@ -194,7 +194,7 @@
   const form = (f) => `<span class="form">${f.map((x) => `<i class="${x}">${{ W: 'В', D: 'Н', L: 'П' }[x]}</i>`).join('')}</span>`;
   const pname = (p) => `<span class="pl" data-player="${p.id}" style="cursor:pointer">${esc(p.name)}</span>${p.gen ? '<span class="gen" title="Сгенерированный игрок — замените реальным в редакторе базы">*</span>' : ''}`;
   const posAlt = (p) => pos(p.pos) + ((p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : '');
-  const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '');
+  const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '') + (p.club && g().teams[p.club] && g().isForeignIn(p, g().teams[p.club]) ? '<span class="ico leg" title="Легионер: попадает под лимит лиги">Л</span>' : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
   const compName = (c) => (FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
@@ -660,7 +660,7 @@
   }
 
   // Случайное событие: окно с выбором; после решения — итог и «Продолжить»
-  const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar' };
+  const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar', agent: 'mail', rumor: 'news', heat: 'alert', snow: 'calendar', legend: 'star', kits: 'shirt', leak: 'news', doping: 'medic', boardmoney: 'coin', audit: 'coin', fanaward: 'medal', captain: 'user', sellout: 'trophy', language: 'globe', family: 'user', physio: 'medic', flares: 'alert', callup: 'globe' };
   function eventModal(id) {
     const G = g(), u = G.userTeam(), m = G.s.inbox.find((x) => x.id === id);
     if (!m || !m.data) return;
@@ -921,6 +921,8 @@
             return `<button class="btn sm bench-btn ${sel ? 'on' : ''} ${p && selSlot && p.id !== selCur ? fitMark(p, selSlot).cls : ''}" data-bench="${i}" title="${p ? esc(p.name) : 'Пусто'}">${p ? `${pos(p.pos)} ${esc(p.name.split(' ').slice(-1)[0])}` : '—'}</button>`;
           }).join('')}</div>
           ${problems.length ? `<div class="note bad small">${problems.map(esc).join('<br>')}<br>Перед матчем такие места заполнятся автоматически.</div>` : ''}
+          ${(() => { const r = G.foreignRuleOf(u); if (!r) return ''; const inXi = u.lineup.filter((id) => id && G.players[id] && G.isForeignIn(G.players[id], u)).length, n = G.foreignCount(u);
+            return `<div class="leg-info small" title="${esc(r.text)}"><b>Л</b> Легионеры${r.nonEU ? ' (не из ЕС)' : ''}: ${r.squad ? `в заявке <span class="${n > r.squad ? 'bad' : n === r.squad ? 'warn' : ''}">${n}/${r.squad}</span>` : `в заявке ${n}`}${r.pitch ? ` · в составе <span class="${inXi > r.pitch ? 'bad' : ''}">${inXi}/${r.pitch}</span>` : ''}<div class="muted">${esc(r.text)}</div></div>`; })()}
         </div>
         <div class="card">
           <h3>Тактика</h3>
@@ -1977,6 +1979,7 @@
       panel.querySelectorAll('[data-out]').forEach((b) => b.onclick = () => { subSel = +b.dataset.out; openMgr(); });
       panel.querySelectorAll('[data-in]').forEach((b) => b.onclick = () => {
         if (sim.userSub(subSel, +b.dataset.in)) { feed.push(sim.events[sim.events.length - 1]); subSel = null; openMgr(); draw(); }
+        else if (sim.userSide && !sim.userSide.canEnter(G.players[+b.dataset.in], G.players[subSel])) toast(`Лимит: на поле уже максимум легионеров (${G.foreignRuleOf(G.userTeam()).pitch}). Замените легионера или выпустите другого игрока.`, 4500);
       });
       panel.querySelectorAll('[data-mt]').forEach((b) => b.onclick = () => {
         const v = {};

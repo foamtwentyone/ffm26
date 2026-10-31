@@ -137,6 +137,28 @@ FM.altFor = (name, pos) => {
   for (const [a, pr] of (FM.ALT_POOL[pos] || []).slice().sort(() => rnd() - 0.5)) if (out.length < 2 && rnd() < pr) out.push(a);
   return out;
 };
+// ---------- лимит на легионеров (сезон 2026/27) ----------
+// squad — сколько иностранцев можно держать в заявке, pitch — сколько одновременно на поле;
+// exempt — гражданства, которые лигой не считаются легионерами; nonEU — считаются только игроки не из ЕС/ЕЭЗ;
+// tier — правило действует только в лиге этого уровня. Лиги без правила — без ограничений.
+FM.EU = new Set(['AUT', 'BEL', 'BUL', 'CRO', 'CYP', 'CZE', 'DEN', 'EST', 'FIN', 'FRA', 'GER', 'GRE', 'HUN', 'IRL', 'ITA', 'LVA', 'LTU', 'LUX', 'MLT', 'NED', 'POL', 'POR', 'ROU', 'SVK', 'SVN', 'ESP', 'SWE', 'ISL', 'LIE', 'NOR', 'SUI']);
+FM.EAEU = ['RUS', 'ARM', 'BLR', 'KAZ', 'KGZ'];
+FM.FOREIGN_RULES = {
+  RUS: { tier: 1, squad: 12, pitch: 7, exempt: FM.EAEU, text: 'РПЛ: не больше 12 легионеров в заявке и 7 на поле. Игроки из стран ЕАЭС (Беларусь, Казахстан, Армения, Киргизия) легионерами не считаются.' },
+  ESP: { tier: 1, squad: 3, nonEU: true, text: 'Ла Лига: не больше 3 игроков не из ЕС в заявке.' },
+  FRA: { tier: 1, squad: 4, nonEU: true, text: 'Лига 1: не больше 4 игроков не из ЕС в заявке.' },
+  TUR: { squad: 14, text: 'Суперлига: не больше 14 иностранцев в заявке, на поле без ограничений.' },
+  KSA: { squad: 10, pitch: 8, text: 'Саудовская Про-лига: не больше 10 иностранцев в заявке и 8 на поле.' },
+  KAZ: { squad: 10, pitch: 8, text: 'Премьер-лига Казахстана: не больше 10 легионеров в заявке и 8 на поле.' },
+  BLR: { pitch: 5, text: 'Высшая лига Беларуси: не больше 5 легионеров на поле.' },
+  UZB: { squad: 4, text: 'Суперлига Узбекистана: не больше 4 легионеров в заявке.' },
+  ARG: { squad: 6, pitch: 5, text: 'Лига Професьональ: не больше 6 иностранцев в заявке и 5 на поле.' },
+  BRA: { pitch: 9, text: 'Серия A Бразилии: не больше 9 иностранцев в составе на матч.' },
+  USA: { squad: 8, text: 'MLS: 8 мест для иностранных игроков в заявке.' },
+};
+FM.foreignRule = (country, tier) => { const r = FM.FOREIGN_RULES[country]; return r && (!r.tier || r.tier === tier) ? r : null; };
+FM.isForeign = (p, country, rule) => !!rule && p.nat !== country && !(rule.exempt || []).includes(p.nat) && !(rule.nonEU && FM.EU.has(p.nat));
+
 // Сколько недель переучиваться: чем дальше позиция и старше игрок, тем дольше.
 FM.retrainWeeks = (p, to) => {
   const f = FM.pfit(p, to);

@@ -140,6 +140,105 @@
         { t: 'Заменить газон', h: 'Расходы, руководство довольно', cost: true, run: (g, c, p, u) => { g.pay(u, c.cost, 'Замена газона'); g.boardConf(1); return 'Новый газон уложен.'; } },
         { t: 'Рискнуть', h: 'Возможен штраф', run: (g, c, p, u) => { if (Math.random() < 0.5) { const f = FM.roundValue(c.cost * 1.5); g.pay(u, f, 'Штраф лиги за газон'); g.boardConf(-2); return `Лига оштрафовала клуб на ${FM.money(f)}.`; } return 'Обошлось — инспекция лиги претензий не предъявила.'; } },
       ], def: 1 },
+    { id: 'agent', w: 6, title: 'Звонок агента',
+      when: (g, u) => { if (!g.inWindow() || u.players.length >= MAX_SQUAD) return null; const base = g.teamBaseOvr(u); const p = FM.pick((g.s.freeAgents || []).map((id) => g.players[id]).filter((x) => x && x.ovr >= base - 3 && x.ovr <= base + 6 && x.age <= 32 && !g.foreignBlock(u, x))); return p && { pid: p.id, wage: g.wageDemand(p, u) }; },
+      text: (g, c) => { const p = g.players[c.pid]; return `Агент свободного агента ${p.name} (${FM.POS_NAME[p.pos].toLowerCase()}, ${p.age} лет, рейтинг ${p.ovr}) предлагает подписать контракт на два года за ${FM.money(c.wage)} в неделю — без трансферной суммы.`; },
+      opts: [
+        { t: 'Подписать', h: 'Игрок сразу в заявке', run: (g, c, p, u) => { if (p.club) return `${p.name} уже подписал контракт с другим клубом.`; const b = g.foreignBlock(u, p); if (b) return b; if (u.players.length >= MAX_SQUAD) return g.squadFullText(); g.s.freeAgents = g.s.freeAgents.filter((x) => x !== p.id); g.transfer(p, u, 0, c.wage, 2); return `${p.name} подписал контракт с «${u.name}».`; } },
+        { t: 'Отказаться', h: '', run: () => 'Агент обещал предложить игрока другим клубам.' },
+      ], def: 1, free: true },
+    { id: 'rumor', w: 6, title: 'Слухи о переходе',
+      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 4)); const big = FM.pick(Object.values(g.teams).filter((t) => t.rep >= u.rep + 6 && t.id !== u.id)); return p && big && { pid: p.id, club: big.id }; },
+      text: (g, c) => `Пресса пишет об интересе «${g.teams[c.club].name}»: в клубе хотят видеть ${g.players[c.pid].name}. Игрок выглядит рассеянным на тренировках.`,
+      opts: [
+        { t: 'Заверить игрока', h: 'Пообещать ключевую роль — игрок успокоится', run: (g, c, p) => { mor(p, 8); return `${p.name} благодарит за доверие и сосредоточен на сезоне.`; } },
+        { t: 'Не комментировать', h: 'Игрок может расстроиться', run: (g, c, p) => { mor(p, -6); return `${p.name} думает о своём будущем.`; } },
+      ], def: 1 },
+    { id: 'heat', w: 4, title: 'Аномальная жара',
+      when: (g) => { const mth = +g.s.date.slice(5, 7); return mth >= 6 && mth <= 8 ? {} : null; },
+      text: () => 'В городе аномальная жара: тренировки пришлось сократить, игроки быстро устают.',
+      opts: [{ t: 'Понятно', h: '', run: (g, c, p, u) => { for (const x of g.squad(u)) x.fit = Math.max(50, x.fit - 12); return 'Форма всей команды немного просела.'; } }], def: 0 },
+    { id: 'snow', w: 4, title: 'Снегопад',
+      when: (g) => { const mth = +g.s.date.slice(5, 7); return mth === 12 || mth <= 3 ? { cost: 0 } : null; },
+      text: () => 'Ночью выпал снег — поле базы засыпано. Можно арендовать манеж или потренироваться в зале.',
+      opts: [
+        { t: 'Арендовать манеж', h: 'Небольшие расходы, без потери формы', run: (g, c, p, u) => { const k = FM.roundValue(Math.max(5, g.wageBill(u) * 0.06)); g.pay(u, k, 'Аренда манежа'); return `Манеж обошёлся в ${FM.money(k)}. Подготовка идёт по плану.`; } },
+        { t: 'Тренироваться в зале', h: 'Бесплатно, форма чуть просядет', run: (g, c, p, u) => { for (const x of g.squad(u)) x.fit = Math.max(55, x.fit - 8); return 'Команда потеряла немного формы.'; } },
+      ], def: 1 },
+    { id: 'legend', w: 4, title: 'Визит легенды',
+      when: () => ({}),
+      text: (g) => `На тренировку «${g.userTeam().name}» приехала легенда клуба — пообщался с игроками и рассказал о великих победах.`,
+      opts: [{ t: 'Отлично', h: '', run: (g, c, p, u) => { g.teamMorale(u, 4); return 'Настроение в команде поднялось.'; } }], def: 0 },
+    { id: 'kits', w: 4, title: 'Продажи формы',
+      when: (g, u) => ({ sum: FM.roundValue(Math.max(15, u.rep * u.rep / 40 * FM.rf(0.6, 1.4))) }),
+      text: (g, c) => `Новая форма клуба разлетается в фан-шопах. Дополнительный доход — ${FM.money(c.sum)}.`,
+      opts: [{ t: 'Отлично', h: '', run: (g, c, p, u) => { g.earn(u, c.sum, 'Продажи формы'); return `${FM.money(c.sum)} поступили на счёт.`; } }], def: 0 },
+    { id: 'leak', w: 5, title: 'Утечка состава',
+      when: (g) => g.nextUserMatch() ? {} : null,
+      text: () => 'Стартовый состав на ближайший матч оказался в телеграм-канале за сутки до игры. Кто-то из команды делится информацией.',
+      opts: [
+        { t: 'Найти виновного', h: 'Напряжение в раздевалке, руководство одобряет', run: (g, c, p, u) => { g.teamMorale(u, -3); g.boardConf(2); return 'Расследование провели. Атмосфера натянутая, но утечки прекратились.'; } },
+        { t: 'Не обращать внимания', h: 'Без последствий', run: () => 'Вы решили не раздувать историю.' },
+      ], def: 1 },
+    { id: 'doping', w: 3, title: 'Допинг-контроль',
+      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan)); return p && { pid: p.id, bad: Math.random() < 0.15 }; },
+      text: (g, c) => `Внезапный допинг-контроль на базе. Среди проверенных — ${g.players[c.pid].name}.`,
+      opts: [{ t: 'Ждём результатов', h: '', run: (g, c, p) => { if (!c.bad) return 'Все пробы чистые.'; p.sus = Math.max(p.sus, 2); mor(p, -10); return `${p.name} пропустил плановую проверку и дисквалифицирован на 2 матча.`; } }], def: 0 },
+    { id: 'boardmoney', w: 3, title: 'Деньги от совета директоров',
+      when: (g, u) => g.s.board.conf >= 65 && g.inWindow() ? { sum: FM.roundValue(Math.max(100, g.squadValue(u) * FM.rf(0.02, 0.05))) } : null,
+      text: (g, c) => `Совет директоров доволен работой тренера и выделяет дополнительно ${FM.money(c.sum)} на усиление состава.`,
+      opts: [{ t: 'Спасибо', h: '', run: (g, c, p, u) => { g.earn(u, c.sum, 'Взнос совета директоров'); return `${FM.money(c.sum)} поступили на трансферный бюджет.`; } }], def: 0 },
+    { id: 'audit', w: 6, title: 'Финансовая проверка',
+      when: (g, u) => u.money < 0 ? { fine: FM.roundValue(Math.max(20, -u.money * 0.05)) } : null,
+      text: (g, c) => `Лига проверила финансы клуба: долги по зарплатам и налогам. Грозит штраф ${FM.money(c.fine)}.`,
+      opts: [
+        { t: 'Заплатить штраф', h: 'Минус деньги', run: (g, c, p, u) => { g.pay(u, c.fine, 'Штраф лиги: долги'); return 'Штраф оплачен.'; } },
+        { t: 'Оспорить', h: 'Может обойтись, но руководство нервничает', run: (g, c, p, u) => { g.boardConf(-3); if (Math.random() < 0.4) return 'Апелляцию удовлетворили — штрафа не будет.'; const f = Math.round(c.fine * 1.5); g.pay(u, f, 'Штраф лиги: долги'); return `Апелляцию отклонили, штраф вырос до ${FM.money(f)}.`; } },
+      ], def: 0 },
+    { id: 'fanaward', w: 4, title: 'Игрок месяца по версии болельщиков',
+      when: (g, u) => { const p = g.squad(u).filter((x) => x.st.apps >= 3).sort((a, b) => b.st.rsum / b.st.apps - a.st.rsum / a.st.apps)[0]; return p && { pid: p.id }; },
+      text: (g, c) => `Болельщики назвали лучшим игроком месяца: ${g.players[c.pid].name}.`,
+      opts: [{ t: 'Поздравить', h: '', run: (g, c, p) => { mor(p, 10); return `${p.name} доволен признанием.`; } }], def: 0 },
+    { id: 'captain', w: 4, title: 'Капитан просит слова',
+      when: (g, u) => { const p = g.squad(u).filter((x) => !x.loan).sort((a, b) => b.age * 2 + b.ovr - (a.age * 2 + a.ovr))[0]; return p && g.nextUserMatch() && { pid: p.id }; },
+      text: (g, c) => `${g.players[c.pid].name} хочет перед матчем выступить перед командой вместо тренера.`,
+      opts: [
+        { t: 'Дать слово капитану', h: 'Команда воодушевлена', run: (g, c, p, u) => { g.teamMorale(u, 4); mor(p, 5); return 'Речь получилась пламенной.'; } },
+        { t: 'Выступить самому', h: 'Капитан слегка обижен', run: (g, c, p) => { mor(p, -5); return 'Вы провели установку сами.'; } },
+      ], def: 1 },
+    { id: 'sellout', w: 4, title: 'Аншлаг',
+      when: (g, u) => { const m = g.nextUserMatch(); return m && m.h === u.id ? { sum: FM.roundValue(Math.max(10, (u.cap || 10000) / 1000 * FM.rf(4, 9))) } : null; },
+      text: (g, c) => `Билеты на ближайший домашний матч распроданы за несколько часов. Дополнительная выручка — ${FM.money(c.sum)}.`,
+      opts: [{ t: 'Отлично', h: '', run: (g, c, p, u) => { g.earn(u, c.sum, 'Аншлаг'); g.teamMorale(u, 2); return 'Стадион будет полным!'; } }], def: 0 },
+    { id: 'language', w: 5, title: 'Легионер не может адаптироваться',
+      when: (g, u) => { const c = g.countryOf(u.league); const p = FM.pick(g.squad(u).filter((x) => x.nat !== c && !x.loan && x.age <= 27)); return p && { pid: p.id, cost: FM.roundValue(Math.max(5, g.wageBill(u) * 0.05)) }; },
+      text: (g, c) => `${g.players[c.pid].name} тяжело привыкает к новой стране: не говорит на языке, скучает по дому. Можно оплатить курсы и переводчика.`,
+      opts: [
+        { t: 'Оплатить курсы', h: 'Игрок быстрее освоится', cost: true, run: (g, c, p, u) => { g.pay(u, c.cost, `Курсы языка: ${p.name}`); mor(p, 14); return `${p.name} занимается с преподавателем и чувствует заботу клуба.`; } },
+        { t: 'Пусть привыкает сам', h: 'Игрок расстроен', run: (g, c, p) => { mor(p, -8); return `${p.name} всё ещё чувствует себя чужим.`; } },
+      ], def: 1 },
+    { id: 'family', w: 4, title: 'Личные обстоятельства',
+      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && !x.inj)); return p && { pid: p.id }; },
+      text: (g, c) => `${g.players[c.pid].name} просит отпустить его на несколько дней домой по семейным обстоятельствам.`,
+      opts: [
+        { t: 'Отпустить', h: 'Пропустит около недели, но будет благодарен', run: (g, c, p) => { p.inj = Math.max(p.inj, 6); mor(p, 12); return `${p.name} уехал домой и вернётся через неделю.`; } },
+        { t: 'Попросить остаться', h: 'Игрок обидится', run: (g, c, p) => { mor(p, -14); return `${p.name} остался, но расстроен.`; } },
+      ], def: 0 },
+    { id: 'physio', w: 4, title: 'Новый физиотерапевт',
+      when: (g, u) => g.squad(u).some((x) => x.inj > 5) ? { cost: FM.roundValue(Math.max(10, g.wageBill(u) * 0.25)) } : null,
+      text: (g, c) => `Известный физиотерапевт готов поработать с клубом месяц за ${FM.money(c.cost)}. Травмированные вернутся быстрее.`,
+      opts: [
+        { t: 'Нанять', h: 'Травмы проходят на треть быстрее', cost: true, run: (g, c, p, u) => { g.pay(u, c.cost, 'Физиотерапевт'); const ps = g.squad(u).filter((x) => x.inj > 0); for (const x of ps) x.inj = Math.ceil(x.inj * 0.65); return `Восстановление ускорено у ${ps.length} игроков.`; } },
+        { t: 'Отказаться', h: '', run: () => 'Работаем своими силами.' },
+      ], def: 1 },
+    { id: 'flares', w: 4, title: 'Пиротехника на трибунах',
+      when: (g, u) => ({ fine: FM.roundValue(Math.max(3, g.wageBill(u) * 0.04)) }),
+      text: (g, c) => `Фанаты зажгли файеры на прошлом матче. Дисциплинарный комитет выписал клубу штраф ${FM.money(c.fine)}.`,
+      opts: [{ t: 'Оплатить', h: '', run: (g, c, p, u) => { g.pay(u, c.fine, 'Штраф за пиротехнику'); return 'Штраф оплачен.'; } }], def: 0 },
+    { id: 'callup', w: 4, title: 'Вызов в сборную',
+      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => x.ovr >= 68 && x.age <= 30 && !x.loan)); return p && { pid: p.id }; },
+      text: (g, c) => `${g.players[c.pid].name} получил вызов в национальную сборную.`,
+      opts: [{ t: 'Поздравить', h: '', run: (g, c, p) => { mor(p, 10); p.vmul = Math.min(5, (p.vmul || 1) * 1.03); g.revalue(p, true); return `${p.name} счастлив, его стоимость немного выросла.`; } }], def: 0 },
   ];
 
   class Game {
@@ -478,6 +577,7 @@
         }
         if (best) { res[i] = best.id; used.add(best.id); }
       }
+      for (const sw of this.enforcePitch(team, res, slots, pool.map((p) => p.id))) { used.delete(sw.out); used.add(sw.in); }
       const rest = pool.filter((p) => !used.has(p.id)).sort((a, b) => b.ovr * cond(b) - a.ovr * cond(a));
       const bench = [];
       const gk = rest.find((p) => p.pos === 'GK');
@@ -525,6 +625,8 @@
         lineup[i] = cand ? cand.id : null;
         if (cand) used.add(cand.id);
       }
+      this.pitchSwaps = this.enforcePitch(team, lineup, slots, team.players);
+      for (const sw of this.pitchSwaps) { used.delete(sw.out); used.add(sw.in); }
       let bench = team.bench.filter((id) => ok(id) && !used.has(id));
       if (bench.length < 7) {
         const extra = this.squad(team).filter((p) => this.isAvailable(p) && !used.has(p.id) && !bench.includes(p.id))
@@ -546,6 +648,11 @@
         if (!p || p.club !== team.id) out.push(`Позиция ${FM.POS_RU[slots[i][0]]} не заполнена`);
         else if (p.inj) out.push(`${p.name} травмирован`);
         else if (p.sus) out.push(`${p.name} дисквалифицирован`);
+      }
+      const r = this.foreignRuleOf(team);
+      if (r && r.pitch) {
+        const n = team.lineup.filter((id) => id && this.players[id] && this.isForeignIn(this.players[id], team)).length;
+        if (n > r.pitch) out.push(`Лимит: в составе ${n} легионеров при максимуме ${r.pitch} на поле — лишних заменят игроки, которые легионерами не считаются`);
       }
       return out;
     }
@@ -2074,6 +2181,7 @@
       if (p.pre) return { ok: false, text: `${p.name} уже подписал предварительный контракт.` };
       if (!this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто — арендовать можно только в окно.' };
       if (u.players.length >= MAX_SQUAD) return { ok: false, text: this.squadFullText() };
+      { const fb = this.foreignBlock(u, p); if (fb) return { ok: false, text: fb }; }
       if (this.teams[p.club].players.length <= 18) return { ok: false, text: `«${this.teams[p.club].name}» не готов сокращать короткий состав.` };
       if ((t.fee || 0) > u.money) return { ok: false, text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
       const a = this.loanAsk(p);
@@ -2329,7 +2437,57 @@
     }
 
     negoBlocked(n) {
-      return n.until && this.s.date < n.until ? `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(n.until)}.` : null;
+      if (n.until && this.s.date < n.until) return `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(n.until)}.`;
+      return n.pid && this.players[n.pid] ? this.foreignBlock(this.userTeam(), this.players[n.pid]) : null;
+    }
+
+    // ---- лимит на легионеров ----
+    foreignRuleOf(team) { const L = this.s.leagues[team.league]; return FM.foreignRule(this.countryOf(team.league), L.tier); }
+    isForeignIn(p, team) { const r = this.foreignRuleOf(team); return FM.isForeign(p, this.countryOf(team.league), r); }
+    foreignCount(team) { const r = this.foreignRuleOf(team), c = this.countryOf(team.league); return r ? team.players.filter((id) => this.players[id] && FM.isForeign(this.players[id], c, r)).length : 0; }
+    // Можно ли заявить игрока: если клуб уже на пределе по легионерам — текст причины. Игроки, которые уже в клубе,
+    // не отчисляются (в базе одно гражданство, поэтому часть клубов стартует сверх лимита), но новых легионеров
+    // такой клуб заявить не может, пока не опустится ниже лимита.
+    foreignBlock(team, p) {
+      const r = this.foreignRuleOf(team);
+      if (!r || !r.squad || p.club === team.id || !FM.isForeign(p, this.countryOf(team.league), r)) return null;
+      const n = this.foreignCount(team);
+      if (n < r.squad) return null;
+      const what = r.nonEU ? 'игроков не из ЕС' : 'легионеров';
+      return `Лимит: в заявке «${team.name}» уже ${n} ${what} при максимуме ${r.squad}. Чтобы заявить ещё одного, освободите место.`;
+    }
+    // Ограничение «на поле»: в составе не больше rule.pitch легионеров. Лишних (с наименьшей потерей силы)
+    // меняем на лучших доступных россиян / местных игроков. Возвращает список замен.
+    enforcePitch(team, lineup, slots, poolIds) {
+      const r = this.foreignRuleOf(team);
+      if (!r || !r.pitch) return [];
+      const c = this.countryOf(team.league), P = this.players;
+      const fr = (id) => id && FM.isForeign(P[id], c, r);
+      const swaps = [];
+      let guard = 0;
+      while (lineup.filter(fr).length > r.pitch && guard++ < 11) {
+        const used = new Set(lineup.filter(Boolean));
+        const locals = poolIds.filter((id) => !used.has(id) && P[id] && !fr(id) && this.isAvailable(P[id]));
+        let best = null;
+        lineup.forEach((id, i) => {
+          if (!fr(id)) return;
+          const slot = slots[i][0];
+          if ((slot === 'GK') !== (P[id].pos === 'GK') && slot === 'GK') return;
+          const cur = P[id].ovr * FM.pfit(P[id], slot);
+          for (const lid of locals) {
+            if ((slot === 'GK') !== (P[lid].pos === 'GK')) continue;
+            const loss = cur - P[lid].ovr * FM.pfit(P[lid], slot);
+            if (!best || loss < best.loss) best = { i, lid, loss };
+          }
+        });
+        if (!best) {
+          // своих не хватает — ставим пустое место нельзя; оставляем как есть
+          break;
+        }
+        swaps.push({ out: lineup[best.i], in: best.lid });
+        lineup[best.i] = best.lid;
+      }
+      return swaps;
     }
 
     // Чем выгоднее для продавца условия оплаты, тем меньше сумма: рассрочка дешевле для покупателя,
@@ -2615,7 +2773,7 @@
         let pr = 0.0018 * Math.pow(p.ovr / 65, 4) * (rank <= 5 ? 1.4 : 1);
         if (p.listed) pr = 0.06;
         if (!FM.chance(pr)) continue;
-        const buyers = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1);
+        const buyers = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && !this.foreignBlock(t, p));
         if (!buyers.length) continue;
         const b = FM.pick(buyers);
         const fee = FM.roundValue(p.value * (p.listed ? FM.rnd() * 0.3 + 0.75 : FM.rnd() * 0.45 + 0.9));
@@ -2707,6 +2865,7 @@
       if (!cands.length) return;
       cands.sort((a, b) => b.ovr - a.ovr);
       for (const p of cands.slice(0, 6)) {
+        if (this.foreignBlock(buyer, p)) continue;
         const terms = p.club ? this.sellTerms(p, buyer, cache) : { fee: 0 };
         if (!terms) continue;
         const wage = this.wageDemand(p, buyer);
@@ -2743,6 +2902,7 @@
       }
       cands.sort((a, b) => b.ovr - a.ovr);
       for (const p of cands.slice(0, 5)) {
+        if (this.foreignBlock(buyer, p)) continue;
         const terms = this.sellTerms(p, buyer, cache);
         if (!terms) continue;
         const wage = this.wageDemand(p, buyer);
@@ -2768,6 +2928,7 @@
       for (const t of FM.shuffle(opts).slice(0, 80)) {
         const same = t.players.map((id) => this.players[id]).filter((x) => x && x.pos === p.pos).map((x) => x.ovr).sort((a, b) => b - a);
         if (p.ovr < (same[0] || 0) - 1) continue; // должен сразу бороться за место в основе
+        if (this.foreignBlock(t, p)) continue;
         const v = t.rep + (this.countryOf(t.league) === this.countryOf(owner.league) ? 6 : 0) + Math.random() * 4;
         if (v > bv) { bv = v; best = t; }
       }
@@ -2799,6 +2960,7 @@
         if (id === p.club || x.size >= MAX_SQUAD - 1) continue;
         if (p.ovr < x.base - 7 || p.ovr > x.base + 5 + Math.min(relax, 4)) continue;
         if (p.ovr >= 80 && x.t.rep < 72) continue; // звёзды не уходят в слабые клубы
+        if (this.foreignBlock(x.t, p)) continue;
         const arr = x.pos[p.pos] || [];
         const need = SQUAD_NEED[p.pos] || 2;
         let v = 0;
@@ -2928,11 +3090,14 @@
     // Вызывается каждый день; возвращает id письма, если событие произошло.
     randomEvent() {
       const s = this.s, u = this.userTeam();
-      if (!s.evNext) s.evNext = FM.addDays(s.date, FM.ri(4, 10));
+      // Событие может случиться в любой день: после предыдущего — короткая пауза в 2–4 дня (s.evNext),
+      // дальше каждый день шанс 7,5% (в среднем раз в две недели, но бывает и через три дня, и через месяц).
+      if (!s.evNext) s.evNext = FM.addDays(s.date, FM.ri(2, 4));
       if (s.date < s.evNext || s.seasonOver) return null;
       if (s.inbox.some((m) => m.type === 'event' && m.data && !m.data.closed)) return null;
-      s.evNext = FM.addDays(s.date, FM.ri(8, 18));
-      const recent = (s.evLog || []).slice(-4);
+      if (!FM.chance(0.075)) return null;
+      s.evNext = FM.addDays(s.date, FM.ri(2, 4));
+      const recent = (s.evLog || []).slice(-8);
       const cands = [];
       for (const E of EVENTS) {
         if (recent.includes(E.id)) continue;
@@ -2956,7 +3121,7 @@
       const p = pid ? this.players[pid] : null;
       m.data.closed = true;
       m.read = true;
-      if (pid && (!p || p.club !== u.id || (c.b && this.players[c.b].club !== u.id))) return (m.data.result = 'Игрок уже покинул клуб — вопрос снят.');
+      if (pid && !E.free && (!p || p.club !== u.id || (c.b && this.players[c.b].club !== u.id))) return (m.data.result = 'Игрок уже покинул клуб — вопрос снят.');
       m.data.choice = i;
       m.data.result = `${m.data.opts[i].t}: ${o.run(this, c, p, u)}`;
       return m.data.result;
