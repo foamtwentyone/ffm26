@@ -137,8 +137,8 @@
     const path = 'M30 6L8 18l9 18 9-4.5V94h48V31.5l9 4.5 9-18L70 6c-3 6-11 9-20 9s-17-3-20-9z';
     return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${path}" fill="${c1}"/>
       <path d="M8 18l9 18M92 18l-9 18" stroke="${c2}" stroke-width="4"/><path d="M30 6c3 6 11 9 20 9s17-3 20-9" fill="none" stroke="${c2}" stroke-width="4"/>
-      <text x="50" y="35" text-anchor="middle" font-family="Saira Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="${last.length > 8 ? 9 : 11}" fill="${ink}" letter-spacing=".5">${last}</text>
-      <text x="50" y="80" text-anchor="middle" font-family="Saira Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="40" fill="${ink}">${shirtNo(p)}</text>
+      <text x="50" y="35" text-anchor="middle" font-family="Oswald, Arial Narrow, sans-serif" font-weight="800" font-size="${last.length > 8 ? 9 : 11}" fill="${ink}" letter-spacing=".5">${last}</text>
+      <text x="50" y="80" text-anchor="middle" font-family="Oswald, Arial Narrow, sans-serif" font-weight="800" font-size="40" fill="${ink}">${shirtNo(p)}</text>
       <path d="${path}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/></svg>`;
   }
 
@@ -317,7 +317,11 @@
     render();
   }
   // Загружает более свежую из двух копий: локальную или облачную.
+  // Скелетон страницы, пока загружается и распаковывается карьера
+  const skeletonPage = () => `<div class="sk-page"><div class="sk sk-bar"></div><div class="sk sk-hero"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div></div>`;
   async function loadSlot(key) {
+    app.innerHTML = skeletonPage();
+    await new Promise((r) => setTimeout(r, 30)); // даём браузеру нарисовать скелетон
     const lm = localMeta(key);
     const cm = await FM.Store.cloudMeta(key);
     try {
@@ -331,6 +335,7 @@
     } catch (e) {
       toast('Сохранение повреждено.');
     }
+    render(); // убираем скелетон: возвращаемся туда, где были
   }
   async function slotMetas() {
     const keys = [SAVE_AUTO, SAVE_SLOT + 1, SAVE_SLOT + 2, SAVE_SLOT + 3];
@@ -822,7 +827,7 @@
       ['transfers', 'swap', 'Трансферы', winOpen ? `окно открыто · ${FM.money(u.money)}` : esc(G.windowText()), winOpen ? 'c2 live' : 'c2'],
       ['tables', 'trophy', 'Турниры', `${myRow.pos}-е место · ${myRow.pts} очк.`, 'c3'],
       ['stats', 'chart', 'Статистика', leaders[0] ? `${leaders[0][1].toLowerCase()}: ${esc(leaders[0][2].p.name.split(' ').slice(-1)[0])} · ${leaders[0][2].v}` : 'игроки и лидеры лиг', 'c4'],
-      ['inbox', 'mail', 'Почта', unread ? `${unread} новых` : 'новых писем нет', unread ? 'c5 live' : 'c5'],
+      ['inbox', 'mail', 'Сообщения', unread ? `${unread} новых` : 'новых нет', unread ? 'c5 live' : 'c5'],
       ['club', 'shield', 'Клуб', `доверие ${conf}%`, 'c6'],
     ];
     const hubHtml = `<div class="hub">${hub.map(([tab, ic, nm, sub, cls]) => `<button class="hub-t ${cls}" data-go="${tab}"><span class="hub-ic">${icon(ic)}</span><b>${nm}</b><span class="hub-sub">${sub}</span><span class="hub-arrow">›</span></button>`).join('')}</div>`;
@@ -2453,6 +2458,8 @@
   }
   async function savesPanel(root, ingame) {
     const keys = [[SAVE_AUTO, 'Автосохранение'], [SAVE_SLOT + 1, 'Слот 1'], [SAVE_SLOT + 2, 'Слот 2'], [SAVE_SLOT + 3, 'Слот 3']];
+    // пока читаются сохранения — скелетоны карточек
+    if (!root.querySelector('.sv-grid')) root.innerHTML = `<div class="sv-grid">${keys.map(() => '<div class="sv sk"></div>').join('')}</div>`;
     const draw = (m) => {
       root.innerHTML = `<div class="sv-grid">${keys.map(([k, n]) => slotCard(k, n, m[k], ingame)).join('')}</div>
         <div class="sv-tools"><button class="btn" id="sv-exp" ${ingame ? '' : 'hidden'}>Экспорт в файл</button><button class="btn" id="sv-imp">Загрузить из файла</button>
