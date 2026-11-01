@@ -1529,7 +1529,7 @@ html, body { overflow-x: hidden; }
 .feed .ev.red { border-left-color: var(--bad); } .feed .ev.yellow { border-left-color: #ffd23f; }
 .feed .ev.sub { border-left-color: var(--accent); } .feed .ev.injury { border-left-color: var(--warn); }
 .feed .ev.save .i, .feed .ev.miss .i { opacity: .8; }
-.feed .ev:first-child { animation: msgIn .4s var(--ease) both; }
+.feed .ev.fresh { animation: msgIn .4s var(--ease) both; }
 @media (max-width: 860px), (max-height: 500px) and (orientation: landscape) {
   .mainnav [data-tab="inbox"] .dot { position: absolute; top: 2px; right: 14%; margin: 0; }
 }
@@ -1891,3 +1891,39 @@ table tr:has(> td) { transition: background-color .15s; }
 .fut.kit-card.sm .kc-st { bottom: 10px; }
 .fut.kit-card.sm .kc-pos { font-size: 9px; padding: 2px 4px; }
 @media (max-height: 500px) and (orientation: landscape) { .pl-head .fut.kit-card .kc-no { font-size: 64px; } }
+/* продление контракта */
+.rnw { display: grid; gap: 10px; padding: 12px; border-radius: var(--r-md); background: var(--glass); border: 1px solid var(--line); margin-top: 10px; }
+.pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.rnw-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rnw-facts div { display: grid; padding: 8px 10px; border-radius: var(--r-sm); background: rgba(0,0,0,.22); }
+.rnw-facts span { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.rnw-facts b { font: 700 var(--fs-lg) var(--f-display); } .rnw-facts em { font-style: normal; font-size: var(--fs-xs); color: var(--muted); }
+.rnw-why { margin: 0; padding-left: 18px; font-size: var(--fs-md); color: var(--muted); display: grid; gap: 2px; }
+.rnw-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.rnw-form label { display: grid; gap: 4px; font-size: var(--fs-xs); color: var(--muted); font-weight: 700; }
+.rnw-ans { padding: 8px 12px; border-radius: var(--r-sm); font-size: var(--fs-md); background: var(--glass); border-left: 3px solid var(--muted); }
+.rnw-ans.counter { border-left-color: var(--warn); } .rnw-ans.reject, .rnw-ans.broken, .rnw-ans.blocked { border-left-color: var(--bad); }
+@media (max-width: 760px), (max-height: 500px) and (orientation: landscape) { .rnw-form { grid-template-columns: 1fr 1fr; } }
+
+/* травмированный игрок, которого нужно заменить */
+.btn.injured { border-color: var(--bad) !important; background: color-mix(in srgb, var(--bad) 18%, transparent) !important; animation: injPulse 1.4s ease-in-out infinite; }
+.btn.injured b { color: var(--bad); }
+tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
+@keyframes injPulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 35%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .btn.injured { animation: none; } }
+
+/* ===================== только горизонтально ===================== */
+/* телефон в вертикальном положении: игра закрыта подсказкой повернуть экран (у установленного приложения ориентация
+   закреплена в манифесте; Safari на iPhone запретить поворот не даёт) */
+.rotate-lock { display: none; }
+@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
+  .rotate-lock { display: grid; position: fixed; inset: 0; z-index: 9999; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 24px;
+    background: radial-gradient(80% 60% at 50% 30%, #1d2f7a, transparent 70%), #050816; color: var(--text); }
+  .rotate-lock b { font: 700 var(--fs-3xl) var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+  .rotate-lock span { color: var(--muted); font-size: var(--fs-base); }
+  .rl-ph { width: 64px; height: 108px; border: 4px solid #fff; border-radius: 14px; position: relative; margin-bottom: 14px; animation: rlTurn 2.2s var(--ease) infinite; }
+  .rl-ph i { position: absolute; left: 50%; bottom: 7px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: #fff; }
+  @keyframes rlTurn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+  body > #app, body > .match, body > .modal-bg { visibility: hidden; }
+}
+.upd { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 9000; display: flex; gap: 12px; align-items: center; padding: 10px 12px 10px 16px; border-radius: var(--r-md); background: rgba(14, 20, 50, .96); border: 1px solid var(--stroke2); box-shadow: 0 12px 40px rgba(0,0,0,.5); font-weight: 700; animation: fxIn .4s both; }

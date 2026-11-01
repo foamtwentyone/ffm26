@@ -1375,6 +1375,12 @@
 
     // Клубы ИИ продлевают истекающие контракты: основу младше 33 лет — всегда,
     // ветеранов от 35 — в половине случаев, остальных — с вероятностью 75%.
+    // Продление у клуба ИИ: новый срок и зарплата ближе к рынку (не меньше нынешней)
+    aiRenew(p, t, y) {
+      p.contract = y + (p.age >= 33 ? 1 : p.age >= 30 ? FM.ri(1, 2) : FM.ri(2, 4));
+      const market = FM.wageFor(p.value, this.tierOf(t), p.age, this.countryOf(t.league));
+      p.wage = Math.round(FM.clamp(market * 0.95, p.wage, p.wage * 1.6) * 10) / 10;
+    }
     renewChance(p, core) {
       if (p.age >= 35) return 0.5;
       if (core && core.has(p.id) && p.age < 33) return 1;
@@ -1615,7 +1621,7 @@
               p.listed = false;
               this.msg('Контракт истёк', `${p.name} покидает клуб свободным агентом.`, 'squad');
             } else if (!p.leaving && FM.chance(this.renewChance(p, core))) {
-              p.contract = y + (p.age >= 33 ? 1 : FM.ri(1, 3));
+              this.aiRenew(p, t, y);
             } else {
               this.removeFromTeam(p);
               s.freeAgents.push(p.id);
@@ -2152,7 +2158,7 @@
       this.expireOffers();
       this.expireEvents();
       this.lastEvent = this.randomEvent();
-      if (s.date.endsWith('-03-01')) this.contractReminder();
+      if (s.date.endsWith('-03-01') || s.date.endsWith('-12-20')) this.contractReminder();
     }
 
     // true — остановка (матч пользователя, важное сообщение, конец сезона)
@@ -2379,7 +2385,9 @@
     contractReminder() {
       const u = this.userTeam();
       const exp = this.squad(u).filter((p) => p.contract <= this.s.season);
-      if (exp.length) this.msg('Истекающие контракты', `Летом истекают контракты: ${exp.map((p) => p.name).join(', ')}. Продлите их в карточке игрока, иначе они уйдут свободными агентами.`, 'squad');
+      if (!exp.length) return;
+      const dec = this.s.date.endsWith('-12-20');
+      this.msg('Истекающие контракты', `Летом истекают контракты: ${exp.map((p) => `${p.name} (${p.ovr})`).join(', ')}. ${dec ? 'С 1 января другие клубы смогут подписать с ними предварительные контракты и забрать бесплатно летом.' : 'Продлите их в карточке игрока, иначе они уйдут свободными агентами.'} Перед продлением посмотрите, на что рассчитывает игрок: в последний год контракта он торгуется жёстче.`, 'squad');
     }
 
     // ================== трансферы ==================
@@ -2899,14 +2907,81 @@
       return Math.round(Math.max(p.wage * 1.08, FM.wageFor(p.value, this.tierOf(u), p.age, this.countryOf(u.league))) * 10) / 10;
     }
 
-    renew(pid, years) {
-      const p = this.players[pid];
-      const w = this.renewCost(p);
-      if (p.age >= 33 && years > 2) years = 2;
-      p.wage = w;
-      p.contract = Math.max(p.contract, this.s.season) + years;
-      p.morale = Math.min(100, p.morale + 8);
-      return w;
+    // ================== продление контракта ==================
+    // Роль, на которую игрок рассчитывает по своему месту в составе
+    expectedRole(p) { const r = this.squadRank(p); return r <= 5 ? 'key' : r <= 11 ? 'starter' : r <= 18 ? 'rotation' : 'backup'; }
+    // Позиция игрока перед продлением: настрой, причины, запрос по зарплате и срокам
+    renewInfo(pid) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      const left = p.contract - s.season; // 0 — контракт истекает этим летом
+      const market = FM.wageFor(p.value, this.tierOf(u), p.age, this.countryOf(u.league));
+      const role = this.expectedRole(p);
+      const why = [];
+      let k = 1, stance = 'ok';
+      // база: ближе к рынку, но от нынешней зарплаты (прибавка 5–80%)
+      let base = FM.clamp(market * 0.95, p.wage * 1.05, p.wage * 1.8);
+      if (left >= 2) { base = Math.max(base, p.wage * 1.12); why.push(`контракт ещё на ${left + 1} сез. — без хорошей прибавки продлевать не спешит`); }
+      if (left === 0) { k *= s.date >= `${s.season + 1}-01-01` ? 1.2 : 1.1; why.push(s.date >= `${s.season + 1}-01-01` ? 'последние месяцы контракта — может уйти бесплатно, торгуется жёстко' : 'последний год контракта — хочет прибавку'); }
+      const apps = p.st.apps + p.cst.apps, avg = apps ? (p.st.rsum + p.cst.rsum) / apps : 0;
+      if (apps >= 10 && avg >= 7.2) { k *= 1.1; why.push(`отличный сезон (средняя оценка ${avg.toFixed(2)})`); }
+      if (p.morale < 25) { stance = 'refuse'; why.push('сильно недоволен — продлевать не хочет'); }
+      else if (p.morale < 40) { k *= 1.15; stance = 'hesitant'; why.push('недоволен в клубе'); }
+      const top = this.teamBaseOvr(u);
+      if (p.ovr >= top + 7 && p.age < 30) {
+        k *= 1.2; stance = stance === 'refuse' ? 'refuse' : 'hesitant'; why.push('считает, что перерос клуб');
+        if (p.ovr >= 80 && u.rep < 70) { stance = 'refuse'; why.push('звезда не хочет оставаться в клубе такого уровня'); }
+      }
+      if (p.age >= 35) why.push('возраст: только на один сезон'); else if (p.age >= 33) why.push('возраст: готов подписать на 1–2 года');
+      if (p.morale >= 75 && stance === 'ok') { k *= 0.95; why.push('доволен в клубе'); }
+      const prefYears = p.age < 24 ? [4, 5] : p.age < 30 ? [3, 4] : p.age < 33 ? [2, 3] : p.age < 35 ? [1, 2] : [1, 1];
+      const maxYears = p.age >= 35 ? 1 : p.age >= 33 ? 2 : p.age >= 30 ? 3 : 5;
+      const rn = p.rn && p.rn.season === s.season ? p.rn : { season: s.season, patience: 3, until: null };
+      const blocked = rn.until && s.date < rn.until ? `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(rn.until)}.` : null;
+      return { left, market, role, stance, why, wage: Math.round(base * k * 10) / 10, prefYears, maxYears, patience: rn.patience, blocked, pre: p.pre ? this.teams[p.pre.team] : null };
+    }
+    // Предложение о продлении: terms = { years, wage, role, release }. Ответ: accept / counter / reject.
+    renewOffer(pid, t) {
+      const s = this.s, p = this.players[pid], u = this.userTeam();
+      if (p.club !== u.id || p.loan) return { status: 'blocked', text: 'Продлить можно только контракт своего игрока.' };
+      if (p.pre) return { status: 'blocked', text: `${p.name} уже подписал предварительный контракт с «${this.teams[p.pre.team].name}».` };
+      const I = this.renewInfo(pid);
+      if (I.blocked) return { status: 'blocked', text: I.blocked };
+      if (I.stance === 'refuse') return { status: 'blocked', text: `${p.name} не хочет продлевать контракт: ${I.why.filter((w) => /не хочет|недоволен|звезда/.test(w)).join(', ') || 'нет желания'}.` };
+      const years = FM.clamp(t.years | 0, 1, I.maxYears);
+      const ROLE_K = { key: 0, starter: 1, rotation: 2, backup: 3 };
+      // роль ниже ожидаемой — дороже (за каждую ступень +15%), выше — дешевле на 5%
+      const step = ROLE_K[t.role] - ROLE_K[I.role];
+      let need = I.wage * (step > 0 ? 1 + 0.15 * step : step < 0 ? 0.95 : 1);
+      // срок не по душе — +5% за каждый год от желаемого
+      const dy = years < I.prefYears[0] ? I.prefYears[0] - years : years > I.prefYears[1] ? years - I.prefYears[1] : 0;
+      need *= 1 + 0.05 * dy;
+      // низкие отступные игроку нравятся (проще уйти в большой клуб), высокие — нет
+      if (t.release && t.release < p.value * 1.5) need *= 0.95;
+      else if (t.release && t.release > p.value * 3) need *= 1.05;
+      if (I.stance === 'hesitant') need *= 1.05;
+      need = Math.round(need * 10) / 10;
+      const rn = p.rn = p.rn && p.rn.season === s.season ? p.rn : { season: s.season, patience: 3, until: null };
+      if (t.wage >= need) {
+        const bonus = FM.roundValue(t.wage * 4);
+        if (bonus > u.money) return { status: 'blocked', text: `Не хватает денег на подъёмные: нужно ${FM.money(bonus)}.` };
+        this.pay(u, bonus, `Продление: ${p.name}`);
+        p.wage = Math.round(t.wage * 10) / 10;
+        p.contract = Math.max(p.contract, s.season) + years;
+        p.role = t.role;
+        p.roleWarned = false;
+        p.release = t.release || null;
+        p.morale = Math.min(100, p.morale + 10);
+        delete p.rn;
+        return { status: 'accept', text: `${p.name} продлил контракт до лета ${p.contract + 1}: ${FM.money(p.wage)}/нед, подъёмные ${FM.money(bonus)}.` };
+      }
+      rn.patience--;
+      if (rn.patience <= 0) {
+        rn.until = FM.addDays(s.date, 45); rn.patience = 3;
+        p.morale = Math.max(5, p.morale - 6);
+        return { status: 'broken', text: `${p.name} обиделся на предложения и прервал переговоры на полтора месяца.` };
+      }
+      if (t.wage >= need * 0.85) return { status: 'counter', wage: need, text: `${p.name} готов подписать за ${FM.money(need)}/нед. Терпения осталось на ${rn.patience} попытк${rn.patience === 1 ? 'у' : 'и'}.` };
+      return { status: 'reject', text: `Это слишком мало: ${p.name} рассчитывает примерно на ${FM.money(need >= 50 ? Math.round(need / 5) * 5 : need)}/нед. Терпения осталось на ${rn.patience} попытк${rn.patience === 1 ? 'у' : 'и'}.` };
     }
 
     transferDay() {
@@ -3170,7 +3245,7 @@
           const p = this.players[pid];
           if (!p || p.contract > y || p.pre || p.loan) continue;
           if (!mine && !p.leaving && FM.chance(0.12)) {
-            if (FM.chance(this.renewChance(p, core))) { p.contract = y + (p.age >= 33 ? 1 : FM.ri(1, 3)); continue; }
+            if (FM.chance(this.renewChance(p, core))) { this.aiRenew(p, t, y); continue; }
             p.leaving = true;
           }
           // ключевых игроков клубы продлевают — к ним до решения клуба не подходят

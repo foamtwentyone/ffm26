@@ -4,6 +4,17 @@
   const SAVE_SLOT = 'ffm26_slot_';
   const DB_KEY = 'ffm26_db';
   const app = document.getElementById('app');
+  // вышла новая версия игры (её скачал офлайн-кэш): плашка с перезапуском, карьера сохраняется
+  window.FM_UPDATE = () => {
+    if (document.getElementById('upd')) return;
+    const b = document.createElement('div');
+    b.id = 'upd'; b.className = 'upd';
+    b.innerHTML = '<span>Вышло обновление игры</span><button class="btn sm primary">Перезапустить</button>';
+    b.querySelector('button').onclick = async () => { if (UI.g) { try { await save(); } catch (e) { /* сохранили, что смогли */ } } location.reload(); };
+    document.body.appendChild(b);
+  };
+  // установленное приложение (и полноэкранный режим на Android) закрепляем горизонтально; Safari на iPhone этого не умеет
+  try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* не поддерживается */ }
   const UI = { g: null, tab: 'home', sel: null, tablesLid: null, tablesView: 'table', round: null, statsKey: 'g', tf: {}, sortKey: 'ovr', sortDir: -1, tfPage: 0 };
   window.UI = UI;
 
@@ -1484,12 +1495,7 @@
         res.querySelectorAll('[data-lo]').forEach((b) => b.onclick = () => { toast(esc(G.loanOut(pid, offers[+b.dataset.lo]))); save(); closeModal(); render(); });
       };
       el.querySelector('[data-tl]').onclick = () => { p.listed = !p.listed; save(); playerModal(pid); render(); };
-      if (el.querySelector('[data-renew]')) el.querySelector('[data-renew]').onclick = () => {
-        const w = G.renewCost(p);
-        res.innerHTML = `<div class="note">Игрок согласен на ${FM.money(w)}/нед. Срок:
-          ${[1, 2, 3, 4].map((y) => `<button class="btn sm" data-y="${y}">${y} г.</button>`).join(' ')}</div>`;
-        res.querySelectorAll('[data-y]').forEach((b) => b.onclick = () => { G.renew(pid, +b.dataset.y); save(); playerModal(pid); render(); toast('Контракт продлён'); });
-      };
+      if (el.querySelector('[data-renew]')) el.querySelector('[data-renew]').onclick = () => renewPanel(res, pid);
       el.querySelector('[data-release]').onclick = () => {
         const years = Math.max(0, p.contract - s.season);
         const comp = Math.round(p.wage * 52 * Math.max(years, 0.5) * 0.5);
@@ -1530,6 +1536,38 @@
   const interestColor = (v) => (v >= 70 ? 'var(--good)' : v >= 50 ? '#9be36b' : v >= 30 ? 'var(--warn)' : 'var(--bad)');
 
   // Переучивание (как в FC): выбор новой позиции, прогресс по неделям, отмена
+  // Переговоры о продлении: настрой игрока, его запрос, срок, роль, зарплата и отступные
+  function renewPanel(res, pid, last) {
+    const G = g(), p = G.players[pid], I = G.renewInfo(pid);
+    const ROLES = [['key', 'Ключевой игрок'], ['starter', 'Игрок основы'], ['rotation', 'Ротация'], ['backup', 'Запасной']];
+    const st = { ok: ['good', 'Готов обсуждать'], hesitant: ['warn', 'Сомневается'], refuse: ['bad', 'Не хочет продлевать'] }[I.stance];
+    const years = Math.min(I.maxYears, I.prefYears[0]);
+    res.innerHTML = `<div class="rnw">
+      <div class="row"><b class="grow">Продление контракта</b><span class="pill ${st[0]}">${st[1]}</span></div>
+      <div class="rnw-facts"><div><span>Сейчас</span><b>${FM.money(p.wage)}/нед</b><em>до лета ${p.contract + 1}</em></div>
+        <div><span>Рынок</span><b>${FM.money(I.market)}/нед</b><em>для вашей лиги</em></div>
+        <div><span>Ждёт</span><b>${FM.money(I.wage)}/нед</b><em>${I.prefYears[0] === I.prefYears[1] ? I.prefYears[0] : `${I.prefYears[0]}–${I.prefYears[1]}`} г., ${esc(ROLES.find((r) => r[0] === I.role)[1].toLowerCase())}</em></div></div>
+      ${I.why.length ? `<ul class="rnw-why">${I.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      ${I.pre ? `<div class="note bad small">Уже подписал предварительный контракт с «${esc(I.pre.name)}».</div>` : I.blocked ? `<div class="note warn small">${esc(I.blocked)}</div>` : I.stance === 'refuse' ? '' : `
+      <div class="rnw-form">
+        <label>Срок<select id="rn-y">${Array.from({ length: I.maxYears }, (_, k) => k + 1).map((y) => `<option value="${y}" ${y === years ? 'selected' : ''}>${y} ${y === 1 ? 'год' : y < 5 ? 'года' : 'лет'}</option>`).join('')}</select></label>
+        <label>Роль<select id="rn-r">${ROLES.map(([k, n]) => `<option value="${k}" ${k === I.role ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+        ${moneyField('rn-w', 'Зарплата в неделю', last && last.wage ? last.wage : I.wage)}
+        ${moneyField('rn-rel', 'Отступные (0 — без)', 0, 'млн')}
+      </div>
+      <div class="row" style="gap:8px;margin-top:8px"><button class="btn primary" id="rn-go">Предложить</button><span class="small muted">Подъёмные при подписании — 4 недельные зарплаты. Терпение: ${I.patience} из 3.</span></div>`}
+      ${last ? `<div class="rnw-ans ${last.status}">${esc(last.text)}</div>` : ''}
+    </div>`;
+    const go = res.querySelector('#rn-go');
+    if (go) go.onclick = () => {
+      const t = { years: +res.querySelector('#rn-y').value, role: res.querySelector('#rn-r').value, wage: readMoney(res.querySelector('#rn-w')), release: readMoney(res.querySelector('#rn-rel')) || null };
+      const r = G.renewOffer(pid, t);
+      save();
+      if (r.status === 'accept') { toast(esc(r.text), 5000); playerModal(pid); render(); return; }
+      renewPanel(res, pid, { status: r.status, text: r.text, wage: r.status === 'counter' ? r.wage : t.wage });
+    };
+  }
+
   // Форма игрока: оценки за последние матчи столбиками (зелёный — от 7.5, красный — ниже 6)
   function formBlock(p) {
     const rh = (p.rh || []).map((x) => x / 10);
@@ -1963,6 +2001,7 @@
       <div class="row" style="justify-content:center;margin-top:14px"><button class="btn primary hidden" id="done">Завершить</button></div></div>`;
     const $ = (q) => root.querySelector(q);
     const feed = [];
+    let shown = 0; // сколько событий уже было на экране — анимируются только новые
     // Давление по ходу матча: каждый шаг — разница xG, ударов, угловых и владения за минуту (плюс — хозяева),
     // сглаженная; отметки голов и перерыва. last — статистика на прошлом шаге.
     const mom = [], momGoals = [], momMarks = [];
@@ -2022,14 +2061,15 @@
       $('#mside').innerHTML = miniStats();
       const body = $('#body');
       if (tab === 'feed') {
-        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? icon('ball') : icon('x', 'red')) : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">${icon('square', 'sm')}</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
+        const fresh = feed.length - shown; shown = feed.length;
+        body.innerHTML = `<div class="feed">${feed.slice().reverse().map((e, i) => `<div class="ev ${e.type} ${e.type === 'penkick' ? (e.ok ? 'goal' : 'red') : ''} ${i < fresh ? 'fresh' : ''}"><span class="m">${e.type === 'penkick' ? 'пен' : `${e.min}'`}</span><span class="i">${e.type === 'penkick' ? (e.ok ? icon('ball') : icon('x', 'red')) : ICONS[e.type] || ''}</span><span>${e.side ? `<b style="color:${markColor(e.side === 'h' ? h : a)}">${icon('square', 'sm')}</b> ` : ''}${esc(e.text)}</span></div>`).join('')}</div>`;
       } else if (tab === 'stats') {
         const H = sim.home.stats, A = sim.away.stats;
         const tp = H.possTicks + A.possTicks || 1;
         const ph = Math.round((H.possTicks / tp) * 100);
         body.innerHTML = statRow('Владение, %', ph, 100 - ph) + statRow('Удары', H.shots, A.shots) + statRow('В створ', H.sot, A.sot) + statRow('xG', H.xg.toFixed(2), A.xg.toFixed(2)) + statRow('Угловые', H.corners, A.corners) + statRow('Фолы', H.fouls, A.fouls) + statRow('Жёлтые', H.yc, A.yc) + statRow('Красные', H.rc, A.rc);
       } else {
-        const side = (sd) => `<div><h3>${esc(sd.team.name)}</h3><table class="lu small">${sd.onPitch.map((o) => `<tr><td>${pos(o.slot)}</td><td>${esc(o.p.name)}${sd.yellows[o.p.id] ? ' ' + icon('card', 'yel') : ''}</td><td>${fitBar(Math.round(sd.fitness[o.p.id]))}</td><td class="num">${rt(sd.rating[o.p.id])}</td></tr>`).join('')}
+        const side = (sd) => `<div><h3>${esc(sd.team.name)}</h3><table class="lu small">${sd.onPitch.map((o) => `<tr class="${o.p.id === sim.needUserSub ? 'injured' : ''}"><td>${pos(o.slot)}</td><td>${o.p.id === sim.needUserSub ? icon('medic', 'red') + ' ' : ''}${esc(o.p.name)}${sd.yellows[o.p.id] ? ' ' + icon('card', 'yel') : ''}</td><td>${fitBar(Math.round(sd.fitness[o.p.id]))}</td><td class="num">${rt(sd.rating[o.p.id])}</td></tr>`).join('')}
           <tr><td colspan="4" class="muted">Запас (замен осталось: ${sd.subsLeft})</td></tr>${sd.bench.map((p) => `<tr class="muted"><td>${pos(p.pos)}</td><td>${esc(p.name)}${sd.used.has(p.id) ? ' (вышел)' : ''}</td><td></td><td></td></tr>`).join('')}</table></div>`;
         body.innerHTML = `<div class="grid" style="grid-template-columns:1fr 1fr">${side(sim.home)}${side(sim.away)}</div>`;
       }
@@ -2097,7 +2137,7 @@
       panel.innerHTML = `<div class="row"><b class="grow">Замены (осталось ${sd.subsLeft})</b><button class="btn sm" id="closeMgr">Скрыть</button></div>
         ${sim.needUserSub ? `<div class="note bad small">${esc(G.players[sim.needUserSub].name)} травмирован — замените его.</div>` : ''}
         <div class="grid" style="grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-          <div><div class="small muted">На поле — кого заменить</div>${sd.onPitch.map((o) => `<button class="btn sm ${subSel === o.p.id ? 'on' : ''}" style="display:block;width:100%;text-align:left;margin:3px 0" data-out="${o.p.id}">${FM.POS_RU[o.slot]} · ${esc(o.p.name)} · ${Math.round(sd.fitness[o.p.id])}% · ${sd.rating[o.p.id].toFixed(1)}</button>`).join('')}</div>
+          <div><div class="small muted">На поле — кого заменить</div>${sd.onPitch.slice().sort((x, y) => (y.p.id === sim.needUserSub) - (x.p.id === sim.needUserSub)).map((o) => `<button class="btn sm ${subSel === o.p.id ? 'on' : ''} ${o.p.id === sim.needUserSub ? 'injured' : ''}" style="display:block;width:100%;text-align:left;margin:3px 0" data-out="${o.p.id}">${o.p.id === sim.needUserSub ? icon('medic', 'red') + ' ' : ''}${FM.POS_RU[o.slot]} · ${esc(o.p.name)} · ${Math.round(sd.fitness[o.p.id])}% · ${sd.rating[o.p.id].toFixed(1)}${o.p.id === sim.needUserSub ? ' · <b>травма</b>' : ''}</button>`).join('')}</div>
           <div><div class="small muted">${outSlot ? `Кто выйдет на позицию «${FM.POS_NAME[outSlot]}»` : 'Запасные — сначала выберите, кого заменить'}</div>${(outSlot ? benchAvail.slice().sort((a, b) => FM.pfit(b, outSlot) - FM.pfit(a, outSlot) || b.ovr - a.ovr) : benchAvail).map((p) => { const mk = outSlot ? fitMark(p, outSlot) : null; return `<button class="btn sm sub-btn ${mk ? mk.cls : ''}" data-in="${p.id}" ${subSel && sd.subsLeft > 0 && G.isAvailable(p) ? '' : 'disabled'}>${pos(p.pos)}<span class="grow">${esc(p.name)}</span>${mk ? `<span class="fit-tag">${mk.tag}</span>` : ''}<b>${p.ovr}</b></button>`; }).join('') || '<div class="small muted">Никого не осталось</div>'}</div></div>
         <div class="row" style="margin-top:10px"><span class="small muted">Настрой</span>${seg('ment', [[-2, 'Автобус'], [-1, 'Оборона'], [0, 'Баланс'], [1, 'Атака'], [2, 'Штурм']])}
           <span class="small muted">Прессинг</span>${seg('press', [[0, 'Низкий'], [1, 'Средний'], [2, 'Высокий']])}</div>`;
@@ -2119,6 +2159,7 @@
     root.querySelectorAll('#spd button').forEach((b) => b.onclick = () => setSpeed(+b.dataset.s));
     root.querySelectorAll('#tabs button').forEach((b) => b.onclick = () => {
       tab = b.dataset.tab;
+      shown = feed.length;
       root.querySelectorAll('#tabs button').forEach((x) => x.classList.toggle('on', x === b));
       draw();
     });
