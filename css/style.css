@@ -2083,4 +2083,5 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
 .badge.logo.sm img, .badge.logo:not(.lg):not(.xl) img { filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .ng-chat .msg .ava .badge.logo { background: none !important; }
 /* тёмные эмблемы: чёткая светлая обводка по контуру герба (без свечения) */
-.badge.logo.dk img, .badge.logo.dk.sm img, .badge.logo.dk:not(.lg):not(.xl) img { filter: url(#lg-ol); }
+/* обводка тёмных эмблем нарисована прямо в картинке (js/data/logos.js) — ровная и одной толщины */
+.badge.logo.dk img { filter: none; }
