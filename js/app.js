@@ -651,7 +651,7 @@
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
     ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, hall: viewHall, menu: viewMenu })[UI.tab](main);
-    if (same) scrollTop(scrollY);
+    if (same) scrollTop(scrollY); else scrollTop(0);
     // при входе в раздел крупные числа «добегают» до значения
     if (!same) document.querySelectorAll('.band-big b, .tf-stat b').forEach((b) => { const m = b.textContent.match(/^([+\u2212-]?)([\d.]+)(.*)$/s); if (!m || b.children.length) return; const v = +m[2], d = (m[2].split('.')[1] || '').length; countUp(b, v, (x) => m[1] + x.toFixed(d) + m[3]); });
     bindCommon(main);

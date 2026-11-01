@@ -2151,7 +2151,7 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
 /* Телефон держат вертикально: страница поворачивается на 90° (класс html.rot ставится скриптом в index.html).
    body — повёрнутый «экран», прокручивается #app; «окна» (position: fixed) привязаны к повёрнутому body. */
 html.rot, html.rot body { overflow: hidden; height: 100%; }
-html.rot body { position: fixed; top: 0; left: 0; min-height: 0; width: calc(100vh / .86); height: calc(100vw / .86); transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
+html.rot body { position: fixed; top: 0; left: 0; min-height: 0; width: calc(100vh / .86); width: calc(100dvh / .86); height: calc(100vw / .86); transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
 html.rot #app { height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 html.rot .mm, html.rot .mm-page { min-height: calc(100vw / .86); }
 html.rot .modal.nx-modal { height: calc(100vw / .86); }
@@ -2410,7 +2410,7 @@ html.rot .mm-sub { margin-top: 10px; letter-spacing: .2em; }
 html.rot .mm-tiles { grid-template-columns: 1.4fr 1fr 1fr; }
 html.rot .mm-t.big { grid-column: auto; }
 html.rot .mm-fm,html.rot .mm-26 { font-size: 72px; }
-html.rot .mm,html.rot .mm-page { min-height: calc(100dvh / .86); }
+html.rot .mm,html.rot .mm-page { min-height: calc(100vw / .86); }
 html.rot .evm h2 { font-size: var(--fs-2xl); }
 html.rot .evm-o { padding-right: 90px; }
 html.rot .evm-text { font-size: var(--fs-base); }
@@ -2433,7 +2433,7 @@ html.rot .mom { padding: 6px 10px !important; margin-bottom: 8px; }
 html.rot .pl-head .fut.kit-card .kc-no { font-size: 64px; }
 html.rot .rnw-form { grid-template-columns: 1fr 1fr; }
 html.rot .modal-bg:has(.nx-modal) { padding: 0; }
-html.rot .modal.nx-modal { max-width: none; height: 100dvh; border-radius: 0; }
+html.rot .modal.nx-modal { max-width: none; height: 100vw; border-radius: 0; }
 html.rot .nx-top { padding: 8px 54px 8px 12px; gap: 10px; }
 html.rot .nx-top .badge.lg { width: 34px; height: 34px; }
 html.rot .nx-club b { font-size: var(--fs-lg); }
@@ -2454,7 +2454,7 @@ html.rot .nx-why { display: none; }
 html.rot .nx-chat { padding: 10px !important; }
 html.rot .nx-compose { padding: 8px 10px 10px; gap: 6px; }
 html.rot .nx-compose .nx-hint,html.rot .nx-compose .tags { display: none; }
-html.rot .modal.nx-modal { height: calc(100dvh / .86); }
+html.rot .modal.nx-modal { height: calc(100vw / .86); }
 html.rot .nx-compose .gap-track { margin: 22px 0 18px; height: 8px; }
 html.rot .nx-compose .gap-ask em,html.rot .nx-compose .gap-me em { display: none; }
 html.rot .nx-compose .gap-ask { top: -24px; }
@@ -2496,3 +2496,11 @@ html.rot .tm-facts b { font-size: var(--fs-md); }
 .br-col, .br-cup { position: relative; z-index: 1; }
 .br-arrow { width: 34px; } .br-arrow .ic { display: none; }
 .eu-tabs { margin-bottom: 12px; }
+
+/* повёрнутая страница: экран по высоте = ширина телефона (100vw); эти правила — последними */
+html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: calc(100vw / .86) !important; }
+html.rot #app { overscroll-behavior: none; touch-action: pan-y; }
+html.rot body { padding: 0 !important; }
+html.rot #app { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+html.rot #app:has(> .mm), html.rot #app:has(> .mm-page) { padding-bottom: 0; }
+html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: 100% !important; height: auto; }
