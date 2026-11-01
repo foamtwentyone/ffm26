@@ -17,6 +17,8 @@
   try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* не поддерживается */ }
   const UI = { g: null, tab: 'home', sel: null, tablesLid: null, tablesView: 'table', round: null, statsKey: 'g', tf: {}, sortKey: 'ovr', sortDir: -1, tfPage: 0 };
   window.UI = UI;
+  // для проверок и отладки: открыть карточку игрока или переговоры по id
+  UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id) };
 
   // ================== помощники ==================
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1681,26 +1683,26 @@
     else if (n.stage === 'club') {
       // ориентир с погрешностью: точную цену клуб называет только в ответ на предложения
       const hint = n.release ? n.ask : FM.roundValue(n.ask * (0.92 + ((p.id * 37) % 17) / 100));
-      form = `<div class="tags">${(n.notes || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+      form = `${gapMeter(n.lastFee || 0, hint, 'Ваше предложение', `Запрос «${esc(club.name)}»`, FM.money)}
+        ${(n.notes || []).length ? `<div class="tags">${n.notes.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div>` : ''}
         <div class="row nego-form">
           ${moneyField('n-fee', 'Сумма', n.lastFee || FM.roundValue(hint * 0.85), moneyUnit(hint))}
           <label>Оплата<select id="n-inst"><option value="0">Сразу</option><option value="1">Рассрочка 40/30/30</option></select></label>
           <label>% с перепродажи<select id="n-sell"><option value="0">нет</option><option value="10">10%</option><option value="20">20%</option></select></label>
           <button class="btn primary" id="n-bid">Отправить</button></div>
-        ${gapMeter(n.lastFee || 0, hint, 'Ваше предложение', `Запрос «${esc(club.name)}»`, FM.money)}
-        <div class="small muted" style="margin-top:8px">Ориентир: около ${FM.money(hint)} · терпение клуба ${dots(n.patience, p.listed ? 6 : 5)} · бюджет ${FM.money(u.money)}</div>`;
+        <div class="small muted nx-hint">Ориентир клуба — около ${FM.money(hint)}. Рассрочка и процент с перепродажи снижают нужную сумму.</div>`;
     } else if (n.stage === 'player') {
       const role = it.starter ? 'starter' : 'rotation';
       const d = G.playerDemand(p, u, role);
-      form = `<div class="row nego-form">
+      form = `${gapMeter(n.lastWage || 0, d.wage, 'Ваше предложение', 'Запрос агента', (v) => `${FM.money(v)}/нед`)}
+        <div class="row nego-form">
           <label>Зарплата/нед, тыс. €<input id="n-wage" type="number" step="0.5" min="0" value="${n.lastWage || Math.round(d.wage * 0.9 * 2) / 2}"></label>
           <label>Срок<select id="n-years">${[1, 2, 3, 4, 5].map((y) => `<option value="${y}" ${y === d.prefYears[0] ? 'selected' : ''}>${y} г.</option>`).join('')}</select></label>
           ${moneyField('n-bonus', 'Подъёмные', d.bonus)}
           <label>Роль<select id="n-role">${Object.entries(ROLE_NAME).map(([k, v]) => `<option value="${k}" ${k === role ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
           ${moneyField('n-release', 'Отступные (0 — нет)', 0, 'млн')}
           <button class="btn primary" id="n-offer">Предложить</button></div>
-        ${gapMeter(n.lastWage || 0, d.wage, 'Ваше предложение', 'Запрос агента', (v) => `${FM.money(v)}/нед`)}
-        <div class="small muted" style="margin-top:8px">Агент ориентируется примерно на ${FM.money(d.wage)}/нед для роли «${ROLE_NAME[role]}», удобный срок — ${d.prefYears.join(' или ')} г. Роль «ключевой игрок» снижает запрос, «запасной» — повышает. Отступные немного снижают запрос. Терпение игрока ${dots(n.pPatience, 4)}</div>`;
+        <div class="small muted nx-hint">Агент ждёт около ${FM.money(d.wage)}/нед для роли «${ROLE_NAME[role]}», срок ${d.prefYears.join(' или ')} г. «Ключевой игрок» и отступные снижают запрос, «запасной» — повышает.</div>`;
     } else {
       const c = G.dealCost(n);
       const t = n.terms;
@@ -1709,23 +1711,42 @@
           <div><span>Агенту</span><b>${FM.money(c.agent)}</b></div><div><span>Подъёмные</span><b>${FM.money(c.bonus)}</b></div>
           <div><span>Зарплата</span><b>${FM.money(t.wage)}/нед</b><span>${t.years} г. · ${ROLE_NAME[t.role]}${t.release ? ` · отступные ${FM.money(t.release)}` : ''}</span></div>
           <div><span>Платим сейчас</span><b class="${c.now > u.money ? 'bad' : ''}">${FM.money(c.now)}</b><span>на счёте ${FM.money(u.money)}</span></div></div>
-        <div class="row"><button class="btn primary" id="n-sign">${n.precontract ? 'Подписать предварительный контракт' : 'Подписать контракт'}</button></div>`;
+        <div class="row nx-signrow"><button class="btn primary" id="n-sign">${n.precontract ? 'Подписать предварительный контракт' : 'Подписать контракт'}</button></div>`;
     }
-    // шапка переговоров: откуда → игрок → куда, интерес игрока шкалой
+    // Раскладка «стол переговоров»: сверху — откуда → этапы → куда; слева — досье игрока (интерес, факты, терпение);
+    // справа — переписка на всю высоту и закреплённая снизу панель предложения со шкалой разницы.
     const ic = interestColor(it.score);
-    const el = modal(`<div class="ng-head" style="--hcb:${club ? glow(club) : '#3a4256'};--acb:${glow(u)}">
-        <div class="ng-side">${club ? badge(club, 'xl') : '<span class="ng-free">FA</span>'}<b>${club ? esc(club.name) : 'Свободный агент'}</b><span>${club ? esc(s.leagues[club.league].short) : 'без клуба'}</span></div>
-        <div class="ng-mid"><div class="ng-card">${futCard(p, [[FM.money(p.value), 'стоимость']]).replace('class="fut ', 'class="fut sm ')}</div>
-          <div class="ng-name">${flag(p.nat)}${esc(p.name)}</div><div class="ng-sub">${FM.POS_NAME[p.pos]} · ${p.age} лет</div></div>
-        <div class="ng-side">${badge(u, 'xl')}<b>${esc(u.name)}</b><span>ваш клуб</span></div>
+    const steps = [club && !n.precontract ? ['Клуб', 0] : null, ['Игрок', 1], ['Подписание', 2]].filter(Boolean);
+    const apps = p.st.apps + p.cst.apps;
+    const ava = (m) => (m.who === 'you' ? badge(u, 'sm') : m.who === 'club' && club ? badge(club, 'sm') : `<span class="ava-kit">${kitSvg(club || { colors: ['#3a4256', '#8f9bcc'] }, p.pos === 'GK')}</span>`);
+    const el = modal(`<div class="nx" style="--hcb:${club ? glow(club) : '#3a4256'};--acb:${awayColor(club ? glow(club) : '#3a4256', u)}">
+      <header class="nx-top">
+        <div class="nx-club">${club ? badge(club, 'lg') : '<span class="ng-free">FA</span>'}<div><b>${club ? esc(club.name) : 'Свободный агент'}</b><span>${club ? esc(s.leagues[club.league].short) : 'без клуба'}</span></div></div>
+        <div class="nx-steps">${steps.map(([l, k], i) => `${i ? '<i class="nx-link ' + (k <= stage ? 'done' : '') + '"></i>' : ''}<span class="${k < stage ? 'done' : k === stage ? 'on' : ''}"><em>${k < stage ? icon('check', 'sm') : i + 1}</em>${l}</span>`).join('')}</div>
+        <div class="nx-club me"><div><b>${esc(u.name)}</b><span>ваш клуб · ${FM.money(u.money)}</span></div>${badge(u, 'lg')}</div>
+      </header>
+      <div class="nx-body">
+        <aside class="nx-dossier">
+          <div class="nx-who">${futCard(p, []).replace('class="fut ', 'class="fut sm ')}<div class="nx-id"><b>${flag(p.nat)}${esc(p.name)}</b><span>${FM.POS_NAME[p.pos]} · ${p.age} лет</span></div></div>
+          <div class="nx-facts">
+            <div><span>Стоимость</span><b>${FM.money(p.value)}</b></div>
+            <div><span>Зарплата</span><b>${p.club ? FM.money(p.wage) : '—'}</b></div>
+            <div><span>Контракт</span><b>${p.club ? `до ${p.contract + 1}` : 'нет'}</b></div>
+            <div><span>Потенциал</span><b>${esc(G.potLabel(p))}</b></div>
+            <div><span>Сезон</span><b>${apps ? `${apps} и · ${p.st.g + p.cst.g} г` : '—'}</b></div>
+            <div><span>Легионер у вас</span><b class="${G.isForeignIn(p, u) ? 'warn' : 'good'}">${G.isForeignIn(p, u) ? 'да' : 'нет'}</b></div>
+          </div>
+          <div class="nx-int">${ring(it.score, it.score >= 50 ? 'good' : it.score >= 30 ? 'warn' : 'bad', 'интерес')}<div><b style="color:${ic}">${it.label}</b><div class="nx-why">${it.why.map((w) => `<span>${esc(w)}</span>`).join('')}</div></div></div>
+          <div class="nx-pat">${club && !n.precontract ? `<div><span>Терпение клуба</span>${dots(n.patience, p.listed ? 6 : 5)}</div>` : ''}<div><span>Терпение игрока</span>${dots(n.pPatience, 4)}</div></div>
+          <button class="btn danger sm nx-end" id="n-end">Закончить переговоры</button>
+        </aside>
+        <section class="nx-main">
+          ${n.precontract ? '<div class="note small">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
+          <div class="chat ng-chat nx-chat" id="chat">${n.log.map((m, i) => `<div class="msg ${m.who} ${i === n.log.length - 1 ? 'new' : ''}"><span class="ava">${ava(m)}</span><span>${esc(m.text)}</span></div>`).join('') || `<div class="nx-empty">${icon(n.stage === 'club' ? 'shield' : 'user')}<b>${n.stage === 'club' ? `Сначала — сумма трансфера с «${esc(club.name)}»` : 'Предложите игроку условия контракта'}</b><span>${n.stage === 'club' ? 'Клуб ответит на ваше предложение и назовёт свою цену.' : 'Агент ответит и назовёт ориентир по зарплате.'}</span></div>`}</div>
+          <div class="nx-compose">${form}</div>
+        </section>
       </div>
-      <div class="ng-int"><span class="label">Интерес игрока</span><div class="ng-gauge"><i style="width:${it.score}%;background:${ic}"></i></div><b style="color:${ic}">${it.label}</b>
-        <div class="small muted ng-why">${it.why.map(esc).join(' · ')}</div></div>
-      <div class="steps">${[club && !n.precontract ? 'Клуб' : null, 'Игрок', 'Подписание'].map((l, i) => (l ? `<span class="${i < stage ? 'done' : i === stage ? 'on' : ''}">${i < stage ? icon('check', 'sm') + ' ' : ''}${l}</span>` : '')).join('')}</div>
-      ${n.precontract ? '<div class="note">Контракт игрока истекает летом — можно подписать предварительный контракт без выплаты клубу. Игрок перейдёт после окончания сезона.</div>' : ''}
-      <div class="chat ng-chat" id="chat">${n.log.map((m, i) => `<div class="msg ${m.who} ${i === n.log.length - 1 ? 'new' : ''}"><span class="ava">${m.who === 'you' ? badge(u, 'sm') : m.who === 'club' && club ? badge(club, 'sm') : `<span class="ava-kit">${kitSvg(club || { colors: ['#3a4256', '#8f9bcc'] }, p.pos === 'GK')}</span>`}</span><span>${esc(m.text)}</span></div>`).join('') || `<div class="muted small center">${n.stage === 'club' ? `Сначала нужно договориться с «${esc(club.name)}» о сумме трансфера.` : 'Предложите игроку условия контракта.'}</div>`}</div>
-      ${form}
-      <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn danger sm" id="n-end">Закончить переговоры</button></div>`, 'wide nego');
+    </div>`, 'wide nego nx-modal');
     el.querySelector('#n-end').onclick = () => {
       // переговоры сбрасываются: договорённости с клубом и игроком забываются, начать можно заново
       delete s.nego[pid];
@@ -2231,7 +2252,7 @@
       <div class="dn-leg">${parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${esc(n)}</span><b>${tot ? Math.round(Math.max(0, v) / tot * 100) : 0}%</b><em>${FM.money(Math.max(0, v))}</em></div>`).join('')}</div></div>`;
   }
   // Кольцо-индикатор 0–100
-  const ring = (v, cls, label) => { const R = 44, C = 2 * Math.PI * R; return `<div class="ring ${cls}"><svg viewBox="0 0 110 110"><circle r="${R}" cx="55" cy="55" class="rg-bg"/><circle r="${R}" cx="55" cy="55" class="rg-v" stroke-dasharray="${(C * Math.max(0, Math.min(100, v)) / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 55 55)"/></svg><div class="ring-c"><b>${Math.round(v)}%</b><span>${esc(label)}</span></div></div>`; };
+  const ring = (v, cls, label) => { const R = 44, C = 2 * Math.PI * R; return `<div class="gring ${cls}"><svg viewBox="0 0 110 110"><circle r="${R}" cx="55" cy="55" class="rg-bg"/><circle r="${R}" cx="55" cy="55" class="rg-v" stroke-dasharray="${(C * Math.max(0, Math.min(100, v)) / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 55 55)"/></svg><div class="gring-c"><b>${Math.round(v)}%</b><span>${esc(label)}</span></div></div>`; };
   const CAT_COL = { sponsor: '#3d8bff', tickets: '#2ef08f', transfers: '#f2c14e', prizes: '#b07cff', wages: '#ff5a6e', other: '#8f9bcc' };
   const CAT_ICON = { sponsor: 'coin', tickets: 'shirt', transfers: 'swap', prizes: 'trophy', wages: 'user', other: 'mail' };
 
