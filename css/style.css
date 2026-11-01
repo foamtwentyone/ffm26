@@ -2014,3 +2014,64 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
 }
 .nx-compose .nego-form { flex-wrap: nowrap; } .nx-compose .nego-form label { flex: 1 1 0; min-width: 0; }
 .nx-compose .kv { align-items: start; } .nx-compose .kv > div { height: auto; }
+
+/* ===================== сцена чемпиона ===================== */
+.champ { position: fixed; inset: 0; z-index: 8000; display: grid; place-items: center; overflow: hidden; padding: 20px;
+  background: radial-gradient(70% 60% at 50% 45%, color-mix(in srgb, var(--cc) 55%, #070b22), #04060f 75%); animation: chIn .5s ease both; }
+.champ.out { animation: chOut .35s ease both; }
+@keyframes chIn { from { opacity: 0; } } @keyframes chOut { to { opacity: 0; transform: scale(1.04); } }
+.ch-rays { position: absolute; left: 50%; top: 42%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--tc) 22%, transparent) 0 6deg, transparent 6deg 18deg); animation: chSpin 40s linear infinite;
+  -webkit-mask: radial-gradient(circle, #000 0 18%, transparent 45%); mask: radial-gradient(circle, #000 0 18%, transparent 45%); }
+@keyframes chSpin { to { transform: rotate(360deg); } }
+.ch-in { position: relative; display: grid; justify-items: center; text-align: center; gap: 8px; max-width: 760px; }
+.ch-cup { position: relative; color: var(--gold); filter: drop-shadow(0 10px 40px color-mix(in srgb, var(--gold) 60%, transparent)); animation: chCup 1s .15s cubic-bezier(.2,1.4,.4,1) both; }
+.ch-cup .ic { width: 150px; height: 150px; }
+.champ.euro .ch-cup { color: #dfe6f5; filter: drop-shadow(0 10px 40px rgba(220,230,255,.5)); }
+@keyframes chCup { from { opacity: 0; transform: translateY(80px) scale(.4) rotate(-8deg); } }
+.ch-badge { margin-top: -34px; animation: fxPop .5s .8s cubic-bezier(.3,1.6,.5,1) both; }
+.ch-badge .badge.xl { box-shadow: 0 0 0 4px rgba(255,255,255,.85), 0 12px 30px rgba(0,0,0,.5); }
+.ch-k { font: 600 var(--fs-md) var(--f-body); letter-spacing: .24em; text-transform: uppercase; color: rgba(255,255,255,.8); animation: fxIn .5s 1s both; }
+.ch-t { margin: 0; font: 700 clamp(56px, 11vw, 120px)/.95 var(--f-display); text-transform: uppercase; letter-spacing: .01em;
+  background: linear-gradient(180deg, #fff 30%, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 24px rgba(0,0,0,.45)); animation: chTitle .7s 1.1s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes chTitle { from { opacity: 0; transform: scale(1.6); letter-spacing: .3em; filter: blur(10px); } }
+.ch-club { font: 700 var(--fs-3xl) var(--f-display); text-transform: uppercase; animation: fxIn .5s 1.5s both; }
+.ch-facts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; animation: fxIn .5s 1.7s both; }
+.ch-facts span { padding: 5px 12px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.15); font-size: var(--fs-md); }
+.ch-go { margin-top: 12px; animation: fxIn .5s 2s both; }
+@media (max-height: 500px) and (orientation: landscape) { .ch-cup .ic { width: 90px; height: 90px; } .ch-badge .badge.xl { width: 56px; height: 56px; } .ch-badge { margin-top: -22px; } .ch-t { font-size: 60px; } .ch-club { font-size: var(--fs-xl); } .ch-in { gap: 4px; } }
+@media (prefers-reduced-motion: reduce) { .ch-rays, .ch-cup, .ch-t, .ch-badge, .ch-k, .ch-club, .ch-facts, .ch-go { animation: none !important; } }
+
+/* ===================== календарь матчей ===================== */
+.fx-bar { margin-bottom: 12px; }
+.cal { padding: 14px !important; }
+.cal-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.cal-h h3 { margin: 0; font: 700 var(--fs-2xl) var(--f-display); text-transform: uppercase; min-width: 170px; text-align: center; }
+.cal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-w { font-size: var(--fs-xs); font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; text-align: center; padding: 4px 0; }
+.cal-d { position: relative; min-height: 96px; border-radius: var(--r-sm); background: rgba(255,255,255,.03); border: 1px solid var(--line); padding: 4px; display: grid; align-content: start; gap: 3px; }
+.cal-d.empty { background: none; border-color: transparent; }
+.cal-d.past:not(.has) { opacity: .45; }
+.cal-d.win { background: linear-gradient(180deg, rgba(46,229,138,.07), rgba(255,255,255,.02)); box-shadow: inset 0 -3px 0 rgba(46,229,138,.45); }
+.cal-d.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+.cal-d.today .cal-n { background: var(--accent); color: var(--accent-ink); }
+.cal-n { justify-self: start; font: 600 var(--fs-sm) var(--f-display); color: var(--muted); padding: 1px 6px; border-radius: var(--r-xs); }
+.cal-m { display: grid; gap: 2px; padding: 4px 5px 5px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--mc) 18%, rgba(0,0,0,.25)); border-left: 3px solid var(--mc); min-width: 0; }
+.cal-m.click { cursor: pointer; } .cal-m.click:hover { background: color-mix(in srgb, var(--mc) 30%, rgba(0,0,0,.2)); }
+.cal-c { font: 600 9px var(--f-body); text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--mc) 60%, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-o { display: flex; gap: 5px; align-items: center; min-width: 0; }
+.cal-o .badge.sm { width: 18px; height: 18px; flex: none; }
+.cal-o b { font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-r { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.ha { font-style: normal; font: 600 9px var(--f-body); width: 16px; height: 16px; border-radius: 4px; display: grid; place-items: center; background: rgba(255,255,255,.12); }
+.ha.h { background: rgba(255,255,255,.22); }
+.cal-r .score { font-style: normal; font: 700 var(--fs-md) var(--f-display); padding: 0 6px; border-radius: 4px; }
+.cal-r .ic.sm { color: #ff9f43; }
+.cal-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 10px; font-size: var(--fs-sm); color: var(--muted); }
+.cal-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cal-leg i.win { background: rgba(46,229,138,.45); }
+@media (max-width: 900px), (max-height: 500px) and (orientation: landscape) {
+  .cal-d { min-height: 62px; padding: 3px; } .cal-c { display: none; } .cal-o .badge.sm { width: 16px; height: 16px; } .cal-o b { font-size: 10px; }
+  .cal-h h3 { font-size: var(--fs-xl); min-width: 130px; } .cal-g { gap: 3px; }
+}

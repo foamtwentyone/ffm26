@@ -670,6 +670,8 @@
     }
     let r, guard = 0;
     do { r = G.advance(); } while (r === 'day' && guard++ < 400);
+    // трофей решился в один из прошедших дней (чужие матчи) — праздник поверх следующего окна
+    if (r !== 'season_end') setTimeout(celebrate, 0);
     if (r === 'match') { save(); render(); return preMatch(); }
     if (r === 'season_end') {
       G.s.seasonOver = true;
@@ -683,6 +685,49 @@
     if (r === 'event') { const id = G.evShow; G.evShow = null; save(); render(); return eventModal(id); }
     save();
     render();
+  }
+
+  // ================== чемпион! ==================
+  // Новый трофей клуба пользователя: кубок или еврокубок (финал выигран) или чемпионство (отрыв больше,
+  // чем очков осталось разыграть у второго места). Каждый трофей празднуется один раз.
+  function trophyNow() {
+    const G = g(), s = G.s, uid = s.user;
+    const done = new Set(s.celebrated || []);
+    const key = (k) => `${s.season}:${k}`;
+    for (const c in s.cups || {}) if (s.cups[c].winner === uid && !done.has(key('cup:' + c))) return { key: key('cup:' + c), kind: 'cup', title: 'Обладатель кубка', name: s.cups[c].name || FM.cupName(c), color: COMP_THEME.cup };
+    for (const E of FM.EURO) { const e = s.euro && s.euro[E.id]; if (e && e.winner === uid && !done.has(key('euro:' + E.id))) return { key: key('euro:' + E.id), kind: 'euro', title: 'Победитель', name: E.name, color: COMP_THEME[E.id] || COMP_THEME.final }; }
+    const lid = G.userTeam().league, tab = G.table(lid);
+    if (tab.length > 1 && tab[0].id === uid && !done.has(key('league:' + lid))) {
+      const second = tab[1];
+      const left = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === second.id || m.a === second.id)).length;
+      const mine = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === uid || m.a === uid)).length;
+      if (tab[0].p > 0 && tab[0].pts - second.pts > left * 3) return { key: key('league:' + lid), kind: 'league', title: 'Чемпион', name: s.leagues[lid].name, color: LEAGUE_THEME[lid] || glow(G.userTeam()), early: mine };
+    }
+    return null;
+  }
+  function celebrate() {
+    const G = g(), s = G.s, t = trophyNow();
+    if (!t) return false;
+    s.celebrated = (s.celebrated || []).concat(t.key).slice(-40);
+    save();
+    const u = G.userTeam(), c = glow(u);
+    const top = G.squad(u).filter((p) => p.st.apps + p.cst.apps > 0).sort((a, b) => (b.st.g + b.cst.g) - (a.st.g + a.cst.g))[0];
+    const el = document.createElement('div');
+    el.className = `champ ${t.kind}`;
+    el.style.setProperty('--cc', c); el.style.setProperty('--tc', t.color);
+    el.innerHTML = `<div class="ch-rays"></div><div class="ch-in">
+        <div class="ch-cup">${icon('trophyF')}</div>
+        <div class="ch-badge">${badge(u, 'xl')}</div>
+        <div class="ch-k">${esc(t.name)} · ${seasonLabel(s)}</div>
+        <h1 class="ch-t">${esc(t.title)}!</h1>
+        <div class="ch-club">${esc(u.name)}</div>
+        <div class="ch-facts">${t.kind === 'league' ? `<span>${t.early ? `досрочно — за ${t.early} тур${t.early === 1 ? '' : t.early < 5 ? 'а' : 'ов'} до конца` : 'по итогам сезона'}</span>` : ''}${top ? `<span>лучший бомбардир — ${esc(top.name)}, ${top.st.g + top.cst.g}</span>` : ''}<span>тренер — ${esc(s.manager)}</span></div>
+        <button class="btn primary ch-go">Продолжить</button></div>`;
+    document.body.appendChild(el);
+    const burst = () => confetti([c, t.color, '#ffffff', '#ffd166'], 3800);
+    burst(); const t2 = setTimeout(burst, 1700);
+    el.querySelector('.ch-go').onclick = () => { clearTimeout(t2); el.classList.add('out'); setTimeout(() => el.remove(), 350); };
+    return true;
   }
 
   // Случайное событие: окно с выбором; после решения — итог и «Продолжить»
@@ -1037,10 +1082,51 @@
   }
 
   // ================== календарь ==================
+  // ================== матчи: календарь и список ==================
+  const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+  const compColor = (m) => { const th = themeOf(m.comp, m); return (th && th[1]) || LEAGUE_THEME[m.comp] || '#5b8cff'; };
   function viewFixtures(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const list = Object.values(s.matches).filter((m) => m.h === u.id || m.a === u.id).sort((a, b) => (a.date < b.date ? -1 : 1));
-    main.innerHTML = `<div class="card tight"><div class="tbl-wrap"><table>
+    const view = UI.fxView || 'cal';
+    main.innerHTML = `<div class="row fx-bar"><div class="seg">${[['cal', 'Календарь'], ['list', 'Список']].map(([k, n]) => `<button data-fxv="${k}" class="${k === view ? 'on' : ''}">${n}</button>`).join('')}</div><span class="grow"></span></div>`;
+    main.querySelectorAll('[data-fxv]').forEach((b) => b.onclick = () => { UI.fxView = b.dataset.fxv; render(); });
+    if (view === 'list') return fixturesList(main, list);
+    // месяц: по умолчанию текущий; листается в пределах сезона
+    const cur = s.date.slice(0, 7);
+    const months = [...new Set(list.map((m) => m.date.slice(0, 7)).concat(cur))].sort();
+    let ym = UI.fxMonth && months.includes(UI.fxMonth) ? UI.fxMonth : cur;
+    const [Y, M] = ym.split('-').map(Number);
+    const first = new Date(Date.UTC(Y, M - 1, 1)), days = new Date(Date.UTC(Y, M, 0)).getUTCDate();
+    const lead = (first.getUTCDay() + 6) % 7; // понедельник — первый день недели
+    const by = {}; for (const m of list) (by[m.date] = by[m.date] || []).push(m);
+    const w = s.window, inWin = (d) => (d >= w.from && d <= w.to) || (d >= w.from2 && d <= w.to2);
+    const res = (m) => { const my = m.h === u.id ? m.hg : m.ag, op = m.h === u.id ? m.ag : m.hg; let r = my > op ? 'W' : my < op ? 'L' : 'D'; if (m.winner && my === op) r = m.winner === u.id ? 'W' : 'L'; return r; };
+    const cell = (d) => {
+      const ds = `${ym}-${String(d).padStart(2, '0')}`;
+      const ms = by[ds] || [];
+      const cls = [ds === s.date ? 'today' : '', ds < s.date ? 'past' : '', inWin(ds) ? 'win' : '', ms.length ? 'has' : ''].join(' ');
+      return `<div class="cal-d ${cls}"><span class="cal-n">${d}</span>${ms.map((m) => { const o = T(m.h === u.id ? m.a : m.h), r = m.played ? res(m) : ''; return `<div class="cal-m ${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''} style="--mc:${compColor(m)}" title="${esc(compName(m.comp))}${roundText(m) ? ' · ' + esc(roundText(m)) : ''} — ${esc(o.name)}">
+          <span class="cal-c">${esc(compShort(m.comp))}</span><span class="cal-o">${badge(o, 'sm')}<b>${esc(o.name)}</b></span>
+          <span class="cal-r">${m.h === u.id ? '<i class="ha h">Д</i>' : '<i class="ha a">Г</i>'}${m.played ? `<em class="score ${r}">${m.hg}:${m.ag}</em>` : bigTag(m) ? icon('fire', 'sm') : ''}</span></div>`; }).join('')}</div>`;
+    };
+    const idx = months.indexOf(ym);
+    const next = list.find((m) => !m.played);
+    const mm = list.filter((m) => m.date.startsWith(ym));
+    const pl = mm.filter((m) => m.played).map(res);
+    main.insertAdjacentHTML('beforeend', `<div class="card cal">
+      <div class="cal-h"><button class="btn sm" data-fxm="${months[idx - 1] || ''}" ${idx > 0 ? '' : 'disabled'}>‹</button><h3>${MONTHS[M - 1]} ${Y}</h3><button class="btn sm" data-fxm="${months[idx + 1] || ''}" ${idx < months.length - 1 ? '' : 'disabled'}>›</button>
+        <span class="grow"></span><span class="small muted">${mm.length} матч${mm.length === 1 ? '' : mm.length < 5 && mm.length ? 'а' : 'ей'}${pl.length ? ` · <b class="good">${pl.filter((x) => x === 'W').length}В</b> <b>${pl.filter((x) => x === 'D').length}Н</b> <b class="bad">${pl.filter((x) => x === 'L').length}П</b>` : ''}</span>
+        ${ym !== cur ? `<button class="btn sm" data-fxm="${cur}">Сегодня</button>` : ''}</div>
+      <div class="cal-g">${['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((d) => `<div class="cal-w">${d}</div>`).join('')}${'<div class="cal-d empty"></div>'.repeat(lead)}${Array.from({ length: days }, (_, i) => cell(i + 1)).join('')}</div>
+      <div class="cal-leg">${[...new Set(list.map((m) => m.comp))].map((c) => { const m = list.find((x) => x.comp === c); return `<span><i style="background:${compColor(m)}"></i>${esc(compName(c))}</span>`; }).join('')}<span><i class="win"></i>трансферное окно</span>${next ? `<span class="grow"></span><span class="small">Следующий: <b>${FM.fmtDateWd(next.date)}</b> — ${esc(T(next.h === u.id ? next.a : next.h).name)}</span>` : ''}</div>
+    </div>`);
+    main.querySelectorAll('[data-fxm]').forEach((b) => b.onclick = () => { if (b.dataset.fxm) { UI.fxMonth = b.dataset.fxm; render(); } });
+  }
+
+  function fixturesList(main, list) {
+    const G = g(), s = G.s, u = G.userTeam();
+    main.insertAdjacentHTML('beforeend', `<div class="card tight"><div class="tbl-wrap"><table>
       <tr><th>Дата</th><th>Турнир</th><th></th><th class="right">Хозяева</th><th class="center">Счёт</th><th>Гости</th></tr>
       ${list.map((m) => {
         const h = T(m.h), a = T(m.a);
@@ -1054,7 +1140,7 @@
           <td class="small muted">${m.h === u.id ? 'дома' : 'в гостях'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
-    </table></div></div>`;
+    </table></div></div>`);
   }
 
   // ================== турниры ==================
@@ -1888,6 +1974,7 @@
     const G = g(), uid = G.s.user, my = m.h === uid ? m.hg : m.ag, op = m.h === uid ? m.ag : m.hg;
     const win = m.winner ? m.winner === uid : my > op, draw = !m.winner && my === op;
     const big = !!(m.neutral && m.winner) || !!G.derbyOf(m);
+    if (celebrate()) { matchReport(m.id); return; }
     splash(win ? 'ПОБЕДА' : draw ? 'НИЧЬЯ' : 'ПОРАЖЕНИЕ', `${esc(T(m.h).name)} ${m.hg}:${m.ag} ${esc(T(m.a).name)}`, win ? glow(G.userTeam()) : draw ? '#8f9bcc' : '#ff5c6c', win ? 'win' : draw ? 'draw' : 'loss', 1600);
     if (win && big) setTimeout(() => confetti([glow(G.userTeam()), '#ffd166', '#ffffff'], 3200), 300);
     matchReport(m.id);
