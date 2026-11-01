@@ -2154,7 +2154,7 @@ html.rot, html.rot body { overflow: hidden; height: 100%; }
 /* zoom у html в Safari считается иначе, чем в Chrome, поэтому в повёрнутом режиме zoom выключен,
    а уменьшение до 0.86 сделано тем же transform, что и поворот: одинаково во всех браузерах */
 html.rot { zoom: 1 !important; }
-html.rot body { position: fixed; top: 0; left: 0; min-height: 0; width: calc(100vh / .86); width: calc(100dvh / .86); height: calc(100vw / .86); transform-origin: top left; transform: rotate(90deg) scale(.86) translateY(-100%); }
+html.rot body { position: fixed; top: 0; left: 0; min-height: 0; width: var(--rw, calc(100dvh / .86)); height: var(--rh, calc(100vw / .86)); max-width: none; margin: 0; transform-origin: top left; transform: rotate(90deg) scale(.86) translateY(-100%); }
 html.rot #app { height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 html.rot .mm, html.rot .mm-page { min-height: calc(100vw / .86); }
 html.rot .modal.nx-modal { height: calc(100vw / .86); }
@@ -2507,3 +2507,8 @@ html.rot body { padding: 0 !important; }
 html.rot #app { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
 html.rot #app:has(> .mm), html.rot #app:has(> .mm-page) { padding-bottom: 0; }
 html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: 100% !important; height: auto; }
+
+/* размеры повёрнутого экрана задаёт скрипт в пикселях (--rw, --rh): vw/dvh и проценты Safari считает по-своему */
+html.rot #app { height: var(--rh, 100%); width: var(--rw, 100%); }
+html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: var(--rh, 100%) !important; }
+html.rot .modal.nx-modal { height: var(--rh); }
