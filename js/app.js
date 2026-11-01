@@ -204,7 +204,7 @@
 
   function badge(t, cls = '') {
     if (t.logoData) return `<span class="badge logo ${cls}"><img src="${t.logoData}" alt="${esc(t.name)}"></span>`;
-    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${cls}"><img src="${FM.LOGO_IMG ? FM.LOGO_IMG[t.id] : `img/logos/${t.id}.png`}" alt="${esc(t.name)}"></span>`;
+    if (FM.LOGOS && FM.LOGOS.has(t.id)) return `<span class="badge logo ${FM.LOGO_DARK && FM.LOGO_DARK.has(t.id) ? 'dk' : ''} ${cls}"><img src="${FM.LOGO_IMG ? FM.LOGO_IMG[t.id] : `img/logos/${t.id}.png`}" alt="${esc(t.name)}"></span>`;
     const init = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).map((w) => w[0]).join('').slice(0, 3).toUpperCase();
     return `<span class="badge ${cls}" style="background:${t.colors[0]};color:${badgeText(t)}">${esc(init)}</span>`;
   }

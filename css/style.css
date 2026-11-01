@@ -2075,3 +2075,15 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
   .cal-d { min-height: 62px; padding: 3px; } .cal-c { display: none; } .cal-o .badge.sm { width: 16px; height: 16px; } .cal-o b { font-size: 10px; }
   .cal-h h3 { font-size: var(--fs-xl); min-width: 130px; } .cal-g { gap: 3px; }
 }
+
+/* ===================== эмблемы без белого круга ===================== */
+/* логотип стоит прямо на фоне; тонкий светлый контур и тень — чтобы тёмные гербы читались на тёмном и цветном фоне */
+.badge.logo, .badge.logo.lg, .badge.logo.xl, .hdr .badge.logo.lg, .ch-badge .badge.logo.xl { background: none !important; border: 0 !important; box-shadow: none !important; border-radius: 0; overflow: visible; }
+.badge.logo img { width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(255,255,255,.55)) drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
+.badge.logo.sm img, .badge.logo:not(.lg):not(.xl) img { filter: drop-shadow(0 0 1px rgba(255,255,255,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.ng-chat .msg .ava .badge.logo { background: none !important; }
+/* тёмные эмблемы: мягкое светлое пятно за гербом, без жёсткого круга */
+.badge.logo.dk { position: relative; }
+.badge.logo.dk::before { content: ""; position: absolute; inset: -12%; border-radius: 50%; background: radial-gradient(circle, rgba(235,240,255,.92) 0 42%, rgba(235,240,255,.55) 58%, transparent 72%); }
+.badge.logo.dk img { position: relative; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
