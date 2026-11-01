@@ -18,7 +18,7 @@
   const UI = { g: null, tab: 'home', sel: null, tablesLid: null, tablesView: 'table', round: null, statsKey: 'g', tf: {}, sortKey: 'ovr', sortDir: -1, tfPage: 0 };
   window.UI = UI;
   // для проверок и отладки: открыть карточку игрока или переговоры по id
-  UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id) };
+  UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id), team: (id) => teamModal(id) };
 
   // ================== помощники ==================
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
