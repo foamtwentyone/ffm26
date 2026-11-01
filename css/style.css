@@ -2083,7 +2083,6 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
   filter: drop-shadow(0 0 1px rgba(255,255,255,.55)) drop-shadow(0 0 7px rgba(255,255,255,.18)) drop-shadow(0 4px 10px rgba(0,0,0,.45)); }
 .badge.logo.sm img, .badge.logo:not(.lg):not(.xl) img { filter: drop-shadow(0 0 1px rgba(255,255,255,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .ng-chat .msg .ava .badge.logo { background: none !important; }
-/* тёмные эмблемы: мягкое светлое пятно за гербом, без жёсткого круга */
-.badge.logo.dk { position: relative; }
-.badge.logo.dk::before { content: ""; position: absolute; inset: -12%; border-radius: 50%; background: radial-gradient(circle, rgba(235,240,255,.92) 0 42%, rgba(235,240,255,.55) 58%, transparent 72%); }
-.badge.logo.dk img { position: relative; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+/* тёмные эмблемы: светлое свечение точно по контуру герба (без пятна и круга) */
+.badge.logo.dk img { filter: drop-shadow(0 0 1px rgba(255,255,255,.95)) drop-shadow(0 0 1px rgba(255,255,255,.8)) drop-shadow(0 0 5px rgba(190,205,255,.55)) drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
+.badge.logo.dk.sm img, .badge.logo.dk:not(.lg):not(.xl) img { filter: drop-shadow(0 0 1px rgba(255,255,255,.9)) drop-shadow(0 0 2px rgba(190,205,255,.5)); }
