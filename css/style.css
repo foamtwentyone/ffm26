@@ -2556,3 +2556,4 @@ html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { pa
 /* сенсорный экран без поворота: #app уже ровно на весь экран — меню растягиваем по нему, а не по dvh
    (Safari применяет масштаб 0.86 к dvh по-своему, и снизу оставалась пустая полоса) */
 html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page { min-height: 100% !important; }
+.pick-mode { margin-bottom: 12px; }

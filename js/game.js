@@ -442,6 +442,9 @@
       };
       const g = new Game(s);
       let leagues = db || FM.leagues;
+      // карьера за сборную: мир строится как обычно, тренер получает сборную после жеребьёвки турниров
+      const natId = typeof teamId === 'string' && teamId.startsWith('nat_') ? teamId : null;
+      if (natId) { teamId = leagues[0].teams[0].id; s.user = teamId; }
       // свой клуб занимает место выбранного клуба лиги: состав генерируется под уровень (или остаётся от заменённого)
       const c = opts.custom;
       if (c) {
@@ -469,6 +472,17 @@
         g.pickFormation(t);
       }
       g.newSeason(true);
+      if (natId && g.teams[natId]) {
+        const n = g.teams[natId];
+        s.user = natId;
+        s.board.conf = 60;
+        g.setExpectation();
+        g.natCallup(n, true);
+        g.pickFormation(n);
+        const T = g.ntMain(natId);
+        g.msg('Добро пожаловать!', `Федерация футбола утвердила вас главным тренером сборной (${n.name}). ${T ? `Ближайший турнир — «${T.name}».` : 'В этом сезоне — товарищеские матчи.'} Игроков не покупают, а вызывают: состав сборной — во вкладке «Состав», матчи — в окна ФИФА.`, 'board');
+        return g;
+      }
       const t = g.teams[teamId];
       g.msg('Добро пожаловать!', `Совет директоров клуба «${t.name}» утвердил вас главным тренером. Задача на сезон: ${g.expectText()}. Трансферное окно открыто до 7 сентября.`, 'board');
       return g;
@@ -1002,10 +1016,20 @@
       } else s.board.expect = old;
     }
 
+    // задача сборной: по ближайшему турниру и силе среди его участников
+    ntExpect(t) {
+      const NT = this.s.nt, own = (x) => x.teams.includes(t.id) && (x.conf === t.conf || x.conf === 'WORLD');
+      const T = NT && (NT.list.find((x) => own(x) && !x.done) || NT.list.find((x) => x.teams.includes(t.id) && !x.done) || NT.list.find((x) => x.teams.includes(t.id)));
+      if (!T) return 'провести сезон товарищеских матчей без провалов';
+      const rk = T.teams.slice().sort((a, b) => this.teams[b].rate - this.teams[a].rate).indexOf(t.id), n = T.teams.length;
+      if (T.kind === 'qual') return rk < T.dir * 0.6 ? `уверенно выйти на «${T.target}»` : rk < T.dir + (T.po || 0) * 2 ? `пробиться на «${T.target}» (хотя бы через стыки)` : 'достойно выступить в отборе';
+      if (T.kind === 'nl') { const tr = (this.s.nlTier || {})[t.natCode]; return tr === 'A' ? (rk < 6 ? 'выйти в «Финал четырёх» Лиги наций' : 'сохранить место в лиге A') : tr === 'B' ? (rk < 22 ? 'выиграть группу и подняться в лигу A' : 'сохранить место в лиге B') : 'выиграть группу и подняться в лигу B'; }
+      return rk < 2 ? `выиграть «${T.name}»` : rk < Math.max(4, n / 6) ? `дойти до полуфинала «${T.name}»` : rk < n / 2 ? `выйти в плей-офф «${T.name}»` : `достойно выступить на «${T.name}»`;
+    }
     expectText() {
       const e = this.s.board.expect;
       const t = this.userTeam();
-      if (t.national) return e <= 1 ? 'выиграть группу отбора и бороться за титул' : e <= 2 ? 'выйти в финальный турнир' : 'достойно выступить в отборе';
+      if (t.national) return this.ntExpect(t);
       const L = this.s.leagues[t.league];
       const n = L.teams.length;
       if (L.tier > 1) {

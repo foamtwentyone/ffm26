@@ -522,7 +522,7 @@
           </div>
           ${customDb() ? '<div class="note small">Используется ваша отредактированная база (Меню → Редактор базы).</div>' : ''}
         </div>
-        <h2>Выберите клуб</h2>
+        <h2>Выберите команду</h2>
         <div id="pick-area"></div>
       </main></div>`;
       app.querySelector('#mm-back').onclick = () => { view = 'menu'; draw(); };
@@ -531,12 +531,27 @@
     // смена лиги перерисовывает только выбор лиги и список клубов — без перезагрузки всего экрана и анимаций
     const drawPick = () => {
       const area = app.querySelector('#pick-area');
+      const mode = `<div class="seg pick-mode"><button data-pm="club" class="${UI.pickMode !== 'nat' ? 'on' : ''}">Клубы</button><button data-pm="nat" class="${UI.pickMode === 'nat' ? 'on' : ''}">Сборные</button></div>`;
+      const bindMode = () => area.querySelectorAll('[data-pm]').forEach((b) => b.onclick = () => { UI.pickMode = b.dataset.pm; drawPick(); });
+      if (UI.pickMode === 'nat') {
+        const all = natChoices(db), cf = UI.pickConf || 'all';
+        const list = all.filter((x) => cf === 'all' || x.conf === cf);
+        area.innerHTML = `${mode}<div class="note small" style="margin:10px 0">Тренер сборной не работает в клубе: игроков не покупают, а вызывают из клубов. Матчи — в окна ФИФА и на турнирах: чемпионат мира, Евро, Кубок Америки, КАН, Кубок Азии, Золотой кубок, Лига наций. Позже можно перейти в клуб (вкладка «Тренер»).</div>
+          <div class="seg nt-chips" style="margin-bottom:12px">${[['all', 'Все'], ...Object.entries(FM.CONF_NAME)].filter(([k]) => k === 'all' || all.some((x) => x.conf === k)).map(([k, n]) => `<button data-cf="${k}" class="${k === cf ? 'on' : ''}">${n}</button>`).join('')}</div>
+          <div class="teams-pick">${list.map((x) => `<button class="tp" data-pick="nat_${x.code}">${flagBadge(x.code)}<div><b>${esc(FM.NAT[x.code] || x.code)}</b><div class="muted small">${esc(FM.CONF_NAME[x.conf])} · ${x.n} игр. в базе</div>
+            ${stars(FM.clamp(Math.round((x.rate - 58) / 3) / 2, 0.5, 5))}</div></button>`).join('')}</div>`;
+        bindMode();
+        area.querySelectorAll('[data-cf]').forEach((b) => b.onclick = () => { UI.pickConf = b.dataset.cf; drawPick(); });
+        area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => start(b.dataset.pick));
+        return;
+      }
       const L = db.find((x) => x.id === lid);
-      area.innerHTML = `${leaguePick(db, lid, 'data-l')}
+      area.innerHTML = `${mode}${leaguePick(db, lid, 'data-l')}
         <div class="teams-pick"><button class="tp tp-new" id="mk-club"><span class="badge lg tp-plus">+</span><div><b>Свой клуб</b><div class="muted small">Займёт место самого слабого клуба лиги «${esc(L.name)}»</div></div></button>${L.teams.slice().sort((a, b) => repOf(b) - repOf(a)).map((t) => `
           <button class="tp" data-pick="${t.id}" style="--tc:${glow(t)}">${badge(t, 'lg')}<div><b>${esc(t.name)}</b><div class="muted small">${esc(t.city)}</div>
           ${stars(FM.clamp(Math.round((repOf(t) - 40) / 5) / 2, 0.5, 5))}</div></button>`).join('')}
 </div>`;
+      bindMode();
       area.querySelectorAll('[data-l]').forEach((b) => b.onclick = () => { lid = b.dataset.l; drawPick(); });
       area.querySelector('#mk-club').onclick = () => createClubModal(L, (custom) => start(custom.replace, custom));
       area.querySelectorAll('[data-pick]').forEach((b) => b.onclick = () => start(b.dataset.pick));
@@ -549,7 +564,8 @@
         closeModal();
         UI.g = FM.Game.newGame(teamId, mgr, customDb() || undefined, { ruEuro, custom });
         UI.tab = 'home';
-        UI.tablesLid = UI.g.userTeam().league;
+        UI.tablesLid = UI.g.userTeam().national ? null : UI.g.userTeam().league;
+        UI.tablesView = UI.g.userTeam().national ? 'nat' : 'table';
         save();
         render();
     };
@@ -1524,6 +1540,22 @@
 
   // Выбор лиги: сначала страна (флаг), затем лига этой страны — при 30+ лигах длинный ряд кнопок неудобен.
   // list — массив { id, name, short, country }, attr — атрибут кнопки с id лиги.
+  // сборные для новой карьеры — прямо из базы: страны с 10+ игроками, сила по 18 лучшим
+  let natChoicesCache = null;
+  function natChoices(db) {
+    if (natChoicesCache && natChoicesCache.db === db) return natChoicesCache.list;
+    const by = {};
+    for (const L of db) for (const T of L.teams) for (const line of (T.players || '').split('\n')) {
+      const f = line.trim().split('|'); if (f.length < 5) continue;
+      const short = /^\d{4}$/.test(f[5] || '') || (f[5] === '' && f.length > 6);
+      const ovr = !short && f[5] && +f[5] ? +f[5] : FM.ovrFromValue(+f[3], +f[2]);
+      for (const c of new Set([f[4] || 'RUS', short ? f[6] : null].filter(Boolean))) (by[c] = by[c] || []).push(ovr);
+    }
+    const list = Object.entries(by).filter(([c, a]) => FM.CONF[c] && a.length >= 10).map(([code, a]) => { a.sort((x, z) => z - x); return { code, n: a.length, conf: FM.CONF[code], rate: a.slice(0, 18).reduce((x, z) => x + z, 0) / 18 }; }).sort((a, b) => b.rate - a.rate);
+    natChoicesCache = { db, list };
+    return list;
+  }
+  const flagBadge = (c) => FM.FLAG_IMG && FM.FLAG_IMG[c] ? `<span class="badge nat lg"><img src="${FM.FLAG_IMG[c]}" alt=""></span>` : `<span class="badge lg">${esc(c)}</span>`;
   function leaguePick(list, cur, attr = 'data-lid', on = true) {
     const cOf = (l) => l.country || 'RUS';
     const curL = list.find((l) => l.id === cur) || list[0];
