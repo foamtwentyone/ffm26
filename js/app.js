@@ -1028,11 +1028,11 @@
         </div>
       </div>
       <div class="card tight"><div class="tbl-wrap"><table>
-        <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="hide-m">Форма</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
+        <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th title="Физическая готовность: падает после матчей, восстанавливается каждый день">Готовн.</th><th class="num hide-m" title="Выносливость: как быстро устаёт и восстанавливается">Вын</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
         ${sq.map((p) => { const mk = markOf(p); return `<tr class="click ${p.id === selCur ? 'sel' : ''} ${mk ? mk.cls : ''}" data-row="${p.id}">
           <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
           <td class="nowrap">${pos(p.pos)}${(p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : ''}${p.train ? `<span class="pos-alt" title="Переучивается">→${FM.POS_RU[p.train.to]}</span>` : ''}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
-          <td class="hide-m">${fitBar(p.fit)}</td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
+          <td>${fitBar(Math.round(p.fit))}<span class="fit-n ${p.fit < 70 ? 'bad' : p.fit < 88 ? 'warn' : ''}">${Math.round(p.fit)}</span></td><td class="num hide-m"><span class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : 'muted'}">${p.sta || 65}</span></td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
           <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`; }).join('')}
       </table></div><div class="small muted" style="padding:10px">Нажмите на позицию на поле или на скамейке, затем на игрока. Без выбора позиции — откроется карточка игрока. «*» — сгенерированный игрок.</div></div>
     </div>`;
@@ -1663,6 +1663,7 @@
         <div><span>Зарплата</span><b>${FM.money(p.wage)}/нед</b></div>
         <div><span>Контракт до</span><b>лето ${p.contract + 1}</b>${p.bon && (p.bon.goal || p.bon.euro) ? `<small>бонусы: ${[p.bon.goal ? `${FM.money(p.bon.goal)} за гол` : '', p.bon.euro ? `${FM.money(p.bon.euro)} за еврокубки` : ''].filter(Boolean).join(', ')}</small>` : ''}${p.sellOn && g().teams[p.sellOn.club] ? `<small>${p.sellOn.pct}% с продажи — «${esc(g().teams[p.sellOn.club].name)}»</small>` : ''}</div>
         <div><span>Физ. готовность</span><b>${Math.round(p.fit)}%</b></div>
+        <div><span>Выносливость</span><b class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : ''}">${p.sta || 65}</b><small>${(p.sta || 65) >= 78 ? 'почти не устаёт' : (p.sta || 65) < 55 ? 'быстро устаёт' : 'обычная'}</small></div>
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div></div></div>
       ${formBlock(p)}

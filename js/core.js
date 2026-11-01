@@ -223,6 +223,16 @@ FM.persFor = (name) => {
   return r < 0.09 ? 'leader' : r < 0.21 ? 'pro' : r < 0.29 ? 'volatile' : r < 0.38 ? 'ambitious' : r < 0.45 ? 'loyal' : null;
 };
 
+// Выносливость (30–99): как быстро игрок устаёт в матче и восстанавливается между матчами.
+// Зависит от позиции (больше всех бегают крайние и центральные полузащитники), возраста и самого игрока (по имени).
+FM.staFor = (name, pos, age) => {
+  let h = 2166136261;
+  for (const ch of 'sta|' + name) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const r = ((h >>> 0) % 1000) / 1000;
+  const base = { GK: 55, CB: 63, LB: 72, RB: 72, DM: 72, CM: 73, AM: 66, LW: 68, RW: 68, ST: 62 }[pos] || 65;
+  return Math.round(FM.clamp(base + (r - 0.5) * 34 - Math.max(0, age - 30) * 2.5 + (age <= 20 ? -3 : 0), 30, 99));
+};
+
 // Сколько недель переучиваться: чем дальше позиция и старше игрок, тем дольше.
 FM.retrainWeeks = (p, to) => {
   const f = FM.pfit(p, to);

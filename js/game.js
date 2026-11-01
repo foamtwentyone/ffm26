@@ -288,6 +288,7 @@
       }
       // старые сохранения: дополнительных позиций не было (только выученные переучиванием) — раздаём, выученные сохраняем
       if (!state.nat && FM.leagues && state.date < `${state.season}-09-01`) this._natLater = true;
+      if (!state.staV1) { state.staV1 = true; for (const id in this.players) { const p = this.players[id]; if (!p.sta) p.sta = FM.staFor(p.name, p.pos, p.age); } }
       if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {
         state.altV1 = true;
@@ -512,7 +513,7 @@
       const tier = team ? this.tierOf(team) : 2;
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
-        alt: d.alt || FM.altFor(d.name, d.pos), pers: FM.persFor(d.name) || undefined,
+        alt: d.alt || FM.altFor(d.name, d.pos), pers: FM.persFor(d.name) || undefined, sta: FM.staFor(d.name, d.pos, d.age),
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
         wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,
@@ -2201,7 +2202,8 @@
           p.inj--;
           if (p.inj === 0 && p.club === s.user) this.msg('Восстановление', `${p.name} восстановился после травмы.`, 'squad');
         }
-        p.fit = Math.min(100, p.fit + (p.inj ? 4 : 13));
+        // восстановление за день: зависит от выносливости и возраста (≈ 9–12 % в день)
+        p.fit = Math.min(100, p.fit + (p.inj ? 4 : 3 + (p.sta || 65) / 22 - Math.max(0, p.age - 31) * 0.3));
       }
       this.natDay();
       if (monday) this.weekly();

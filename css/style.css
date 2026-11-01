@@ -2543,3 +2543,4 @@ html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { pa
 .cu.inj { opacity: .55; }
 .cu span { display: grid; min-width: 0; } .cu span b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .cu em { font-style: normal; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cu-o { font: 700 var(--fs-base) var(--f-display); }
+.fit-n { font: 600 var(--fs-xs) var(--f-display); margin-left: 6px; color: var(--muted); } .fit-n.warn { color: var(--warn); } .fit-n.bad { color: var(--bad); }

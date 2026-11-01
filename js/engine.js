@@ -325,7 +325,9 @@
           happened = true;
         }
         this.discipline(s);
-        if (Math.random() < 0.0008) this.injury(s);
+        // усталые игроки травмируются чаще
+        const tired = s.onPitch.reduce((x, o) => x + Math.max(0, 70 - s.fitness[o.p.id]), 0) / Math.max(1, s.onPitch.length);
+        if (Math.random() < 0.0008 * (1 + tired / 12)) this.injury(s);
         this.tire(s);
       }
       if (!happened && Math.random() < 0.05) {
@@ -509,7 +511,7 @@
     }
 
     injury(s) {
-      const o = FM.pick(s.onPitch);
+      const o = s.onPitch.length ? FM.weighted(s.onPitch, (x) => 1 + Math.max(0, 75 - s.fitness[x.p.id]) / 12) : null;
       if (!o) return;
       const days = FM.weighted([[3, 5], [7, 3], [14, 2], [28, 1], [60, 0.4], [150, 0.15]], (x) => x[1])[0];
       const d = FM.ri(Math.ceil(days * 0.6), days);
@@ -532,11 +534,12 @@
     }
 
     tire(s) {
-      const k = 0.27 * (1 + 0.22 * (s.tactics.press - 1)) * (1 + 0.1 * (s.tactics.tempo - 1));
+      const k = 0.36 * (1 + 0.22 * (s.tactics.press - 1)) * (1 + 0.1 * (s.tactics.tempo - 1));
       for (const o of s.onPitch) {
         const age = o.p.age;
         const a = age > 31 ? 1.2 : age < 21 ? 0.95 : 1;
-        s.fitness[o.p.id] = Math.max(0, s.fitness[o.p.id] - k * a * (o.slot === 'GK' ? 0.25 : 1) * (0.7 + Math.random() * 0.6));
+        const st = 1.35 - (o.p.sta || 65) / 150; // выносливость: 95 — устаёт на треть медленнее, 40 — быстрее
+        s.fitness[o.p.id] = Math.max(0, s.fitness[o.p.id] - k * a * st * (o.slot === 'GK' ? 0.25 : 1) * (0.7 + Math.random() * 0.6));
         s.mins[o.p.id] = (s.mins[o.p.id] || 0) + 1;
       }
       if (this.minute % 5 === 0) s.recalc();
