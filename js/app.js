@@ -4,6 +4,10 @@
   const SAVE_SLOT = 'ffm26_slot_';
   const DB_KEY = 'ffm26_db';
   const app = document.getElementById('app');
+  // телефон вертикально: вся игра повёрнута на 90° (html.rot), прокручивается #app, а не окно
+  const rotOn = () => document.documentElement.classList.contains('rot');
+  const scrollTop = (y = 0) => { if (rotOn()) app.scrollTop = y; else window.scrollTo(0, y); };
+  const scrollPos = () => (rotOn() ? app.scrollTop : window.scrollY);
   // вышла новая версия игры (её скачал офлайн-кэш): плашка с перезапуском, карьера сохраняется
   window.FM_UPDATE = () => {
     if (document.getElementById('upd')) return;
@@ -293,6 +297,7 @@
     root.querySelectorAll('[data-player]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); playerModal(+el.dataset.player); }));
     root.querySelectorAll('[data-team]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); teamModal(el.dataset.team); }));
     root.querySelectorAll('[data-match]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); matchReport(+el.dataset.match); }));
+    if (root.querySelector && root.querySelector('.br')) requestAnimationFrame(() => drawBrLines(root));
   }
 
   // ================== сохранения ==================
@@ -323,7 +328,7 @@
     await save();
     UI.g = null;
     UI.lastTab = null;
-    window.scrollTo(0, 0);
+    scrollTop(0);
     startScreen();
     toast('Карьера сохранена');
   }
@@ -496,8 +501,8 @@
           </div></div>`;
         const c = app.querySelector('#cont');
         if (c) c.onclick = () => loadSlot(SAVE_AUTO);
-        app.querySelector('#mm-new').onclick = () => { view = 'new'; draw(); window.scrollTo(0, 0); };
-        app.querySelector('#mm-saves').onclick = () => { view = 'saves'; draw(); window.scrollTo(0, 0); };
+        app.querySelector('#mm-new').onclick = () => { view = 'new'; draw(); scrollTop(0); };
+        app.querySelector('#mm-saves').onclick = () => { view = 'saves'; draw(); scrollTop(0); };
         return;
       }
       if (view === 'saves') {
@@ -594,7 +599,7 @@
     if (tab === 'tables') { UI.tablesView = sub || 'table'; if (sub === 'cup') UI.cupC = null; }
     if (tab === 'transfers' && sub) UI.tf.view = sub;
     render();
-    window.scrollTo(0, 0);
+    scrollTop(0);
   }
 
   function render() {
@@ -608,7 +613,7 @@
     // тот же раздел — перерисовываем без анимации появления и с прежней прокруткой
     const same = UI.lastTab === UI.tab;
     UI.lastTab = UI.tab;
-    const scrollY = window.scrollY;
+    const scrollY = scrollPos();
     app.classList.toggle('calm', same);
     app.innerHTML = `
       <header class="hdr"><div class="hdr-in">
@@ -646,7 +651,7 @@
     app.querySelector('#go').onclick = goOn;
     const main = app.querySelector('#main');
     ({ home: viewHome, squad: viewSquad, fixtures: viewFixtures, tables: viewTables, stats: viewStats, transfers: viewTransfers, finance: viewFinance, club: viewClub, inbox: viewInbox, news: viewNews, coach: viewCoach, hall: viewHall, menu: viewMenu })[UI.tab](main);
-    if (same) window.scrollTo(0, scrollY);
+    if (same) scrollTop(scrollY);
     // при входе в раздел крупные числа «добегают» до значения
     if (!same) document.querySelectorAll('.band-big b, .tf-stat b').forEach((b) => { const m = b.textContent.match(/^([+\u2212-]?)([\d.]+)(.*)$/s); if (!m || b.children.length) return; const v = +m[2], d = (m[2].split('.')[1] || '').length; countUp(b, v, (x) => m[1] + x.toFixed(d) + m[3]); });
     bindCommon(main);
@@ -1194,6 +1199,7 @@
     const ep = main.querySelector('#ep'), en = main.querySelector('#en');
     if (ep) ep.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.max(1, UI.euroMd[view] - 1) } }); render(); };
     if (en) en.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.min(8, UI.euroMd[view] + 1) } }); render(); };
+    main.querySelectorAll('[data-eus]').forEach((b) => b.onclick = () => { UI.euroSub = Object.assign(UI.euroSub || {}, { [b.dataset.eid]: b.dataset.eus }); render(); });
   }
 
   // ================== турнирная сетка ==================
@@ -1202,15 +1208,51 @@
   function brTie(t) {
     const uid = g().s.user;
     const row = (id, sc, win) => id ? `<div class="br-t ${win === id ? 'w' : win ? 'l' : ''} ${id === uid ? 'me' : ''}">${badge(T(id), 'sm')}<span>${esc(T(id).name)}</span><b>${sc ?? ''}</b></div>` : '<div class="br-t tbd"><i></i><span>определится</span><b></b></div>';
-    return `<div class="br-m ${t.a === uid || t.b === uid ? 'mine' : ''} ${t.mids && t.mids.length ? 'click' : ''}" ${t.mids && t.mids.length ? `data-match="${t.mids[t.mids.length - 1]}"` : ''}>
+    return `<div class="br-m ${t.a === uid || t.b === uid ? 'mine' : ''} ${t.mids && t.mids.length ? 'click' : ''}" data-k="${t.k || ''}" data-from="${(t.from || []).join(' ')}" ${t.mids && t.mids.length ? `data-match="${t.mids[t.mids.length - 1]}"` : ''}>
       ${row(t.a, t.sa, t.w)}${row(t.b, t.sb, t.w)}${t.note || t.date ? `<div class="br-n">${esc(t.note || '')}${t.date ? `<span>${esc(t.date)}</span>` : ''}</div>` : ''}</div>`;
   }
   function bracket(cols, winner, title) {
     const uid = g().s.user;
+    // связи раундов: пара следующего раунда «растёт» из пар, где победили её участники.
+    // Колонки упорядочиваем с конца, чтобы источники стояли рядом со своей парой, — тогда линии не перекрещиваются.
+    for (let i = cols.length - 2; i >= 0; i--) {
+      const next = cols[i + 1].ties, cur = cols[i].ties.slice(), ordered = [];
+      for (const t of next) for (const id of [t.a, t.b]) { const j = cur.findIndex((x) => x.w && x.w === id); if (j >= 0) ordered.push(cur.splice(j, 1)[0]); }
+      cols[i].ties = ordered.concat(cur);
+    }
+    cols.forEach((c, i) => c.ties.forEach((t, j) => { t.k = `${i}-${j}`; }));
+    cols.forEach((c, i) => { if (i) c.ties.forEach((t) => { t.from = cols[i - 1].ties.filter((x) => x.w && (x.w === t.a || x.w === t.b)).map((x) => x.k); }); });
     return `<div class="br-wrap"><div class="br">${cols.map((c, i) => `<div class="br-col ${c.ties.some((t) => t.a === uid || t.b === uid) ? 'path' : ''}"><div class="br-h">${esc(c.name)}${c.date ? `<span>${esc(c.date)}</span>` : ''}</div><div class="br-list">${c.ties.length ? c.ties.map(brTie).join('') : `<div class="br-empty">${esc(c.empty || 'Жеребьёвка после предыдущего раунда')}</div>`}</div></div>${i < cols.length - 1 ? '<div class="br-arrow">' + icon('play') + '</div>' : ''}`).join('')}
       <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
   }
   const brDate = (d) => FM.fmtDate(d).replace(/ (\S{3})\S*$/, ' $1');
+  // Линии сетки рисуются после вёрстки: от правого края пары-источника к левому краю пары следующего раунда
+  function drawBrLines(root) {
+    root.querySelectorAll('.br').forEach((br) => {
+      br.querySelectorAll('svg.br-lines').forEach((x) => x.remove());
+      // координаты через offset* — не зависят от поворота страницы и масштаба
+      const off = (el) => { let x = 0, y = 0; for (let n = el; n && n !== br; n = n.offsetParent) { x += n.offsetLeft; y += n.offsetTop; } return { x, y }; };
+      const pos = (el) => { const o = off(el); return { l: o.x, r: o.x + el.offsetWidth, y: o.y + el.offsetHeight / 2 }; };
+      const byK = {}; br.querySelectorAll('.br-m[data-k]').forEach((el) => { byK[el.dataset.k] = el; });
+      let d = '', dm = '';
+      br.querySelectorAll('.br-m[data-from]').forEach((el) => {
+        const to = pos(el);
+        for (const k of el.dataset.from.split(' ').filter(Boolean)) {
+          const src = byK[k]; if (!src) continue;
+          const a = pos(src), mx = (a.r + to.l) / 2;
+          const seg = `M${a.r},${a.y}H${mx}V${to.y}H${to.l}`;
+          if (src.classList.contains('mine') && el.classList.contains('mine')) dm += seg; else d += seg;
+        }
+      });
+      // последняя пара → кубок
+      const cup = br.querySelector('.br-cup'), lastCol = [...br.querySelectorAll('.br-col')].pop();
+      if (cup && lastCol && lastCol.querySelectorAll('.br-m').length === 1) { const fin = lastCol.querySelector('.br-m'); if (fin) { const a = pos(fin), c = pos(cup); d += `M${a.r},${a.y}H${c.l}`; } }
+      if (!d && !dm) return;
+      br.insertAdjacentHTML('afterbegin', `<svg class="br-lines" width="${br.scrollWidth}" height="${br.scrollHeight}"><path d="${d}"/><path class="me" d="${dm}"/></svg>`);
+    });
+  }
+  window.addEventListener('resize', () => drawBrLines(document));
+
   // одиночный матч кубка → пара сетки
   const cupTie = (m) => ({ a: m.h, b: m.a, sa: m.played ? m.hg : null, sb: m.played ? m.ag : null, w: m.played ? (m.winner || (m.hg > m.ag ? m.h : m.a)) : null, mids: m.played ? [m.id] : [], note: m.pens ? `пен. ${m.pens[0]}:${m.pens[1]}` : m.et ? 'д.в.' : '', date: m.played ? '' : brDate(m.date) });
   // пара из двух матчей еврокубка → сумма
@@ -1254,7 +1296,12 @@
     if (e.final) koCols.push({ name: 'Финал', date: brDate(s.matches[e.final].date), ties: [cupTie(s.matches[e.final])] });
     const brk = koCols.length ? `<div class="card"><h3>${esc(E.name)} · плей-офф</h3>${bracket(koCols, e.winner, E.name)}</div>` : '';
     const ko = '', fin = '';
-    return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
+    // вкладки: общий этап / плей-офф (после общего этапа — по умолчанию плей-офф)
+    UI.euroSub = UI.euroSub || {};
+    const sub = UI.euroSub[id] || (e.ko.length ? 'po' : 'group');
+    const tabs = `<div class="seg eu-tabs">${[['group', 'Общий этап'], ['po', 'Плей-офф']].map(([k, n]) => `<button data-eus="${k}" data-eid="${id}" class="${k === sub ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    if (sub === 'po') return tabs + (brk || `<div class="card muted">Плей-офф начнётся после общего этапа: 1–4 места — сразу в 1/4 финала, 5–12 — стыки.</div>`);
+    return tabs + `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
         <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${zone(r.pos)}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${esc(s.leagues[T(r.id).league].short)}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}
@@ -1262,7 +1309,7 @@
       <div style="display:grid;gap:16px;align-content:start">
         <div class="card"><div class="row" style="margin:14px 0 8px"><button class="btn sm" id="ep">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[e.md[cur - 1][0]].date)}</b><button class="btn sm" id="en">›</button></div>${e.md[cur - 1].map(line).join('')}</div>
         ${ko}${fin}
-      </div></div>${brk ? `<div style="margin-top:16px">${brk}</div>` : ''}`;
+      </div></div>`;
   }
 
   // дни тура без перенесённых матчей: «25–26 июля» или «31 октября»
@@ -1541,8 +1588,8 @@
     bindF('#f-name', 'name'); bindF('#f-league', 'league'); bindF('#f-price', 'maxPrice', true);
     bindF('#f-ovr', 'minOvr', true); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly'); bindF('#f-exp', 'expiring');
     const pp = main.querySelector('#pp'), pn = main.querySelector('#pn');
-    if (pp) pp.onclick = () => { UI.tfPage--; render(); window.scrollTo(0, 0); };
-    if (pn) pn.onclick = () => { UI.tfPage++; render(); window.scrollTo(0, 0); };
+    if (pp) pp.onclick = () => { UI.tfPage--; render(); scrollTop(0); };
+    if (pn) pn.onclick = () => { UI.tfPage++; render(); scrollTop(0); };
     main.querySelectorAll('[data-list]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); const p = P(+b.dataset.list); p.listed = !p.listed; render(); });
   }
 

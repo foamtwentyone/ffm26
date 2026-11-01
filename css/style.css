@@ -1912,20 +1912,6 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
 @keyframes injPulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 35%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .btn.injured { animation: none; } }
 
-/* ===================== только горизонтально ===================== */
-/* телефон в вертикальном положении: игра закрыта подсказкой повернуть экран (у установленного приложения ориентация
-   закреплена в манифесте; Safari на iPhone запретить поворот не даёт) */
-.rotate-lock { display: none; }
-@media (orientation: portrait) and (pointer: coarse) and (max-width: 900px) {
-  .rotate-lock { display: grid; position: fixed; inset: 0; z-index: 9999; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 24px;
-    background: radial-gradient(80% 60% at 50% 30%, #1d2f7a, transparent 70%), #050816; color: var(--text); }
-  .rotate-lock b { font: 700 var(--fs-3xl) var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
-  .rotate-lock span { color: var(--muted); font-size: var(--fs-base); }
-  .rl-ph { width: 64px; height: 108px; border: 4px solid #fff; border-radius: 14px; position: relative; margin-bottom: 14px; animation: rlTurn 2.2s var(--ease) infinite; }
-  .rl-ph i { position: absolute; left: 50%; bottom: 7px; width: 14px; height: 4px; margin-left: -7px; border-radius: 2px; background: #fff; }
-  @keyframes rlTurn { 0%, 25% { transform: rotate(0); } 55%, 85% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
-  body > #app, body > .match, body > .modal-bg { visibility: hidden; }
-}
 .upd { position: fixed; left: 50%; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 9000; display: flex; gap: 12px; align-items: center; padding: 10px 12px 10px 16px; border-radius: var(--r-md); background: rgba(14, 20, 50, .96); border: 1px solid var(--stroke2); box-shadow: 0 12px 40px rgba(0,0,0,.5); font-weight: 700; animation: fxIn .4s both; }
 
 /* ===================== переговоры: «стол переговоров» ===================== */
@@ -2160,3 +2146,353 @@ tr.injured > td { background: color-mix(in srgb, var(--bad) 16%, transparent); }
 .tm-stars { grid-column: 1 / -1; } .tm-sl { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
 .tm-stars .fut.kit-card.sm { width: 100px; } .tm-stars .fut.kit-card.sm .kc-no { font-size: 46px; }
 @media (max-width: 900px), (max-height: 500px) and (orientation: landscape) { .tm-hero { margin: 0 -14px 10px; padding: 12px 50px 12px 14px; } .tm-hn h2 { font-size: var(--fs-2xl); } .tm-hero .badge.xl { width: 52px; height: 52px; } .tm-facts { grid-template-columns: repeat(3, 1fr); } .tm-facts b { font-size: var(--fs-md); } }
+
+/* ===================== игра всегда горизонтально ===================== */
+/* Телефон держат вертикально: страница поворачивается на 90° (класс html.rot ставится скриптом в index.html).
+   body — повёрнутый «экран», прокручивается #app; «окна» (position: fixed) привязаны к повёрнутому body. */
+html.rot, html.rot body { overflow: hidden; height: 100%; }
+html.rot body { position: fixed; top: 0; left: 0; min-height: 0; width: calc(100vh / .86); height: calc(100vw / .86); transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
+html.rot #app { height: 100%; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+html.rot .mm, html.rot .mm-page { min-height: calc(100vw / .86); }
+html.rot .modal.nx-modal { height: calc(100vw / .86); }
+html.rot .ib-list { max-height: calc(100vw / .86 - 220px); }
+/* подсказка при входе: показывается один раз, пока телефон вертикально */
+.rotate-lock { display: none; }
+html.rot.rot-hint .rotate-lock { display: grid; position: fixed; inset: 0; z-index: 9999; place-content: center; justify-items: center; gap: 10px; text-align: center; padding: 24px;
+  background: radial-gradient(80% 60% at 50% 30%, #1d2f7a, transparent 70%), #050816; color: var(--text); }
+.rotate-lock b { font: 700 var(--fs-3xl) var(--f-display); text-transform: uppercase; }
+.rotate-lock span { color: var(--muted); font-size: var(--fs-base); max-width: 420px; }
+.rl-ph { width: 108px; height: 64px; border: 4px solid #fff; border-radius: 14px; position: relative; margin-bottom: 14px; animation: rlTurn 2.2s var(--ease) infinite; }
+.rl-ph i { position: absolute; top: 50%; right: 7px; width: 4px; height: 14px; margin-top: -7px; border-radius: 2px; background: #fff; }
+@keyframes rlTurn { 0%, 25% { transform: rotate(90deg); } 55%, 85% { transform: rotate(0); } 100% { transform: rotate(90deg); } }
+.rl-go { margin-top: 10px; }
+/* правила горизонтального телефона — и для повёрнутой страницы */
+html.rot .squad-layout { grid-template-columns: 1fr; }
+html.rot .pitch { max-width: 430px; margin: 0 auto; }
+html.rot .hide-m { display: none; }
+html.rot .board .sc { font-size: var(--fs-5xl); padding: 8px 16px; }
+html.rot .club-name { font-size: var(--fs-xl); }
+html.rot .next-btn { font-size: var(--fs-base); padding: 10px 16px; }
+html.rot .chip { font-size: var(--fs-md); padding: 3px 9px; }
+html.rot .burger { display: none; }
+html.rot .mainnav { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; margin: 0; gap: 0; flex-wrap: nowrap; padding: 6px max(6px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); background: rgba(6, 10, 28, .94); backdrop-filter: blur(14px); border-top: 1px solid var(--stroke); }
+html.rot .mainnav button { flex: 1; flex-direction: column; gap: 3px; padding: 6px 2px; border: 0; background: none; font-size: var(--fs-sm); border-radius: var(--r-md); }
+html.rot .mainnav button.on { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+html.rot .mainnav button:nth-child(n+5):not(.more):not([data-tab="inbox"]) { display: none; }
+html.rot .mainnav .more { display: inline-flex; }
+html.rot .mainnav .ni,html.rot .mainnav .ni svg { width: 24px; height: 24px; }
+html.rot .mainnav .dot { position: absolute; top: 2px; right: 18%; min-width: 18px; height: 18px; line-height: 18px; font-size: var(--fs-xs); }
+html.rot body { padding-bottom: 84px; }
+html.rot .cmp-row { grid-template-columns: 30px 1fr 92px 1fr 30px; gap: 6px; }
+html.rot .dash-simple { grid-template-columns: 1fr; }
+html.rot #toasts { bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+html.rot .mainnav button { font-size: var(--fs-xs); letter-spacing: 0; }
+html.rot .mainnav button { font-size: var(--fs-xs); padding: 6px 2px; }
+html.rot .mainnav .ni,html.rot .mainnav .ni svg { width: 22px; height: 22px; }
+html.rot .bd-ball { width: 40px; height: 40px; }
+html.rot .bd-cl { display: none; }
+html.rot .bd-st { width: auto; font-size: var(--fs-xs); }
+html.rot .bd-wname { font-size: var(--fs-xl); }
+html.rot .bd-drum { font-size: var(--fs-xl); padding: 14px; }
+html.rot .bd-list { max-height: 40vh; }
+html.rot body { font-size: var(--fs-base); }
+html.rot .club-name { font-size: var(--fs-xl); }
+html.rot .hdr .badge.lg { width: 36px; height: 36px; font-size: var(--fs-sm); }
+html.rot .hdr-in { padding-block: 7px; gap: 10px; }
+html.rot .burger { width: 34px; height: 34px; border-radius: var(--r-sm); }
+html.rot .hic { transform: scale(.85); }
+html.rot .next-btn { font-size: var(--fs-md); padding: 8px 13px; border-radius: var(--r-md); }
+html.rot .when { font-size: var(--fs-md); }
+html.rot .chip { font-size: var(--fs-sm); padding: 2px 8px; gap: 4px; }
+html.rot .strip-in { padding-block: 6px; gap: 8px; }
+html.rot .crumb { padding-top: 12px; gap: 10px; }
+html.rot .crumb h1 { font-size: var(--fs-xl); }
+html.rot .crumb-hint { font-size: var(--fs-sm); margin-top: 2px; }
+html.rot .back { width: 32px; height: 32px; border-radius: var(--r-sm); font-size: var(--fs-xl); }
+html.rot main { padding-block: 12px; }
+html.rot .grid,html.rot .dash { gap: 12px; }
+html.rot .seg { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; border-radius: var(--r-md); padding: 3px; }
+html.rot .seg::-webkit-scrollbar { display: none; }
+html.rot .seg button { font-size: var(--fs-md); padding: 6px 10px; white-space: nowrap; flex: none; border-radius: var(--r-sm); }
+html.rot .lp-c { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 calc(-1 * var(--gr)) 0 0; padding-right: var(--gr); }
+html.rot .lp-c::-webkit-scrollbar { display: none; }
+html.rot .lp-c button { flex: none; font-size: var(--fs-sm); padding: 4px 9px 4px 5px; }
+html.rot .lp-c .flag { width: 16px; height: 16px; }
+html.rot .tile > header,html.rot .card > h3:first-child { font-size: var(--fs-md); gap: 8px; }
+html.rot .card > h3:first-child { padding: 11px 12px 9px; margin-bottom: 10px; }
+html.rot .tile > header { padding: 11px 12px 2px; }
+html.rot .tile .tb { padding-top: 10px; }
+html.rot .card { padding: 0 12px 12px; }
+html.rot h3 { font-size: var(--fs-sm); }
+html.rot .badge.xl { width: 58px; height: 58px; font-size: var(--fs-xl); border-width: 2px; }
+html.rot .badge.lg { width: 38px; height: 38px; font-size: var(--fs-md); }
+html.rot .hm-team b { font-size: var(--fs-base); }
+html.rot .hm-vs { font-size: var(--fs-2xl); }
+html.rot .hm-date { font-size: var(--fs-sm); }
+html.rot .hm-tag,html.rot .small { font-size: var(--fs-sm); }
+html.rot .btn { font-size: var(--fs-md); padding: 7px 12px; border-radius: var(--r-sm); }
+html.rot .btn.sm { font-size: var(--fs-sm); padding: 4px 9px; }
+html.rot th { padding: 8px 5px 7px; font-size: var(--fs-xs); }
+html.rot td { padding: 6px 5px; }
+html.rot .list-item { padding: 7px 0; gap: 8px; }
+html.rot .kvl { font-size: var(--fs-md); padding: 5px 0; }
+html.rot .kv b { font-size: var(--fs-lg); }
+html.rot .inbox-item { padding: 11px 13px; }
+html.rot .inbox-item .t { font-size: var(--fs-base); }
+html.rot .slot { width: 64px; }
+html.rot .slot .shirt { width: 32px; height: 32px; font-size: var(--fs-sm); }
+html.rot .slot .nm { font-size: var(--fs-xs); padding: 1px 5px; max-width: 66px; }
+html.rot .board .sc { font-size: var(--fs-4xl); padding: 6px 12px; }
+html.rot .toast { font-size: var(--fs-md); padding: 9px 14px; }
+html.rot .sched,html.rot .mini { font-size: var(--fs-md); padding: 4px 8px; gap: 8px; }
+html.rot .mini b { font-size: var(--fs-md); }
+html.rot .cmp-row { grid-template-columns: 26px 1fr 84px 1fr 26px; gap: 6px; }
+html.rot .cmp-row b { font-size: var(--fs-md); }
+html.rot .cmp-row span { font-size: var(--fs-xs); }
+html.rot .hm-team { gap: 5px; }
+html.rot /* 16px — иначе iPhone приближает страницу при вводе */
+  input,html.rot select { font-size: var(--fs-lg); padding: 6px 9px; }
+html.rot input.sm { padding: 3px 6px; }
+html.rot .cm-head { flex-direction: column; align-items: stretch; gap: 10px; }
+html.rot .cm-rep { flex-direction: row; align-items: baseline; gap: 10px; padding: 8px 12px; }
+html.rot .cm-rep b { font-size: var(--fs-2xl); }
+html.rot .cm-row { gap: 6px 10px; }
+html.rot .cm-row > .grow { flex: 1 1 calc(100% - 50px); min-width: 0; }
+html.rot .cm-row .lvl { margin-left: 40px; }
+html.rot .cm-row .btn { margin-left: auto; }
+html.rot /* окна (игрок,html.rot переговоры,html.rot итоги) */
+  .modal-bg { padding: calc(8px + env(safe-area-inset-top, 0px)) 8px 8px; }
+html.rot .modal { padding: 14px; border-radius: var(--r); }
+html.rot .modal .x { width: 28px; height: 28px; font-size: var(--fs-lg); right: 10px; top: 8px; }
+html.rot .modal h2,html.rot h2 { font-size: var(--fs-xl); }
+html.rot .modal h3 { margin-top: 12px; }
+html.rot .interest { margin-top: 8px; padding: 8px 10px; }
+html.rot .steps { margin: 10px 0 8px; }
+html.rot .steps span { font-size: var(--fs-xs); padding: 4px; }
+html.rot .chat { max-height: 180px; padding: 8px; }
+html.rot .nego-form { gap: 8px; }
+html.rot .nego-form label { font-size: var(--fs-xs); flex-basis: 110px; }
+html.rot .note { padding: 8px 10px; }
+html.rot .kv { gap: 6px; margin: 10px 0; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+html.rot .kv > div { padding: 6px 9px; border-radius: var(--r-sm); }
+html.rot .kv span:first-child { font-size: var(--fs-xs); margin-bottom: 1px; }
+html.rot .kv b { font-size: var(--fs-base); }
+html.rot html { zoom: .86; }
+html.rot .hdr-in { padding-block: 4px; }
+html.rot .hdr .badge.lg { width: 30px; height: 30px; }
+html.rot .club-name { font-size: var(--fs-lg); }
+html.rot .next-btn { font-size: var(--fs-sm); padding: 6px 12px; }
+html.rot .strip-in { padding-block: 3px; }
+html.rot .crumb { padding-top: 8px; }
+html.rot .crumb-hint { display: none; }
+html.rot .mainnav { padding: 2px max(6px, env(safe-area-inset-left, 0px)) calc(2px + env(safe-area-inset-bottom, 0px)); }
+html.rot .mainnav button { flex-direction: row; justify-content: center; gap: 6px; padding: 5px 4px; font-size: var(--fs-sm); }
+html.rot .mainnav .ni,html.rot .mainnav .ni svg { width: 18px; height: 18px; }
+html.rot .mainnav .dot { position: static; }
+html.rot body { padding-bottom: 46px; }
+html.rot #toasts { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+html.rot .squad-layout { grid-template-columns: minmax(240px, 300px) minmax(0, 1fr); }
+html.rot .pitch { max-width: 300px; }
+html.rot .badge.xl { width: 48px; height: 48px; }
+html.rot .hm-team b { font-size: var(--fs-md); }
+html.rot .slot .shirt.kit { width: 36px; height: 36px; }
+html.rot .slot .kit-ovr { font-size: var(--fs-xs); line-height: 15px; }
+html.rot .pl-head { grid-template-columns: 130px minmax(0, 1fr); }
+html.rot .fut { width: 130px; }
+html.rot .fut-ovr { font-size: var(--fs-4xl); }
+html.rot .fut-name { font-size: var(--fs-base); }
+html.rot .fut-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+html.rot .podium { gap: 10px; }
+html.rot .lp { aspect-ratio: 105 / 28; }
+html.rot .modal.prematch { padding: 10px; }
+html.rot .bc.pv { padding: 10px 12px; gap: 8px; margin: 0 30px 8px 0; }
+html.rot .bc.pv .bc-vs { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px; }
+html.rot .bc.pv .bc-team.away { flex-direction: row-reverse; text-align: right; }
+html.rot .bc.pv .bc-kick { order: 0; }
+html.rot .bc.pv .badge.xl { width: 40px; height: 40px; }
+html.rot .bc.pv .bc-tn b { font-size: var(--fs-xl) !important; }
+html.rot .bc.pv .bc-tn span { font-size: var(--fs-xs); }
+html.rot .bc.pv .bc-v { font-size: var(--fs-2xl); }
+html.rot .bc.pv .bc-where { display: none; }
+html.rot .bc.pv .form-s { display: none; }
+html.rot .pv-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+html.rot .pv-star { display: none; }
+html.rot .pv-xi h3 { font-size: var(--fs-md); }
+html.rot .pv-row { font-size: var(--fs-sm); padding: 2px 0; gap: 5px; }
+html.rot .pv-row .ovr { transform: scale(.85); }
+html.rot .pv-kit { width: 16px; height: 16px; }
+html.rot .modal.prematch .note { font-size: var(--fs-sm); padding: 6px 10px; margin: 6px 0; }
+html.rot .modal.prematch .btn { padding: 7px 12px; }
+html.rot /* живой матч */
+  .board { padding: 10px; }
+html.rot .board .sc { font-size: var(--fs-4xl); padding: 4px 12px; }
+html.rot .board .tm .badge.lg { width: 34px; height: 34px; }
+html.rot .board .scorers { font-size: var(--fs-xs); }
+html.rot /* кнопки превью всегда видны внизу окна */
+  .pv-actions { position: sticky; bottom: -10px; margin: 8px -10px -10px !important; padding: 8px 10px; background: color-mix(in srgb, var(--bg0) 92%, #000); border-top: 1px solid var(--stroke); z-index: 3; }
+html.rot .pl-head .fut.kit-card { width: 130px; }
+html.rot .pl-head .kc-no { font-size: 58px; }
+html.rot .tf-row { grid-template-columns: 34px minmax(0, 1fr) 40px 40px 76px; }
+html.rot .tf-row .tf-club,html.rot .tf-row .potbar { display: none; }
+html.rot .tf-row.mine { grid-template-columns: 34px minmax(0, 1fr) 40px 76px 86px; }
+html.rot .tf-row.mine .tf-age,html.rot .tf-row.mine .tf-wage,html.rot .tf-row.mine .tf-cont { display: none; }
+html.rot .tf-deal { grid-template-columns: 44px minmax(0, 1fr) 84px; }
+html.rot .tf-deal .tf-route { grid-column: 2 / 4; grid-row: 2; }
+html.rot .tf-filters { grid-template-columns: 1fr 1fr; }
+html.rot .tf-filters:not(.open) > :not(h3) { display: none !important; }
+html.rot .tf-filters.open > :not(h3) { display: grid; }
+html.rot .tf-filters.open > label.check { display: flex; }
+html.rot .tf-filters > h3 { cursor: pointer; margin-bottom: 0 !important; }
+html.rot .tf-fchev { display: inline; }
+html.rot .tf-filters.open .tf-fchev { transform: rotate(180deg); }
+html.rot .tf-filters { gap: 10px; }
+html.rot .tf-band { gap: 14px; padding: 10px 14px; }
+html.rot .tf-band .band-meter { flex-basis: 160px; }
+html.rot .tf-win b { font-size: var(--fs-lg); }
+html.rot .tf-band .band-big b { font-size: var(--fs-xl); }
+html.rot .tf-tabs button { font-size: var(--fs-md); }
+html.rot .tf-presets { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+html.rot .tf-presets button { flex: none; padding: 4px 11px; font-size: var(--fs-sm); }
+html.rot .tf-row { grid-template-columns: 22px 34px minmax(0, 1fr) 40px 40px 76px !important; }
+html.rot .tf-row.mine { grid-template-columns: 34px minmax(0, 1fr) 40px 76px 86px !important; }
+html.rot .tf-kit { width: 22px; height: 22px; }
+html.rot .tf-spot-row { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; }
+html.rot .ng-head { padding: 10px; gap: 6px; margin-right: 30px; }
+html.rot .ng-head .badge.xl,html.rot .ng-free { width: 44px; height: 44px; font-size: var(--fs-base); }
+html.rot .ng-side b { font-size: var(--fs-md); }
+html.rot .ng-card { display: none; }
+html.rot .ng-name { font-size: var(--fs-lg); text-align: center; }
+html.rot .ng-route { top: 30%; }
+html.rot .tk { grid-template-columns: minmax(0, 1fr) 70px; }
+html.rot .tk-main { padding: 12px 12px 10px; gap: 8px; }
+html.rot .tk-pt b { font-size: var(--fs-2xl); }
+html.rot .tk-pass b { font-size: var(--fs-xl); }
+html.rot .tk-fields b { font-size: var(--fs-base); }
+html.rot .tk-stub b { font-size: var(--fs-4xl); }
+html.rot .tk-stamp { width: 110px; height: 110px; right: 76px; bottom: 30px; }
+html.rot .tk-stamp span:first-child { font-size: var(--fs-base); }
+html.rot .tk-bar { height: 22px; }
+html.rot .tk-bar.v { height: 60px; width: 22px; }
+html.rot .tf-row.tf-head > :nth-child(7) { display: none; }
+html.rot .next-btn { min-height: 44px; padding: 10px 18px !important; font-size: var(--fs-base) !important; }
+html.rot .hdr-in .next-btn::before { content: ""; position: absolute; inset: -8px -8px -8px -14px; }
+html.rot .pv-actions .btn,html.rot .prematch .btn { min-height: 46px; font-size: var(--fs-base); flex: 1 1 0; }
+html.rot .pv-actions .btn.primary { flex: 1.4 1 0; font-size: var(--fs-lg); }
+html.rot .btn { min-height: 38px; }
+html.rot .btn.sm { min-height: 32px; }
+html.rot .mtabs .seg button,html.rot #spd button { min-height: 36px; min-width: 40px; }
+html.rot .pv-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; }
+html.rot .pv-xi,html.rot .pv-row { min-width: 0; }
+html.rot .pv-row .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html.rot .bc.pv .bc-tn b,html.rot .bc.rep .rep-t > b { hyphens: none; overflow-wrap: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+html.rot .bc.pv .bc-tn { min-width: 0; }
+html.rot .bc.pv .bc-tn span { white-space: nowrap; }
+html.rot .tk-stamp span:first-child { font-size: var(--fs-base); }
+html.rot .mainnav { overflow: hidden; box-sizing: border-box; }
+html.rot .mainnav button { min-width: 0; white-space: nowrap; overflow: hidden; }
+html.rot .mainnav button > span:not(.ni):not(.dot) { overflow: hidden; text-overflow: ellipsis; }
+html.rot .hub { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+html.rot .hub-t { min-height: 84px; padding: 10px; border-radius: var(--r-md); }
+html.rot .hub-t b { font-size: var(--fs-lg); }
+html.rot .hub-sub { font-size: var(--fs-xs); }
+html.rot .hub-ic { width: 56px; height: 56px; }
+html.rot .hub-arrow { display: none; }
+html.rot .hub { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+html.rot .mainnav [data-tab="inbox"] .dot { position: absolute; top: 2px; right: 14%; margin: 0; }
+html.rot .mm { padding-block: 16px; }
+html.rot .mm-in { gap: 14px; }
+html.rot .mm-tiles { grid-template-columns: 1fr 1fr; }
+html.rot .mm-t.big { grid-column: 1 / -1; }
+html.rot .mm-t { min-height: 110px; padding: 14px; }
+html.rot .mm-t b { font-size: var(--fs-2xl); }
+html.rot .mm-fm,html.rot .mm-26 { font-size: clamp(64px, 16vw, 110px); }
+html.rot .mm-sub { margin-top: 10px; letter-spacing: .2em; }
+html.rot .mm-tiles { grid-template-columns: 1.4fr 1fr 1fr; }
+html.rot .mm-t.big { grid-column: auto; }
+html.rot .mm-fm,html.rot .mm-26 { font-size: 72px; }
+html.rot .mm,html.rot .mm-page { min-height: calc(100dvh / .86); }
+html.rot .evm h2 { font-size: var(--fs-2xl); }
+html.rot .evm-o { padding-right: 90px; }
+html.rot .evm-text { font-size: var(--fs-base); }
+html.rot .fin-grid,html.rot .club-grid { grid-template-columns: 1fr; }
+html.rot .recs { grid-template-columns: 1fr; }
+html.rot .donut { grid-template-columns: 110px 1fr; }
+html.rot .donut svg { width: 110px; height: 110px; }
+html.rot .ch { height: 160px; }
+html.rot .sp-t b { font-size: var(--fs-2xl); }
+html.rot .gbars { height: 150px; }
+html.rot .stad-pic { display: none; }
+html.rot .sp-tiles { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+html.rot .sp-t { padding: 8px 10px; }
+html.rot .fin-grid,html.rot .club-grid { grid-template-columns: 1fr 1fr; }
+html.rot .fin-chart,html.rot .club-grid .wide { grid-column: 1 / -1; }
+html.rot .m-main { grid-template-columns: 1fr; }
+html.rot .m-side { display: none; }
+html.rot .mom-svg { height: 60px; }
+html.rot .mom { padding: 6px 10px !important; margin-bottom: 8px; }
+html.rot .pl-head .fut.kit-card .kc-no { font-size: 64px; }
+html.rot .rnw-form { grid-template-columns: 1fr 1fr; }
+html.rot .modal-bg:has(.nx-modal) { padding: 0; }
+html.rot .modal.nx-modal { max-width: none; height: 100dvh; border-radius: 0; }
+html.rot .nx-top { padding: 8px 54px 8px 12px; gap: 10px; }
+html.rot .nx-top .badge.lg { width: 34px; height: 34px; }
+html.rot .nx-club b { font-size: var(--fs-lg); }
+html.rot .nx-club span { font-size: var(--fs-xs); }
+html.rot .nx-steps span { font-size: var(--fs-xs); padding: 3px 8px 3px 3px; }
+html.rot .nx-steps em { width: 18px; height: 18px; }
+html.rot .nx-link { width: 10px; }
+html.rot .nx-body { grid-template-columns: 230px minmax(0, 1fr); }
+html.rot .nx-dossier { padding: 10px; gap: 10px; }
+html.rot .nx-who .fut.kit-card.sm { width: 64px; }
+html.rot .nx-who .fut.kit-card.sm .kc-no { font-size: 30px; }
+html.rot .nx-who .fut.kit-card.sm .kc-sn,html.rot .nx-who .kc-ids { display: none; }
+html.rot .nx-id b { font-size: var(--fs-lg); }
+html.rot .nx-facts b { font-size: var(--fs-md); }
+html.rot .nx-int .gring { width: 70px; height: 70px; }
+html.rot .nx-int .gring b { font-size: var(--fs-xl); }
+html.rot .nx-why { display: none; }
+html.rot .nx-chat { padding: 10px !important; }
+html.rot .nx-compose { padding: 8px 10px 10px; gap: 6px; }
+html.rot .nx-compose .nx-hint,html.rot .nx-compose .tags { display: none; }
+html.rot .modal.nx-modal { height: calc(100dvh / .86); }
+html.rot .nx-compose .gap-track { margin: 22px 0 18px; height: 8px; }
+html.rot .nx-compose .gap-ask em,html.rot .nx-compose .gap-me em { display: none; }
+html.rot .nx-compose .gap-ask { top: -24px; }
+html.rot .nx-compose .gap-me { top: 10px; }
+html.rot .nx-compose .gap-ask b,html.rot .nx-compose .gap-me b { font-size: var(--fs-sm); }
+html.rot .nx-compose .gap-say { font-size: var(--fs-sm); }
+html.rot .nx-compose .nego-form input,html.rot .nx-compose .nego-form select { padding: 5px 8px; }
+html.rot .nx-facts span { font-size: 9px; }
+html.rot .ch-cup .ic { width: 90px; height: 90px; }
+html.rot .ch-badge .badge.xl { width: 56px; height: 56px; }
+html.rot .ch-badge { margin-top: -22px; }
+html.rot .ch-t { font-size: 60px; }
+html.rot .ch-club { font-size: var(--fs-xl); }
+html.rot .ch-in { gap: 4px; }
+html.rot .cal-d { min-height: 62px; padding: 3px; }
+html.rot .cal-c { display: none; }
+html.rot .cal-o .badge.sm { width: 16px; height: 16px; }
+html.rot .cal-o b { font-size: 10px; }
+html.rot .cal-h h3 { font-size: var(--fs-xl); min-width: 130px; }
+html.rot .cal-g { gap: 3px; }
+html.rot .br-col { width: 190px; }
+html.rot .br-t { font-size: var(--fs-sm); padding: 4px 6px; }
+html.rot .br-cup { width: 150px; }
+html.rot .br-cupic .ic { width: 44px; height: 44px; }
+html.rot .nw-hero { padding: 14px; gap: 12px; }
+html.rot .nw-ht h2 { font-size: var(--fs-xl); }
+html.rot .nw-hero .badge.xl { width: 48px; height: 48px; }
+html.rot .nw-list { grid-template-columns: 1fr 1fr; }
+html.rot .tm-hero { margin: 0 -14px 10px; padding: 12px 50px 12px 14px; }
+html.rot .tm-hn h2 { font-size: var(--fs-2xl); }
+html.rot .tm-hero .badge.xl { width: 52px; height: 52px; }
+html.rot .tm-facts { grid-template-columns: repeat(3, 1fr); }
+html.rot .tm-facts b { font-size: var(--fs-md); }
+/* линии сетки плей-офф */
+.br { position: relative; } .br-col, .br-list, .br-m { position: relative; }
+.br-lines { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 0; overflow: visible; }
+.br-lines path { fill: none; stroke: rgba(255,255,255,.22); stroke-width: 1.5; stroke-linejoin: round; }
+.br-lines path.me { stroke: var(--accent); stroke-width: 2.5; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 60%, transparent)); }
+.br-col, .br-cup { position: relative; z-index: 1; }
+.br-arrow { width: 34px; } .br-arrow .ic { display: none; }
+.eu-tabs { margin-bottom: 12px; }
