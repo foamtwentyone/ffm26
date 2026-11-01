@@ -631,7 +631,7 @@
           <button class="chip cash" data-tab="finance" title="Деньги клуба"><b>€</b>${FM.money(u.money).replace(' €', '')}</button>
         </div>
       </div></div>
-      <nav class="mainnav">${NAV.map((id) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="ni">${icon(TAB_ICONS[id])}</span><span>${NAV_NAME[id] || esc(TABS.find((t) => t[0] === id)[1])}</span>${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</button>`).join('')}
+      <nav class="mainnav">${NAV.map((id) => `<button data-tab="${id}" class="${UI.tab === id ? 'on' : ''}"><span class="ni">${icon(TAB_ICONS[id])}${id === 'inbox' && unread ? `<span class="dot">${unread}</span>` : ''}</span><span>${NAV_NAME[id] || esc(TABS.find((t) => t[0] === id)[1])}</span></button>`).join('')}
         <button class="more" id="more"><span class="ni">${icon('dots')}</span><span>Ещё</span></button></nav>
       ${UI.tab !== 'home' ? `<div class="crumb"><button class="back" data-tab="home">‹</button><div><h1>${esc(title)}</h1>${TAB_HINTS[UI.tab] ? `<div class="crumb-hint">${TAB_HINTS[UI.tab]}</div>` : ''}</div></div>` : ''}
       <main id="main"></main>
