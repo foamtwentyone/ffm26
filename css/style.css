@@ -2553,3 +2553,6 @@ html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { pa
 .nt-q { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; background: var(--glass2); font-size: var(--fs-sm); }
 .nat-groups.one { grid-template-columns: minmax(0, 560px); }
 .nt-hist td { vertical-align: middle; }
+/* сенсорный экран без поворота: #app уже ровно на весь экран — меню растягиваем по нему, а не по dvh
+   (Safari применяет масштаб 0.86 к dvh по-своему, и снизу оставалась пустая полоса) */
+html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page { min-height: 100% !important; }
