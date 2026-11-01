@@ -138,6 +138,7 @@
   function goalText(n, a, xg, how, ctx) {
     let open;
     if (how === 'с пенальти') open = FM.pick([`ГОЛ! ${n} уверенно реализует пенальти`, `ГОЛ! ${n} отправляет вратаря в другой угол`, `ГОЛ! ${n} пробивает пенальти под перекладину — без шансов`]);
+    else if (how === 'со штрафного') open = FM.pick([`ГОЛ! ${n} исполняет штрафной — точно в девятку`, `ГОЛ! ${n} перекручивает стенку со штрафного`, `ГОЛ! Шедевр со штрафного от ${n}`]);
     else if (how === 'после углового') open = FM.pick([`ГОЛ! ${n} выпрыгивает выше всех после углового и забивает головой`, `ГОЛ! После подачи с углового ${n} замыкает у дальней штанги`, `ГОЛ! Суматоха после углового, и ${n} первым успевает к мячу`]);
     else if (xg > 0.35) open = FM.pick([`ГОЛ! ${n} с близкого расстояния не промахивается`, `ГОЛ! ${n} выходит один на один и хладнокровно забивает`, `ГОЛ! ${n} закатывает мяч в пустые ворота`, `ГОЛ! ${n} подставляет ногу под прострел`, `ГОЛ! ${n} добивает мяч после отскока`]);
     else if (xg < 0.08) open = FM.pick([`ГОЛ! Какой удар! ${n} кладёт мяч в девятку издалека`, `ГОЛ! ${n} бьёт с двадцати пяти метров — мяч влетает под перекладину`, `ГОЛ! Невероятно! ${n} забивает ударом через себя`, `ГОЛ! ${n} закручивает мяч в дальний угол — шедевр`, `ГОЛ! ${n} исполняет штрафной — точно в угол`]);
@@ -156,6 +157,7 @@
       this.bench = bench.map((pid) => game.players[pid]);
       this.used = new Set(xi.map((x) => x.pid));
       this.subsLeft = 5;
+      this.sp = Object.assign({}, team.sp || {});
       this.goals = 0;
       this.stats = { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, yc: 0, rc: 0, possTicks: 0 };
       this.rating = {};
@@ -174,7 +176,17 @@
     eff(o) {
       const fit = this.fitness[o.p.id];
       const morale = 0.97 + (o.p.morale || 50) / 1700;
-      return o.p.ovr * FM.pfit(o.p, o.slot) * (0.78 + 0.22 * fit / 100) * morale;
+      // капитан на поле: команда собраннее (+1%, лидер по характеру — +2%)
+      const cap = this.onPitch.some((x) => x.p.id === this.sp.cap) ? (this.game.players[this.sp.cap].pers === 'leader' ? 1.02 : 1.01) : 1;
+      return o.p.ovr * FM.pfit(o.p, o.slot) * (0.78 + 0.22 * fit / 100) * morale * cap;
+    }
+    // исполнитель стандарта: назначенный, если он на поле, иначе лучший по формуле
+    spOf(k, fb) {
+      const id = this.sp[k];
+      const o = id && this.onPitch.find((x) => x.p.id === id);
+      if (o) return o.p;
+      const pool = this.onPitch.filter((x) => x.slot !== 'GK');
+      return (pool.length ? pool : this.onPitch).slice().sort((a, b) => fb(b) - fb(a))[0].p;
     }
 
     recalc() {
@@ -330,7 +342,7 @@
     pickAssist(s, shooter) {
       const pool = s.onPitch.filter((o) => o.p !== shooter);
       if (!pool.length || Math.random() < 0.22) return null;
-      return FM.weighted(pool, (o) => (ASSIST_W[o.slot] || 1) * Math.pow(o.p.ovr / 60, 2)).p;
+      return FM.weighted(pool, (o) => (ASSIST_W[o.slot] || 1) * Math.pow(o.p.ovr / 60, 2) * (o.p.id === s.sp.pm ? 2.2 : 1)).p;
     }
 
     chance(s, o) {
@@ -368,9 +380,11 @@
 
     corner(s) {
       s.stats.corners++;
-      if (Math.random() < 0.035) {
+      const ckq = s.spOf('ck', (o) => ({ AM: 3, LW: 3, RW: 3, CM: 2 }[o.slot] || 0.3) * o.p.ovr).ovr;
+      if (Math.random() < 0.035 * Math.pow(ckq / 70, 1.5)) {
         const scorer = FM.weighted(s.onPitch, (o) => (o.slot === 'GK' ? 0 : { CB: 4, ST: 3, DM: 1.5 }[o.slot] || 0.6)).p;
-        const taker = FM.weighted(s.onPitch.filter((o) => o.p !== scorer), (o) => ({ AM: 3, LW: 3, RW: 3, CM: 2 }[o.slot] || 0.3)).p;
+        const ck = s.spOf('ck', (o) => ({ AM: 3, LW: 3, RW: 3, CM: 2 }[o.slot] || 0.3) * o.p.ovr);
+        const taker = ck !== scorer ? ck : FM.weighted(s.onPitch.filter((o) => o.p !== scorer), (o) => ({ AM: 3, LW: 3, RW: 3, CM: 2 }[o.slot] || 0.3)).p;
         s.stats.shots++;
         s.stats.sot++;
         s.stats.xg += 0.1;
@@ -378,8 +392,20 @@
       }
     }
 
+    // штрафной удар: исполнитель против вратаря; удары со штрафных забиваются редко (~7%)
+    freeKick(s, o) {
+      const taker = s.spOf('fk', (x) => (SHOOT_W[x.slot] || 0.5) * x.p.ovr);
+      const gk = o.gkPlayer();
+      s.stats.shots++;
+      s.stats.xg += 0.07;
+      const pr = FM.clamp(0.065 * Math.pow(taker.ovr / Math.max(gk.ovr, 40), 2), 0.02, 0.16);
+      if (Math.random() < pr) { s.stats.sot++; this.goal(s, taker, null, 0.07, 'со штрафного'); return; }
+      if (Math.random() < 0.4) { s.stats.sot++; this.log('save', FM.pick([`${taker.name} исполняет штрафной — ${gk.name} забирает мяч.`, `Штрафной! ${taker.name} бьёт через стенку, ${gk.name} в прыжке спасает.`]), s, { xg: 0.07 }); return; }
+      this.log('miss', FM.pick([`${taker.name} бьёт со штрафного — в стенку.`, `Штрафной от ${taker.name} — над перекладиной.`, `${taker.name} закручивает со штрафного, но мимо.`]), s, { xg: 0.07 });
+    }
+
     penalty(s, o) {
-      const taker = s.onPitch.slice().sort((a, b) => (SHOOT_W[b.slot] || 0) * b.p.ovr - (SHOOT_W[a.slot] || 0) * a.p.ovr)[0].p;
+      const taker = s.spOf('pen', (o) => (SHOOT_W[o.slot] || 0) * o.p.ovr);
       const fouler = FM.weighted(o.onPitch, (x) => ({ CB: 3, LB: 2, RB: 2, DM: 1.5 }[x.slot] || 0.3)).p;
       this.log('pen', T.pen(fouler.name, taker.name), s);
       if (Math.random() < 0.2) this.card(o, fouler, false);
@@ -428,12 +454,16 @@
     discipline(s) {
       const press = s.tactics.press;
       const hot = this.opts.derby ? 1.35 : 1; // в дерби больше фолов и карточек
-      if (Math.random() < 0.13 * hot * (1 + 0.15 * (press - 1))) s.stats.fouls++;
+      if (Math.random() < 0.13 * hot * (1 + 0.15 * (press - 1))) {
+        s.stats.fouls++;
+        // опасный штрафной у ворот соперника (s — фолящая команда)
+        if (Math.random() < 0.05) this.freeKick(this.other(s), s);
+      }
       if (Math.random() < 0.0215 * hot * (1 + 0.2 * (press - 1))) {
-        const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2.2, CM: 1.4, LB: 1.4, RB: 1.4, GK: 0.15 }[o.slot] || 0.9)).p;
+        const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2.2, CM: 1.4, LB: 1.4, RB: 1.4, GK: 0.15 }[o.slot] || 0.9) * ({ volatile: 2, pro: 0.4 }[o.p.pers] || 1)).p;
         this.card(s, p, false);
       } else if (Math.random() < 0.00075 * hot) {
-        const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2, GK: 0.3 }[o.slot] || 1)).p;
+        const p = FM.weighted(s.onPitch, (o) => ({ CB: 2, DM: 2, GK: 0.3 }[o.slot] || 1) * ({ volatile: 3, pro: 0.3 }[o.p.pers] || 1)).p;
         this.card(s, p, true);
       }
     }
@@ -578,7 +608,7 @@
     }
 
     penalties() {
-      const order = (s) => s.onPitch.slice().sort((a, b) => b.p.ovr * ((SHOOT_W[b.slot] || 0.3) + 1) - a.p.ovr * ((SHOOT_W[a.slot] || 0.3) + 1)).map((o) => o.p);
+      const order = (s) => s.onPitch.slice().sort((a, b) => (b.p.id === s.sp.pen) - (a.p.id === s.sp.pen) || b.p.ovr * ((SHOOT_W[b.slot] || 0.3) + 1) - a.p.ovr * ((SHOOT_W[a.slot] || 0.3) + 1)).map((o) => o.p);
       const H = order(this.home), A = order(this.away);
       const res = { h: 0, a: 0, kicks: [] };
       const kick = (side, shooters, i, opp) => {

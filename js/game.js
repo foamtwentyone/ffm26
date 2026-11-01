@@ -115,7 +115,7 @@
         { t: 'Отказать', h: 'Сильное недовольство', run: (g, c, p) => { mor(p, -15); return `${p.name} недоволен отказом.`; } },
       ], def: 1 },
     { id: 'conflict', w: 6, title: 'Конфликт в раздевалке',
-      when: (g, u) => { const ps = FM.shuffle(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 16)).slice(0, 2); return ps.length === 2 && { a: ps[0].id, b: ps[1].id }; },
+      when: (g, u) => { const ps = FM.shuffle(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 16)).sort((x, y) => (y.pers === 'volatile') - (x.pers === 'volatile')).slice(0, 2); return ps.length === 2 && { a: ps[0].id, b: ps[1].id }; },
       text: (g, c) => `${g.players[c.a].name} и ${g.players[c.b].name} поругались на тренировке, дело дошло до толчков. Команда ждёт, как отреагирует тренер.`,
       opts: [
         { t: (g, c) => `Поддержать: ${g.players[c.a].name}`, h: 'Один доволен, другой обижен', run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(a, 8); mor(b, -15); return `Вы приняли сторону: ${a.name}. ${b.name} затаил обиду.`; } },
@@ -241,6 +241,20 @@
       opts: [{ t: 'Поздравить', h: '', run: (g, c, p) => { mor(p, 10); p.vmul = Math.min(5, (p.vmul || 1) * 1.03); g.revalue(p, true); return `${p.name} счастлив, его стоимость немного выросла.`; } }], def: 0 },
   ];
 
+
+  // ================== сборные ==================
+  // Каждый сезон — «Кубок наций»: отбор осенью (8 групп по 4, два круга в окна сборных), весной … летом —
+  // финальный турнир 16 команд на вылет. Сборная — команда в s.teams с national: true; игроки остаются в клубах,
+  // в players сборной — вызванные на текущее окно.
+  const NAT_COLORS = { RUS: ['#ffffff', '#d52b1e'], ENG: ['#ffffff', '#cf081f'], ESP: ['#c60b1e', '#ffc400'], FRA: ['#002395', '#ffffff'], GER: ['#ffffff', '#000000'], ITA: ['#0066b2', '#ffffff'],
+    POR: ['#c8102e', '#046a38'], NED: ['#ff6b00', '#ffffff'], BEL: ['#e30613', '#000000'], BRA: ['#ffdc02', '#009c3b'], ARG: ['#75aadb', '#ffffff'], CRO: ['#ff0000', '#ffffff'], TUR: ['#e30a17', '#ffffff'],
+    POL: ['#ffffff', '#dc143c'], SRB: ['#c6363c', '#0c4076'], DEN: ['#c60c30', '#ffffff'], SUI: ['#ff0000', '#ffffff'], AUT: ['#ed2939', '#ffffff'], USA: ['#ffffff', '#002868'], URU: ['#5cbfeb', '#ffffff'],
+    COL: ['#fcd116', '#003893'], MAR: ['#c1272d', '#006233'], SEN: ['#00853f', '#fdef42'], NGA: ['#008751', '#ffffff'], JPN: ['#000555', '#ffffff'], KOR: ['#ff0000', '#000000'], UKR: ['#ffd500', '#005bbb'],
+    SCO: ['#0065bf', '#ffffff'], NOR: ['#ba0c2f', '#00205b'], SWE: ['#fecc02', '#006aa7'], CZE: ['#ffffff', '#d7141a'], GRE: ['#0d5eaf', '#ffffff'], CIV: ['#ff8200', '#009a44'], GHA: ['#ffffff', '#ce1126'],
+    CMR: ['#007a5e', '#ce1126'], ALG: ['#ffffff', '#006233'], ECU: ['#ffd100', '#034ea2'], MEX: ['#006847', '#ffffff'], KAZ: ['#00afca', '#fec50c'], UZB: ['#ffffff', '#0099b5'], GEO: ['#ffffff', '#ff0000'],
+    HUN: ['#cd2a3e', '#ffffff'], SVK: ['#ffffff', '#0b4ea2'], SVN: ['#ffffff', '#005da4'], ARM: ['#d90012', '#0033a0'], AZE: ['#00b5e2', '#ef3340'], BLR: ['#c8313e', '#ffffff'], IRL: ['#169b62', '#ffffff'], WAL: ['#d30731', '#00b140'] };
+  const NAT_DATES = { q: ['09-03', '09-07', '10-08', '10-12', '11-12', '11-16'], ko: [['06-05', '1/8 финала'], ['06-10', '1/4 финала'], ['06-15', '1/2 финала'], ['06-20', 'Финал']] };
+
   class Game {
     constructor(state) {
       this.s = state;
@@ -273,6 +287,8 @@
         if (FM.leagues) this.addMissingRealPlayers();
       }
       // старые сохранения: дополнительных позиций не было (только выученные переучиванием) — раздаём, выученные сохраняем
+      if (!state.nat && FM.leagues && state.date < `${state.season}-09-01`) this._natLater = true;
+      if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {
         state.altV1 = true;
         for (const id in this.players) {
@@ -309,8 +325,10 @@
           const t = p.club && this.teams[p.club];
           p.wage = Math.round(FM.wageFor(p.value, t ? this.tierOf(t) : 2, p.age, t ? this.countryOf(t.league) : '') * 10) / 10;
         }
-        for (const id in this.teams) { const t = this.teams[id]; t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10; }
+        for (const id in this.teams) { const t = this.teams[id]; if (t.national) continue; t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10; }
       }
+      // старые сохранения: сборные появляются, если отбор этого сезона ещё не начался
+      if (this._natLater) { delete this._natLater; this.setupNations(); }
     }
 
     repairStarMoves() {
@@ -476,6 +494,8 @@
       for (const id in s.teams) {
         if (before.has(id)) continue;
         const t = s.teams[id];
+
+        if (t.national) continue;
         t.sponsor = Math.round(this.wageBill(t) * 0.97 * 10) / 10;
         this.pickFormation(t);
       }
@@ -492,7 +512,7 @@
       const tier = team ? this.tierOf(team) : 2;
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
-        alt: d.alt || FM.altFor(d.name, d.pos),
+        alt: d.alt || FM.altFor(d.name, d.pos), pers: FM.persFor(d.name) || undefined,
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
         wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,
@@ -565,6 +585,10 @@
     leagueAt(country, tier) { return this.s.order.find((id) => this.countryOf(id) === country && this.s.leagues[id].tier === tier); }
     isRussian(team) { return this.countryOf(team.league) === 'RUS'; }
     userTeam() { return this.teams[this.s.user]; }
+    // игрок в составе команды (у сборной — среди вызванных)
+    inSquad(p, team) { return team.national ? team.players.includes(p.id) : p.club === team.id; }
+    // все клубы (без сборных)
+    clubs() { return Object.values(this.teams).filter((t) => !t.national); }
     squad(team) { return team.players.map((id) => this.players[id]); }
     // Арендованный игрок: часть зарплаты (loan.wagePct) платит взявший клуб, остальное — владелец.
     wageBill(team) {
@@ -644,7 +668,7 @@
       const slots = FM.FORMATIONS[team.formation];
       const lineup = team.lineup.slice(0, slots.length);
       while (lineup.length < slots.length) lineup.push(null);
-      const ok = (id) => id && this.players[id] && this.players[id].club === team.id && this.isAvailable(this.players[id]);
+      const ok = (id) => id && this.players[id] && this.inSquad(this.players[id], team) && this.isAvailable(this.players[id]);
       const used = new Set(lineup.filter(ok));
       for (let i = 0; i < slots.length; i++) {
         if (ok(lineup[i])) continue;
@@ -674,7 +698,7 @@
       const out = [];
       for (let i = 0; i < slots.length; i++) {
         const p = this.players[team.lineup[i]];
-        if (!p || p.club !== team.id) out.push(`Позиция ${FM.POS_RU[slots[i][0]]} не заполнена`);
+        if (!p || !this.inSquad(p, team)) out.push(`Позиция ${FM.POS_RU[slots[i][0]]} не заполнена`);
         else if (p.inj) out.push(`${p.name} травмирован`);
         else if (p.sus) out.push(`${p.name} дисквалифицирован`);
       }
@@ -698,11 +722,14 @@
       this._tables = {};
       this.setupCups();
       this.setupEuro();
+      this.setupNations();
       this.spreadRounds();
       s.playoff = null;
       s.window = { from: `${y}-06-20`, to: `${y}-09-07`, from2: `${y + 1}-01-20`, to2: `${y + 1}-02-25` };
       for (const id in this.teams) {
         const t = this.teams[id];
+
+        if (t.national) continue;
         t.form = [];
         if (id !== s.user) this.pickFormation(t);
         // финансы сезона: итоги прошлого — в prev, счётчики с нуля
@@ -948,6 +975,7 @@
     expectText() {
       const e = this.s.board.expect;
       const t = this.userTeam();
+      if (t.national) return e <= 1 ? 'выиграть группу отбора и бороться за титул' : e <= 2 ? 'выйти в финальный турнир' : 'достойно выступить в отборе';
       const L = this.s.leagues[t.league];
       const n = L.teams.length;
       if (L.tier > 1) {
@@ -976,7 +1004,7 @@
     setupCup(c) {
       const s = this.s;
       const y = s.season;
-      const teams = Object.values(this.teams).filter((t) => !t.reserveOf && this.countryOf(t.league) === c)
+      const teams = this.clubs().filter((t) => !t.reserveOf && this.countryOf(t.league) === c)
         .sort((a, b) => this.tierOf(a) - this.tierOf(b) || b.rep - a.rep).map((t) => t.id);
       if (teams.length < 4) return;
       let size = 2;
@@ -1122,6 +1150,7 @@
           this.teams[id].money += E.fee;
           if (id === s.user) {
             this.finLog(this.teams[id], `${E.name}: участие`, E.fee);
+            for (const p of this.squad(this.teams[id])) if (p.bon && p.bon.euro) this.pay(this.teams[id], p.bon.euro, `Бонус за еврокубки: ${p.name}`);
             this.msg(E.name, `Команда сыграет в общем этапе турнира «${E.name}». Первый матч — ${FM.fmtDate(this.s.matches[e.md[0].find((mid) => [this.s.matches[mid].h, this.s.matches[mid].a].includes(id))].date)}.`, 'cup');
           }
         }
@@ -1534,6 +1563,8 @@
       // резервные команды в переходах не участвуют: eligibleUp отсекает их от повышения
       for (const [tid, lid] of moves) {
         const t = this.teams[tid];
+
+        if (t.national) continue;
         const from = t.league;
         if (from === lid) continue;
         const up = s.leagues[lid].tier < s.leagues[from].tier;
@@ -1547,6 +1578,7 @@
 
       // оценка работы тренера
       const u = this.userTeam();
+      if (u.national && !summary.userLeague) { summary.userLeague = u.league; summary.userPos = (this.table(u.league).find((r) => r.id === u.id) || {}).pos || 4; }
       const pos = summary.userPos;
       const exp = s.board.expect;
       const moved = summary.moves.find((m) => m.id === u.id);
@@ -1565,13 +1597,13 @@
         if (c && c.md && s.euro && s.euro[E.id]) { const row = this.euroTable(E.id).find((r) => r.id === u.id); if (row) c.pos = row.pos; }
       }
       ce.final = { league: summary.userLeague, pos, cup: Object.values(s.cups).some((c) => c.winner === u.id), euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) };
-      s.history.unshift({ year: y, league: summary.userLeague, pos, team: u.id, cup: Object.values(s.cups).some((c) => c.winner === u.id), moved: moved ? (moved.up ? 'up' : 'down') : null,
+      s.history.unshift({ year: y, league: u.national ? `${s.nat ? s.nat.name : 'Сборная'}${s.nat && s.nat.winner === u.id ? ' · победа' : ''}` : summary.userLeague, pos, team: u.id, cup: Object.values(s.cups).some((c) => c.winner === u.id), moved: moved ? (moved.up ? 'up' : 'down') : null,
         euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) });
       this.msg(`Итоги сезона ${y}/${String(y + 1).slice(2)}`, `«${u.name}» занимает ${pos}-е место (${s.leagues[summary.userLeague].name}). ${verdict}`, 'board');
 
       // предложения о работе после удачного сезона
       if (pos <= exp - 3 || (moved && moved.up)) {
-        const cands = Object.values(this.teams).filter((t) => t.id !== u.id && t.rep > u.rep + 2 && t.rep <= u.rep + 16 && !t.reserveOf);
+        const cands = this.clubs().filter((t) => t.id !== u.id && t.rep > u.rep + 2 && t.rep <= u.rep + 16 && !t.reserveOf);
         FM.shuffle(cands).slice(0, 2).forEach((t) => {
           this.msg(`Предложение от «${t.name}»`, `«${t.name}» (${s.leagues[t.league].name}) предлагает вам возглавить команду.`, 'job', { team: t.id });
         });
@@ -1597,6 +1629,8 @@
       this.returnLoans();
       for (const tid in this.teams) {
         const t = this.teams[tid];
+
+        if (t.national) continue;
         const core = tid === s.user ? null : this.coreOf(t);
         for (const pid of t.players.slice()) {
           const p = this.players[pid];
@@ -1610,7 +1644,7 @@
           if (p.contract <= y && p.pre && this.teams[p.pre.team]) {
             const to = this.teams[p.pre.team];
             const pre = p.pre;
-            this.transfer(p, to, 0, pre.wage, pre.years, { role: pre.role, release: pre.release });
+            this.transfer(p, to, 0, pre.wage, pre.years, { role: pre.role, release: pre.release, bon: pre.bon });
             if (to.id === s.user) this.msg('Пополнение', `${p.name} перешёл в клуб по предварительному контракту.`, 'transfer');
             continue;
           }
@@ -1635,6 +1669,8 @@
       // воспитанники
       for (const tid in this.teams) {
         const t = this.teams[tid];
+
+        if (t.national) continue;
         // у клуба пользователя воспитанники поднимаются, только если в заявке есть места
         const n = tid === s.user ? Math.min(FM.ri(1, 3), Math.max(0, MAX_SQUAD - 2 - t.players.length)) : FM.ri(1, 3);
         const base = this.teamBaseOvr(t) - 12;
@@ -1718,7 +1754,7 @@
     jobOffers() {
       // клубы, готовые взять тренера после увольнения
       const prev = this.teams[this.s.user];
-      return FM.shuffle(Object.values(this.teams).filter((t) => t.id !== prev.id && !t.reserveOf && t.rep <= prev.rep - 3)).slice(0, 5)
+      return FM.shuffle(this.clubs().filter((t) => t.id !== prev.id && !t.reserveOf && t.rep <= prev.rep - 3)).slice(0, 5)
         .sort((a, b) => b.rep - a.rep);
     }
 
@@ -1773,7 +1809,7 @@
     coachMarket() {
       const s = this.s, cr = this.coachRep();
       const out = [];
-      for (const t of Object.values(this.teams)) {
+      for (const t of this.clubs()) {
         if (t.id === s.user || t.reserveOf || t.rep > cr + 12 || t.rep < cr - 28) continue;
         const L = s.leagues[t.league];
         const row = this.table(t.league).find((r) => r.id === t.id);
@@ -1789,7 +1825,7 @@
 
     applyJob(teamId) {
       const s = this.s, t = this.teams[teamId];
-      const m = this.coachMarket().find((x) => x.id === teamId);
+      const m = (t && t.national ? this.natMarket() : this.coachMarket()).find((x) => x.id === teamId);
       if (!m) return { ok: false, text: `«${t.name}» не рассматривает вашу кандидатуру.` };
       if (m.refused) return { ok: false, text: `«${t.name}» уже отказал вам в этом сезоне.` };
       if (m.level < 2) {
@@ -1808,6 +1844,15 @@
       const s = this.s, u = this.userTeam();
       if (s.sacked || s.seasonOver || !FM.chance(0.04)) return;
       if (s.inbox.some((m) => m.type === 'job' && m.data && !m.data.closed)) return;
+      // иногда зовёт федерация: сборная уровнем близко к репутации тренера
+      if (FM.chance(0.25)) {
+        const nc = this.natMarket().filter((x) => x.level >= 2 && !x.refused && (s.jobDeclined || {})[x.id] !== s.season);
+        if (nc.length) {
+          const t = this.teams[FM.pick(nc.slice(0, 4)).id];
+          this.msg(`Предложение от федерации: ${t.name}`, `Федерация футбола (${t.name}) предлагает вам возглавить национальную сборную. Тренер сборной не работает в клубе: вы уйдёте из «${u.name}». Сборная выступает в турнире «${s.nat.name}».`, 'job', { team: t.id });
+          return;
+        }
+      }
       const c = this.coachMarket().filter((x) => x.vacancy && x.level >= 2 && x.rep >= u.rep - 2 && (s.jobDeclined || {})[x.id] !== s.season);
       if (!c.length) return;
       const t = this.teams[FM.pick(c.slice(0, 5)).id];
@@ -1987,12 +2032,21 @@
       m.reds = sim.events.filter((e) => e.type === 'red').map((e) => ({ pid: e.pid, side: e.side, min: e.min }));
       m.stats = ['shots', 'sot', 'corners', 'yc', 'rc', 'poss'].reduce((o, k) => { o[k] = [sim.home.stats[k], sim.away.stats[k]]; return o; }, {});
       m.stats.xg = [Math.round(sim.home.stats.xg * 100) / 100, Math.round(sim.away.stats.xg * 100) / 100];
-      const isLeague = !!s.leagues[m.comp];
+      // матчи сборных: статистика — отдельно (p.nst), без дисквалификаций в клубе
+      const natM = FM.isNat(m.comp);
+      const isLeague = !!s.leagues[m.comp] && !natM;
+      const SO = (p) => (natM ? (p.nst = p.nst || { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }) : isLeague ? p.st : p.cst);
       const euro = FM.EURO.find((E) => E.id === m.comp);
       if (m.ko || FM.isCup(m.comp)) m.winner = sim.winner();
       if (FM.isCup(m.comp) && !m.winner) m.winner = m.hg >= m.ag ? m.h : m.a;
       if (m.h === s.user || m.a === s.user) this.recordCoach(m);
+      // бонусы за голы игрокам пользователя
+      const ut = this.teams[s.user];
+      for (const g of sim.goalsList || []) { const p = this.players[g.scorer]; if (p && p.bon && p.bon.goal && p.club === s.user && ut && ((g.side === 'h') === (m.h === s.user))) this.pay(ut, p.bon.goal, `Бонус за гол: ${p.name}`); }
       const ratings = {};
+      // поражение бьёт по настроению; лидер на поле смягчает удар
+      const lost = (tid) => (m.winner ? m.winner !== tid : (tid === m.h ? m.hg < m.ag : m.ag < m.hg));
+      const lostWithLeader = new Set([sim.home, sim.away].filter((sd) => sd.onPitch.some((o) => o.p.pers === 'leader')).map((sd) => sd.team.id));
       for (const side of [sim.home, sim.away]) {
         const t = side.team;
         const playedIds = new Set(Object.keys(side.mins).map(Number));
@@ -2001,21 +2055,22 @@
           if (!p) continue;
           const r = side.rating[pid];
           ratings[pid] = r;
-          const st = isLeague ? p.st : p.cst;
+          const st = SO(p);
+          if (natM) p.caps = (p.caps || 0) + 1;
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;
           // форма: оценки за последние 8 матчей (×10, целые — компактно в сохранении)
           p.rh = (p.rh || []).concat(Math.round(r * 10)).slice(-8);
           p.fit = Math.round(side.fitness[pid]);
-          p.morale = FM.clamp(p.morale + (r >= 7.5 ? 4 : r < 6 ? -3 : 0), 10, 100);
+          p.morale = FM.clamp(p.morale + (r >= 7.5 ? 4 : r < 6 ? -3 : 0) * (p.pers === 'volatile' ? 1.8 : 1) - (lostWithLeader.has(t.id) ? 0 : (lost(t.id) ? 1 : 0)), 10, 100);
           // сухой матч — вратарю и защитникам, сыгравшим от 60 минут
           const conceded = side === sim.home ? sim.away.goals : sim.home.goals;
           if (!conceded && (side.mins[pid] || 0) >= 60 && (FM.GROUP[p.pos] === 'G' || FM.GROUP[p.pos] === 'D')) st.cs = (st.cs || 0) + 1;
         }
         for (const pid in side.yellows) {
           const p = this.players[pid];
-          (isLeague ? p.st : p.cst).yc++;
+          SO(p).yc++;
           if (side.yellows[pid] < 2 && isLeague) {
             p.ycAcc++;
             if (p.ycAcc % 4 === 0) {
@@ -2026,7 +2081,8 @@
         }
         for (const pid of side.redCards || []) {
           const p = this.players[pid];
-          (isLeague ? p.st : p.cst).rc++;
+          SO(p).rc++;
+          if (natM) continue;
           p.sus += side.yellows[pid] >= 2 ? 1 : FM.ri(2, 3);
           if (t.id === s.user) this.msg('Удаление', `${p.name} дисквалифицирован на ${p.sus} матч(а).`, 'squad');
         }
@@ -2036,7 +2092,7 @@
           if (t.id === s.user) this.msg('Травма', `${p.name} получил травму и выбыл примерно на ${this.injText(p.inj)}.`, 'squad');
         }
         // отбывшие дисквалификацию
-        for (const pid of t.players) {
+        for (const pid of natM ? [] : t.players) {
           const p = this.players[pid];
           if (p.sus > 0 && !playedIds.has(pid) && !(side.redCards || []).includes(pid)) p.sus--;
         }
@@ -2044,14 +2100,13 @@
         t.form.push(res > 0 ? 'W' : res < 0 ? 'L' : 'D');
         if (t.form.length > 10) t.form.shift();
       }
-      const key = isLeague ? 'st' : 'cst';
       for (const g of sim.goalsList) {
         const p = this.players[g.scorer];
-        if (p) p[key].g++;
+        if (p) SO(p).g++;
         const a = g.assist && this.players[g.assist];
-        if (a) a[key].a++;
+        if (a) SO(a).a++;
       }
-      this.hallMatch(m, sim, isLeague);
+      if (!natM) this.hallMatch(m, sim, isLeague);
       // дерби: громкий результат в новостях, для своей команды — реакция руководства и игроков
       const dn = this.derbyOf(m);
       if (dn) {
@@ -2074,9 +2129,14 @@
       if (!m.neutral) {
         const away = this.teams[m.a];
         const derby = !!this.derbyOf(m), big = derby || (s.leagues[m.comp] && !!this.bigMatchOf(m));
-        const fill = FM.clamp(0.12 + home.rep / 160 + (away.rep - 60) / 250 + (FM.isCup(m.comp) ? 0.05 : euro ? 0.15 : 0) + (derby ? 0.3 : big ? 0.15 : 0) + FM.gauss(0, 0.05), 0.08, derby ? 1 : 0.98);
+        // цена билетов клуба (home.tk: 0.7 — дёшево … 1.6 — премиум): дороже билет — меньше зрителей
+        const tk = home.tk || 1;
+        const fill = FM.clamp((0.12 + home.rep / 160 + (away.rep - 60) / 250 + (FM.isCup(m.comp) ? 0.05 : euro ? 0.15 : 0) + (derby ? 0.3 : big ? 0.15 : 0) + FM.gauss(0, 0.05)) * Math.pow(1 / tk, 0.9), 0.08, derby ? 1 : 0.98);
         m.att = Math.round(home.cap * fill);
-        const price = (s.leagues[home.league].ticket || 2) * (m.comp === 'po' ? 1.5 : euro ? 2 : 1) * (derby ? 1.5 : 1);
+        m.fill = Math.round(fill * 100);
+        const price = (s.leagues[home.league].ticket || 2) * tk * (m.comp === 'po' ? 1.5 : euro ? 2 : 1) * (derby ? 1.5 : 1);
+        // полный стадион поднимает настроение команды, пустой — нет
+        if (home.id === s.user && fill >= 0.9) for (const p of this.squad(home)) p.morale = Math.min(100, p.morale + 0.6);
         const inc = Math.round((m.att * price) / 100) / 10;
         home.money += inc;
         if (home.id === s.user) this.finLog(home, 'Билеты', inc);
@@ -2125,6 +2185,7 @@
       for (const m of this.todayMatches()) this.playMatch(m);
       this.progressCup();
       this.progressEuro();
+      this.progressNations();
       this.setupPlayoff();
     }
 
@@ -2142,6 +2203,7 @@
         }
         p.fit = Math.min(100, p.fit + (p.inj ? 4 : 13));
       }
+      this.natDay();
       if (monday) this.weekly();
       if (monday) this.aiPreContracts();
       if (FM.weekday(s.date) % 3 === 0) this.aiFreeAgents();
@@ -2222,6 +2284,7 @@
       if (!this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто — арендовать можно только в окно.' };
       if (u.players.length >= MAX_SQUAD) return { ok: false, text: this.squadFullText() };
       { const fb = this.foreignBlock(u, p); if (fb) return { ok: false, text: fb }; }
+      if (this.s.ffp && this.s.ffp.ban) return { ok: false, text: 'Санкции фэйр-плей: аренда запрещена, пока баланс не станет положительным.' };
       if (this.teams[p.club].players.length <= 18) return { ok: false, text: `«${this.teams[p.club].name}» не готов сокращать короткий состав.` };
       if ((t.fee || 0) > u.money) return { ok: false, text: `Не хватает денег: на счёте ${FM.money(u.money)}.` };
       const a = this.loanAsk(p);
@@ -2241,7 +2304,7 @@
     loanOffers(pid) {
       const p = this.players[pid], u = this.userTeam();
       const out = [];
-      for (const t of Object.values(this.teams)) {
+      for (const t of this.clubs()) {
         if (t.id === u.id || t.reserveOf || t.players.length >= MAX_SQUAD - 1 || t.rep > u.rep + 4 || t.rep < u.rep - 30) continue;
         const better = this.squad(t).filter((x) => FM.GROUP[x.pos] === FM.GROUP[p.pos] && x.ovr >= p.ovr).length;
         if (better >= { G: 1, D: 3, M: 3, F: 2 }[FM.GROUP[p.pos]]) continue;
@@ -2309,6 +2372,7 @@
     }
 
     trainWeek() {
+      if (this.userTeam().national) return;
       for (const p of this.squad(this.userTeam())) {
         const t = p.train;
         if (!t) continue;
@@ -2329,11 +2393,15 @@
       const s = this.s;
       for (const id in this.teams) {
         const t = this.teams[id];
+
+        if (t.national) continue;
         const wages = this.wageBill(t);
         t.money += t.sponsor - wages;
         if (id === s.user) {
           this.finLog(t, 'Спонсоры', t.sponsor);
           this.finLog(t, 'Зарплаты', -wages);
+          this.loanWeek(t);
+          this.ffpWeek(t);
           // баланс по неделям — для графика
           t.fin.hist = (t.fin.hist || []).concat({ d: s.date, m: Math.round(t.money) }).slice(-104);
         }
@@ -2343,9 +2411,11 @@
         // рост к потенциалу: быстрее у самых молодых и у тех, кто играет; к 24–27 годам — понемногу
         const young = p.age <= 27 && p.ovr < p.pot;
         const playing = p.st.mins + p.cst.mins > 0;
-        if (young && Math.random() < (playing ? 0.09 : 0.045) * (p.age <= 20 ? 1.3 : p.age >= 24 ? 0.5 : 1)) { p.ovr++; this.revalue(p); }
+        if (young && Math.random() < (playing ? 0.09 : 0.045) * (p.age <= 20 ? 1.3 : p.age >= 24 ? 0.5 : 1) * (p.pers === 'pro' ? 1.2 : 1)) { p.ovr++; this.revalue(p); }
         else if (p.age >= 31 && Math.random() < 0.006 * (p.age - 30)) { p.ovr--; this.revalue(p); }
-        p.morale += (60 - p.morale) * 0.1;
+        p.morale += (60 - p.morale) * (p.pers === 'pro' ? 0.15 : 0.1);
+        // амбициозный в клубе намного слабее себя теряет терпение
+        if (p.pers === 'ambitious' && p.club && this.teams[p.club] && p.ovr >= this.teamBaseOvr(this.teams[p.club]) + 6) p.morale = Math.max(15, p.morale - 1.5);
       }
       // доверие: положение в таблице против ожиданий
       const u = this.userTeam();
@@ -2384,6 +2454,7 @@
 
     contractReminder() {
       const u = this.userTeam();
+      if (u.national) return;
       const exp = this.squad(u).filter((p) => p.contract <= this.s.season);
       if (!exp.length) return;
       const dec = this.s.date.endsWith('-12-20');
@@ -2487,6 +2558,8 @@
 
     negoBlocked(n) {
       if (n.until && this.s.date < n.until) return `Переговоры прерваны. Вернуться к ним можно с ${FM.fmtDate(n.until)}.`;
+      if (this.userTeam().national) return 'Сборная не покупает игроков — вызывайте их во вкладке «Состав».';
+      if (this.s.ffp && this.s.ffp.ban) return 'Санкции фэйр-плей: клуб не может регистрировать новых игроков, пока баланс не станет положительным.';
       return n.pid && this.players[n.pid] ? this.foreignBlock(this.userTeam(), this.players[n.pid]) : null;
     }
 
@@ -2501,7 +2574,7 @@
         for (const n in by) for (const x of by[n].sort((a, b) => b.ovr - a.ovr).slice(0, 26)) if (x.age >= 19) set.add(x.id);
         this._capped = { season: this.s.season, set };
       }
-      return this._capped.set.has(p.id);
+      return (p.caps || 0) > 0 || this._capped.set.has(p.id);
     }
     yearsBetween(a, b) { return Math.max(0, (Date.parse(b) - Date.parse(a)) / (365.25 * 864e5)); }
     // сколько лет игрок живёт в стране c (всего и после 18 лет — для правил ФИФА)
@@ -2567,6 +2640,18 @@
       const s = this.s;
       for (const id in this.players) {
         const p = this.players[id];
+        // клубы ИИ тоже оформляют паспорта легионерам, прожившим в стране нужный срок
+        if (p.club && p.club !== s.user && !p.natz && !p.loan && Math.random() < 0.004) {
+          const t = this.teams[p.club], c = t && this.countryOf(t.league), nr = c && FM.natRule(c), r = t && this.foreignRuleOf(t);
+          if (r && nr && !nr.none && !FM.cits(p).includes(c) && FM.isForeign(p, c, r) && !(nr.noDual && this.isCapped(p))) {
+            const need = nr.fast && nr.fast.includes(p.nat) ? nr.fastYears : nr.years;
+            if (this.residence(p, c).total >= need || (nr.decree && p.ovr >= 75 && this.squadRank(p) <= 8 && Math.random() < 0.3)) {
+              p.cit = (p.cit || []).concat(c);
+              if (nr.noDual) p.nat2 = null;
+              if (p.ovr >= 72) this.news(`${p.name} («${t.name}») получил гражданство: ${(FM.NAT && FM.NAT[c]) || c}.`);
+            }
+          }
+        }
         if (p.natz && s.date >= p.natz.done) {
           const z = p.natz, mine = p.club === s.user;
           delete p.natz;
@@ -2593,6 +2678,161 @@
         }
       }
     }
+    // ================== кредит и финансовый фэйр-плей ==================
+    // Кредит: до 25% стоимости состава, 8% годовых, погашение равными платежами за 52 недели.
+    loanLimit(t) { return FM.roundValue(Math.max(500, this.squadValue(t) * 0.25)); }
+    takeLoan(k) {
+      const u = this.userTeam();
+      if (u.bank && u.bank.left > 0) return 'Сначала погасите текущий кредит.';
+      if (this.s.ffp && this.s.ffp.ban) return 'Банк не выдаёт кредит клубу под санкциями.';
+      k = Math.min(k, this.loanLimit(u));
+      const total = Math.round(k * 1.08 * 10) / 10;
+      u.bank = { sum: k, left: total, weekly: Math.round(total / 52 * 10) / 10 };
+      this.earn(u, k, 'Банковский кредит');
+      return `Кредит ${FM.money(k)} получен. Платёж — ${FM.money(u.bank.weekly)} в неделю, год.`;
+    }
+    repayLoan() {
+      const u = this.userTeam();
+      if (!u.bank || u.bank.left <= 0) return 'Кредита нет.';
+      const k = Math.round(u.bank.left * 0.97 * 10) / 10; // досрочно — со скидкой на проценты
+      if (k > u.money) return `Не хватает денег: нужно ${FM.money(k)}.`;
+      this.pay(u, k, 'Досрочное погашение кредита');
+      delete u.bank;
+      return 'Кредит погашен досрочно.';
+    }
+    loanWeek(t) {
+      if (!t.bank || t.bank.left <= 0) return;
+      const k = Math.min(t.bank.weekly, t.bank.left);
+      t.money -= k; this.finLog(t, 'Платёж по кредиту', -k);
+      t.bank.left = Math.round((t.bank.left - k) * 10) / 10;
+      if (t.bank.left <= 0) { delete t.bank; this.msg('Кредит погашен', 'Клуб полностью рассчитался с банком.', 'board'); }
+    }
+    // Фэйр-плей: долг больше 3 млн € 6 недель подряд — предупреждение, 12 недель — запрет на покупки и штраф 5% долга.
+    // Запрет снимается, когда баланс снова положительный.
+    ffpWeek(t) {
+      const s = this.s, f = s.ffp = s.ffp || { weeks: 0, ban: false };
+      if (t.money < -3000) f.weeks++; else { f.weeks = 0; if (f.ban && t.money >= 0) { f.ban = false; this.msg('Санкции сняты', 'Баланс клуба снова положительный — запрет на регистрацию новых игроков снят.', 'board'); } }
+      if (f.weeks === 6) this.msg('Финансовый фэйр-плей', `Долг клуба ${FM.money(-t.money)} держится уже 6 недель. Если через 6 недель он сохранится, лига запретит покупки и оштрафует клуб.`, 'board');
+      if (f.weeks === 12 && !f.ban) {
+        f.ban = true;
+        const fine = FM.roundValue(-t.money * 0.05);
+        this.pay(t, fine, 'Штраф за нарушение фэйр-плей');
+        s.board.conf = Math.max(0, s.board.conf - 8);
+        this.msg('Санкции лиги', `Клуб нарушил правила финансового фэйр-плей: штраф ${FM.money(fine)} и запрет на покупку и аренду игроков, пока баланс не станет положительным.`, 'board');
+      }
+    }
+    // ================== сборные ==================
+    natCode(t) { return t.natCode; }
+    // гражданин и может играть за сборную c
+    eligibleFor(p, c) { return p.nat === c || p.nat2 === c || (p.elig || []).includes(c); }
+    // сила страны: 23 лучших игрока
+    natPool(c) { return Object.values(this.players).filter((p) => p.club && this.eligibleFor(p, c)).sort((a, b) => b.ovr - a.ovr); }
+    setupNations() {
+      const s = this.s, y = s.season;
+      // страны с достаточным числом игроков в базе
+      const by = {};
+      for (const id in this.players) { const p = this.players[id]; if (!p.club) continue; for (const c of [p.nat, p.nat2].filter(Boolean)) (by[c] = by[c] || []).push(p.ovr); }
+      const str = Object.entries(by).filter(([, a]) => a.length >= 20).map(([c, a]) => [c, a.sort((x, z) => z - x).slice(0, 18).reduce((x, z) => x + z, 0) / 18]).sort((a, b) => b[1] - a[1]);
+      const keep = s.user && this.teams[s.user] && this.teams[s.user].national ? this.teams[s.user].natCode : null;
+      const list = str.slice(0, 32).map((x) => x[0]);
+      // всегда есть сборная страны клуба тренера и сборная России (если хватает игроков в базе)
+      const must = [keep, 'RUS', this.teams[s.user] && !this.teams[s.user].national ? this.countryOf(this.teams[s.user].league) : null].filter((c) => c && by[c] && by[c].length >= 20);
+      for (const c of must) if (!list.includes(c)) list.splice(list.length - 1 - must.indexOf(c), 1, c);
+      // старые группы убираем
+      for (const lid of Object.keys(s.leagues)) if (s.leagues[lid].national) delete s.leagues[lid];
+      const rate = Object.fromEntries(str);
+      for (const c of list) {
+        const id = `nat_${c}`;
+        const t = this.teams[id] = this.teams[id] || { id, national: true, natCode: c, name: (FM.NAT && FM.NAT[c]) || c, city: (FM.NAT && FM.NAT[c]) || c, stadium: 'Национальный стадион', cap: 55000,
+          colors: NAT_COLORS[c] || ['#2b3a67', '#ffffff'], money: 0, sponsor: 0, players: [], formation: '4-3-3', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 }, form: [], fin: { income: 0, expense: 0, log: [] } };
+        t.rep = Math.round(FM.clamp(30 + (rate[c] - 60) * 2.2, 40, 95));
+        t.form = [];
+      }
+      // посев: 4 корзины по силе, 8 групп
+      const seeded = list.slice().sort((a, b) => rate[b] - rate[a]);
+      const groups = Array.from({ length: 8 }, () => []);
+      for (let pot = 0; pot < 4; pot++) FM.shuffle(seeded.slice(pot * 8, pot * 8 + 8)).forEach((c, i) => groups[i].push(`nat_${c}`));
+      const letters = 'ABCDEFGH';
+      s.nat = { season: y, name: `Кубок наций ${y + 1}`, groups: [], ko: [], final: null, winner: null, teams: list.map((c) => `nat_${c}`) };
+      groups.forEach((g, i) => {
+        const lid = `nat${letters[i]}`;
+        const L = s.leagues[lid] = { id: lid, name: `Кубок наций · отбор, группа ${letters[i]}`, short: `Группа ${letters[i]}`, tier: 0, national: true, country: 'INT', ticket: 3, prize: [0, 0, 0, 0], teams: g.slice(), rounds: [], weekday: 4 };
+        // два круга: 6 туров
+        const [a, b, c2, d] = g, pairs = [[[a, b], [c2, d]], [[a, c2], [b, d]], [[a, d], [b, c2]]];
+        const rounds = pairs.concat(pairs.map((r) => r.map(([h, w]) => [w, h])));
+        rounds.forEach((r, k) => { L.rounds.push(r.map(([h, w]) => this.addMatch({ comp: lid, round: k + 1, date: `${y}-${NAT_DATES.q[k]}`, h, a: w }))); });
+        for (const id of g) this.teams[id].league = lid;
+        s.nat.groups.push(lid);
+      });
+      for (const id of s.nat.teams) { this.natCallup(this.teams[id], true); this.pickFormation(this.teams[id]); }
+      this._tables = {};
+    }
+    // вызов: 26 лучших доступных (у сборной пользователя — его выбор, недостающих добирает ассистент)
+    natCallup(t, force) {
+      const s = this.s, c = t.natCode;
+      const mine = t.id === s.user;
+      const pool = this.natPool(c).filter((p) => !p.inj);
+      if (mine && !force && t.players.length) {
+        t.players = t.players.filter((id) => this.players[id] && this.players[id].club && this.eligibleFor(this.players[id], c));
+        for (const p of pool) { if (t.players.length >= 23) break; if (!t.players.includes(p.id)) t.players.push(p.id); }
+        return;
+      }
+      const gk = pool.filter((p) => p.pos === 'GK').slice(0, 3), out = pool.filter((p) => p.pos !== 'GK').slice(0, 23);
+      t.players = gk.concat(out).map((p) => p.id);
+    }
+    // за 3 дня до окна сборных — новые вызовы ИИ (у пользователя — проверка доступности)
+    natDay() {
+      const s = this.s;
+      if (!s.nat) return;
+      const soon = Object.values(s.matches).some((m) => FM.isNat(m.comp) && !m.played && m.date === FM.addDays(s.date, 3));
+      if (!soon) return;
+      for (const id of s.nat.teams) { const t = this.teams[id]; if (!t) continue; this.natCallup(t, id !== s.user); if (id !== s.user) this.pickFormation(t); }
+      if (this.teams[s.user] && this.teams[s.user].national) this.msg('Сбор сборной', 'Через три дня — матчи сборной. Проверьте состав вызванных игроков во вкладке «Состав».', 'squad');
+    }
+    // после матчей дня: итоги отбора → сетка финала → следующий раунд
+    progressNations() {
+      const s = this.s, N = s.nat;
+      if (!N || N.winner) return;
+      const all = (ids) => ids.every((id) => s.matches[id].played);
+      if (!N.ko.length) {
+        if (!N.groups.every((lid) => all(s.leagues[lid].rounds.flat()))) return;
+        const first = [], second = [];
+        for (const lid of N.groups) { const t = this.table(lid); first.push(t[0].id); second.push(t[1].id); }
+        // 1/8: победитель группы против второго места соседней
+        const pairs = first.map((w, i) => [w, second[(i + 1) % 8]]);
+        this.natRound(0, pairs);
+        const q = new Set(first.concat(second));
+        if (q.has(s.user)) this.msg('Финальный турнир!', `Сборная вышла в финальный турнир «${N.name}». 1/8 финала — ${FM.fmtDate(`${N.season + 1}-${NAT_DATES.ko[0][0]}`)}.`, 'cup');
+        else if (this.teams[s.user] && this.teams[s.user].national) this.msg('Отбор провален', 'Сборная не смогла выйти в финальный турнир. Федерация оценит итоги цикла.', 'board');
+        this.news(`Определились участники финального турнира «${N.name}»: ${[...q].map((id) => this.teams[id].name).join(', ')}.`);
+        return;
+      }
+      const R = N.ko[N.ko.length - 1];
+      if (!all(R.ties)) return;
+      const w = R.ties.map((id) => s.matches[id].winner);
+      if (w.length === 1) {
+        N.winner = w[0];
+        this.news(`Сборная «${this.teams[w[0]].name}» — победитель турнира «${N.name}»!`);
+        if (w[0] === s.user) { s.board.conf = Math.min(100, s.board.conf + 30); this.msg(`${N.name} наш!`, 'Сборная выиграла турнир! Федерация в восторге.', 'board'); }
+        return;
+      }
+      const pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
+      this.natRound(N.ko.length, pairs);
+    }
+    natRound(k, pairs) {
+      const s = this.s, N = s.nat, [d, name] = NAT_DATES.ko[k];
+      const ties = pairs.map(([h, a]) => this.addMatch({ comp: 'natko', label: `${N.name}: ${name}`, date: `${N.season + 1}-${d}`, h, a, ko: true, neutral: true }));
+      N.ko.push({ name, ties });
+      for (const id of new Set(pairs.flat())) { const t = this.teams[id]; this.natCallup(t, id !== s.user); if (id !== s.user) this.pickFormation(t); }
+    }
+    // предложения от федераций: сборные, чей уровень близок к репутации тренера
+    natMarket() {
+      const s = this.s, cr = this.coachRep();
+      return (s.nat ? s.nat.teams : []).map((id) => this.teams[id]).filter((t) => t && t.id !== s.user).map((t) => {
+        const fit = cr - t.rep;
+        return { id: t.id, rep: t.rep, level: fit >= 2 ? 3 : fit >= -4 ? 2 : fit >= -9 ? 1 : 0, refused: s.jobRefused && s.jobRefused[t.id] === s.season, national: true };
+      }).sort((a, b) => b.rep - a.rep);
+    }
     // ---- лимит на легионеров ----
     foreignRuleOf(team) { const L = this.s.leagues[team.league]; return FM.foreignRule(this.countryOf(team.league), L.tier); }
     isForeignIn(p, team) { const r = this.foreignRuleOf(team); return FM.isForeign(p, this.countryOf(team.league), r); }
@@ -2600,7 +2840,26 @@
     // Можно ли заявить игрока: если клуб уже на пределе по легионерам — текст причины. Игроки, которые уже в клубе,
     // не отчисляются (в базе одно гражданство, поэтому часть клубов стартует сверх лимита), но новых легионеров
     // такой клуб заявить не может, пока не опустится ниже лимита.
+    // воспитанник для страны c: гражданин по рождению или приехал в страну до 22 лет
+    isHomegrown(p, c) {
+      if (p.nat === c) return true;
+      if (!p.res || p.res.c !== c) return false;
+      return p.age - this.yearsBetween(p.res.since, this.s.date) <= 21;
+    }
+    hgCount(team) {
+      const c = this.countryOf(team.league);
+      return this.squad(team).filter((x) => x.age > 21 && !this.isHomegrown(x, c)).length;
+    }
+    // квота воспитанников: в клуб на пределе нельзя заявить ещё одного взрослого «не воспитанника»
+    hgBlock(team, p) {
+      const L = this.s.leagues[team.league], c = this.countryOf(team.league), r = FM.hgRule(c, L.tier);
+      if (!r || p.club === team.id || p.age <= 21 || this.isHomegrown(p, c)) return null;
+      const n = this.hgCount(team);
+      return n >= r.max ? `Квота воспитанников: в заявке «${team.name}» уже ${n} игроков старше 21 года, не воспитанных в стране (максимум ${r.max} из 25).` : null;
+    }
     foreignBlock(team, p) {
+      const hb = this.hgBlock(team, p);
+      if (hb) return hb;
       const r = this.foreignRuleOf(team);
       if (!r || r.squad == null || p.club === team.id || !FM.isForeign(p, this.countryOf(team.league), r)) return null;
       const n = this.foreignCount(team);
@@ -2716,6 +2975,8 @@
       const starter = better < { G: 1, D: 4, M: 3, F: 3 }[FM.GROUP[p.pos]];
       if (starter) { sc += 8; why.push('будет игроком основы'); } else { sc -= 8; why.push('придётся бороться за место'); }
       if (cur && p.morale < 45) { sc += 10; why.push('недоволен в нынешнем клубе'); }
+      if (p.pers === 'ambitious' && cur) { const d = team.rep - cur.rep; sc += d > 0 ? Math.min(14, d) : -6; why.push(d > 0 ? 'амбициозен — хочет в клуб сильнее' : 'амбициозен — не хочет вниз'); }
+      if (p.pers === 'loyal' && cur) { sc -= 12; why.push('предан своему клубу'); }
       if (p.age >= 31) sc += 5;
       if (p.nat === this.countryOf(team.league)) { sc += 5; why.push('родная страна'); }
       sc = Math.round(FM.clamp(sc, 0, 100));
@@ -2738,6 +2999,14 @@
       return { wage: Math.round(w * 10) / 10, prefYears, interest: it, bonus: FM.roundValue(w * 8) };
     }
 
+    // сколько стоит бонусная часть контракта для игрока в неделю (ожидание: голы по позиции и прошлому сезону,
+    // шанс еврокубков — по силе клуба)
+    bonusValue(p, team, bon) {
+      if (!bon) return 0;
+      const eg = Math.max({ ST: 12, LW: 7, RW: 7, AM: 6, CM: 3, DM: 1.5, LB: 1, RB: 1, CB: 1.5, GK: 0 }[p.pos] || 2, (p.st.g + p.cst.g) * 0.8);
+      const pe = FM.clamp((team.rep - 60) / 30, 0.05, 0.9);
+      return ((bon.goal || 0) * eg + (bon.euro || 0) * pe) / 52 * 0.85;
+    }
     agentFee(p, fee, wage) {
       return FM.roundValue(Math.max(fee * 0.05, wage * 4));
     }
@@ -2749,7 +3018,7 @@
       if (blocked) return { status: 'blocked', text: blocked };
       if (n.stage !== 'player') return { status: 'blocked', text: n.stage === 'club' ? 'Сначала договоритесь с клубом.' : 'Условия уже согласованы.' };
       const ROLE = { key: 'ключевой игрок', starter: 'игрок основы', rotation: 'ротация', backup: 'запасной' };
-      this.negoSay(n, 'you', `Контракт на ${t.years} г.: ${FM.money(t.wage)}/нед, подъёмные ${FM.money(t.bonus || 0)}, роль — ${ROLE[t.role]}${t.release ? `, отступные ${FM.money(t.release)}` : ''}.`);
+      this.negoSay(n, 'you', `Контракт на ${t.years} г.: ${FM.money(t.wage)}/нед, подъёмные ${FM.money(t.bonus || 0)}, роль — ${ROLE[t.role]}${t.release ? `, отступные ${FM.money(t.release)}` : ''}${t.bon && t.bon.goal ? `, ${FM.money(t.bon.goal)} за гол` : ''}${t.bon && t.bon.euro ? `, ${FM.money(t.bon.euro)} за еврокубки` : ''}.`);
       const d = this.playerDemand(p, u, t.role);
       const res = (status, text, extra = {}) => { this.negoSay(n, 'player', text); return Object.assign({ status, text }, extra); };
       if (d.interest.score < 15) {
@@ -2759,7 +3028,7 @@
       let need = d.wage;
       if (!d.prefYears.includes(t.years)) need *= 1.05;
       if (t.release) need *= t.release < p.value * 1.5 ? 0.93 : 0.97;
-      const got = t.wage + (t.bonus || 0) / (t.years * 52);
+      const got = t.wage + (t.bonus || 0) / (t.years * 52) + this.bonusValue(p, u, t.bon);
       if (got >= need) {
         n.stage = 'done';
         n.terms = Object.assign({}, t);
@@ -2806,7 +3075,7 @@
         return { ok: true, text: `${p.name} перейдёт в «${u.name}» летом.` };
       }
       if (p.club && !this.inWindow()) return { ok: false, text: 'Трансферное окно закрыто.' };
-      this.transfer(p, u, c.fee, n.terms.wage, n.terms.years, { inst: n.deal && n.deal.inst, sellOn: n.deal && n.deal.sellOn, role: n.terms.role, release: n.terms.release, agent: c.agent, bonus: c.bonus });
+      this.transfer(p, u, c.fee, n.terms.wage, n.terms.years, { inst: n.deal && n.deal.inst, sellOn: n.deal && n.deal.sellOn, role: n.terms.role, release: n.terms.release, agent: c.agent, bonus: c.bonus, bon: n.terms.bon });
       delete s.nego[pid];
       return { ok: true, text: `${p.name} — ваш игрок!` };
     }
@@ -2858,7 +3127,11 @@
         to.money -= extra;
         if (to.id === s.user) this.finLog(to, `Агент и подъёмные: ${p.name}`, -extra);
       }
-      p.sellOn = opts.sellOn && from ? { club: from.id, pct: opts.sellOn } : null;
+      // процент с будущей продажи: по договорённости; клубы ИИ часто оставляют его за собой, продавая молодых
+      let so = opts.sellOn || 0;
+      if (!so && from && fee > 0 && from.id !== s.user && to.id !== s.user && p.age <= 23 && Math.random() < 0.5) so = FM.pick([10, 15, 20]);
+      p.sellOn = so && from ? { club: from.id, pct: so } : null;
+      p.bon = opts.bon && (opts.bon.goal || opts.bon.euro) ? opts.bon : null;
       p.joined = s.date;
       if (fee > 0) {
         const H = this.hall();
@@ -2933,6 +3206,8 @@
       }
       if (p.age >= 35) why.push('возраст: только на один сезон'); else if (p.age >= 33) why.push('возраст: готов подписать на 1–2 года');
       if (p.morale >= 75 && stance === 'ok') { k *= 0.95; why.push('доволен в клубе'); }
+      if (p.pers === 'loyal') { k *= 0.9; why.push('предан клубу — уступает в деньгах'); }
+      if (p.pers === 'ambitious' && p.ovr >= this.teamBaseOvr(u) + 4) { k *= 1.12; if (stance === 'ok') stance = 'hesitant'; why.push('амбициозен — ждёт клуба уровнем выше'); }
       const prefYears = p.age < 24 ? [4, 5] : p.age < 30 ? [3, 4] : p.age < 33 ? [2, 3] : p.age < 35 ? [1, 2] : [1, 1];
       const maxYears = p.age >= 35 ? 1 : p.age >= 33 ? 2 : p.age >= 30 ? 3 : 5;
       const rn = p.rn && p.rn.season === s.season ? p.rn : { season: s.season, patience: 3, until: null };
@@ -2987,15 +3262,15 @@
     transferDay() {
       const s = this.s;
       const u = this.userTeam();
-      // предложения за игроков пользователя
-      for (const pid of u.players) {
+      // предложения за игроков пользователя (у тренера сборной своих игроков нет)
+      for (const pid of u.national ? [] : u.players) {
         const p = this.players[pid];
         if (p.loan || s.inbox.some((x) => x.type === 'offer' && x.data && x.data.pid === pid && !x.data.closed)) continue;
         const rank = this.squadRank(p);
         let pr = 0.0018 * Math.pow(p.ovr / 65, 4) * (rank <= 5 ? 1.4 : 1);
         if (p.listed) pr = 0.06;
         if (!FM.chance(pr)) continue;
-        const buyers = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && !this.foreignBlock(t, p));
+        const buyers = this.clubs().filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && !this.foreignBlock(t, p));
         if (!buyers.length) continue;
         const b = FM.pick(buyers);
         const fee = FM.roundValue(p.value * (p.listed ? FM.rnd() * 0.3 + 0.75 : FM.rnd() * 0.45 + 0.9));
@@ -3003,17 +3278,17 @@
         this.msg(`Предложение за ${p.name}`, `«${b.name}» предлагает ${FM.money(fee)} за ${p.name}. Ответить нужно в течение 5 дней.`, 'offer', { pid, from: b.id, fee, until: FM.addDays(s.date, 5) });
       }
       // отступные в контрактах игроков пользователя
-      for (const pid of u.players.slice()) {
+      for (const pid of u.national ? [] : u.players.slice()) {
         const p = this.players[pid];
         if (!p.release || p.release > p.value * 1.6 || !FM.chance(0.004)) continue;
-        const b = Object.values(this.teams).find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5);
+        const b = this.clubs().find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5);
         if (!b) continue;
         this.msg('Отступные активированы', `«${b.name}» выплатил отступные ${FM.money(p.release)} — ${p.name} уходит из клуба.`, 'transfer');
         this.transfer(p, b, p.release, null, FM.ri(3, 5));
       }
       // трансферы между клубами ИИ: летом рынок активнее, чем зимой; топ-клубы иногда охотятся за звёздами,
       // молодёжь больших клубов уходит в аренду туда, где будет играть
-      const ai = Object.values(this.teams).filter((t) => t.id !== u.id && !t.reserveOf);
+      const ai = this.clubs().filter((t) => t.id !== u.id && !t.reserveOf);
       const summer = s.date >= s.window.from && s.date <= s.window.to;
       const cache = {};
       for (let k = 0; k < (summer ? 12 : 6); k++) this.aiBuy(FM.pick(ai), cache);
@@ -3069,6 +3344,8 @@
       const cands = [];
       for (const tid in this.teams) {
         const t = this.teams[tid];
+
+        if (t.national) continue;
         if (t.id === buyer.id || t.id === s.user || t.reserveOf === buyer.id || t.players.length <= 20) continue;
         if (t.rep > buyer.rep + 12) continue;
         for (const pid of t.players) {
@@ -3163,6 +3440,8 @@
       const s = this.s, info = {};
       for (const id in this.teams) {
         const t = this.teams[id];
+
+        if (t.national) continue;
         if (id === s.user || t.reserveOf) continue;
         const pos = {};
         for (const pid of t.players) { const p = this.players[pid]; if (p) (pos[p.pos] = pos[p.pos] || []).push(p.ovr); }
@@ -3238,6 +3517,8 @@
       let info = null;
       for (const id in this.teams) {
         const t = this.teams[id];
+
+        if (t.national) continue;
         if (t.reserveOf) continue;
         const mine = id === s.user;
         const core = mine ? null : this.coreOf(t);
@@ -3299,7 +3580,7 @@
       if (!p || p.club !== s.user) { m.data.result = 'Неактуально'; return 'Игрок уже не в клубе.'; }
       if (!this.inWindow()) { m.data.result = 'Окно закрыто'; return 'Трансферное окно закрыто.'; }
       if (b.money < m.data.fee) { m.data.result = 'Сорвалось'; return `«${b.name}» больше не может позволить себе эту сумму.`; }
-      this.transfer(p, b, m.data.fee, null, FM.ri(2, 4));
+      this.transfer(p, b, m.data.fee, null, FM.ri(2, 4), { sellOn: p.age <= 23 ? 10 : 0 });
       m.data.result = 'Продан';
       return `${p.name} продан в «${b.name}» за ${FM.money(m.data.fee)}.`;
     }
@@ -3312,6 +3593,7 @@
     // Вызывается каждый день; возвращает id письма, если событие произошло.
     randomEvent() {
       const s = this.s, u = this.userTeam();
+      if (u.national) return null;
       // Событие может случиться в любой день: после предыдущего — короткая пауза в 2–4 дня (s.evNext),
       // дальше каждый день шанс 7,5% (в среднем раз в две недели, но бывает и через три дня, и через месяц).
       if (!s.evNext) s.evNext = FM.addDays(s.date, FM.ri(2, 4));
