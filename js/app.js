@@ -224,7 +224,7 @@
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '') + (p.club && g().teams[p.club] && g().isForeignIn(p, g().teams[p.club]) ? '<span class="ico leg" title="Легионер: попадает под лимит лиги">Л</span>' : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
-  const compName = (c) => (FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compName = (c) => (c === 'natfr' ? 'Товарищеский матч' : FM.isNat(c) && g().ntOfComp(c) && !g().s.leagues[c] ? g().ntOfComp(c).name : FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
   const compShort = (c) => (FM.isCup(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
   // пометка особого матча: дерби или матч лидеров
@@ -908,12 +908,12 @@
       ${s.seasonOver ? `<section class="tile w2 season-over" data-go="review"><header><span class="hic">${icon('trophy')}</span><span class="tt">Сезон ${seasonLabel(s)} завершён</span><span class="chev">›</span></header>
         <div class="tb"><div>Посмотрите итоги: чемпионы, кубки, лучшие игроки. Таблицы и статистика сезона ещё доступны.</div>
         <div class="row" style="margin-top:10px"><button class="btn primary" id="rv-open">Итоги сезона</button><span class="small muted">Новый сезон — кнопкой «Новый сезон» вверху</span></div></div></section>` : ''}
-      ${tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><span class="hide-m">${form(r.form)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
+      ${u.national ? tile('Турниры сборной', 'tables:nat', ntTiles(u), '', 'trophy') : ''}${u.national && !L.nt ? '' : tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><span class="hide-m">${form(r.form)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       ${tile('Ближайшие матчи', 'fixtures', upcoming.slice(0, 4).map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
         return `<div class="sched"><b>${shortDate(m.date)}</b>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
       }).join('') || '<div class="muted">Сезон завершён</div>', '', 'calendar')}
-      ${tile(u.national ? 'Сборная' : 'Клуб', 'club', `${u.national ? `<div class="kvl"><span>Турнир</span><b>${esc(G.s.nat ? G.s.nat.name : '')}</b></div>` : `<div class="kvl"><span>Деньги</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>`}
+      ${tile(u.national ? 'Сборная' : 'Клуб', 'club', `${u.national ? `<div class="kvl"><span>Турнир</span><b>${esc((G.ntMain(u.id) || {}).name || 'товарищеские матчи')}</b></div>` : `<div class="kvl"><span>Деньги</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>`}
         <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
         <div class="kvl"><span>Доверие руководства</span><b class="${conf < 45 ? 'bad' : conf < 75 ? 'warn' : 'good'}">${conf}%</b></div>
         <div class="kvl"><span>Трансферное окно</span><b>${G.inWindow() ? 'открыто' : 'закрыто'}</b></div>`, '', 'shield')}
@@ -954,7 +954,7 @@
   // вызов в сборную: лучшие игроки страны, у которых есть право играть за неё
   function callupCard(u) {
     const G = g(), c = u.natCode;
-    const pool = G.natPool(c).slice(0, 70);
+    const taken = G.ntTaken(u), pool = G.natPool(c).filter((p) => G.eligibleFor(p, c) && (!taken.has(p.id) || u.players.includes(p.id))).slice(0, 70);
     const on = new Set(u.players);
     return `<div class="card callup"><div class="row"><h3 class="grow">Вызов в сборную · ${on.size} из 26</h3><button class="btn sm" id="cu-auto">Вызвать лучших</button></div>
       <div class="small muted" style="margin-bottom:8px">Игроки остаются в своих клубах и приезжают на окна сборных. Травмированных лучше не вызывать — ассистент заменит их перед сбором.</div>
@@ -1216,7 +1216,7 @@
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
       <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
-      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}${s.nat ? `<button data-v="nat" class="${view === 'nat' ? 'on' : ''}">Сборные</button>` : ''}<button data-v="awards" class="${view === 'awards' ? 'on' : ''}">Награды</button></div></div>
+      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}${s.nt ? `<button data-v="nat" class="${view === 'nat' ? 'on' : ''}">Сборные</button>` : ''}<button data-v="awards" class="${view === 'awards' ? 'on' : ''}">Награды</button></div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
@@ -1229,26 +1229,69 @@
     if (ep) ep.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.max(1, UI.euroMd[view] - 1) } }); render(); };
     if (en) en.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.min(8, UI.euroMd[view] + 1) } }); render(); };
     main.querySelectorAll('[data-nsub]').forEach((b) => b.onclick = () => { UI.natSub = b.dataset.nsub; render(); });
+    main.querySelectorAll('[data-ntsel]').forEach((b) => b.onclick = () => { UI.ntSel = b.dataset.ntsel; UI.natSub = null; render(); });
     main.querySelectorAll('[data-eus]').forEach((b) => b.onclick = () => { UI.euroSub = Object.assign(UI.euroSub || {}, { [b.dataset.eid]: b.dataset.eus }); render(); });
   }
 
-  // ================== сборные: группы отбора и финальный турнир ==================
+  // ================== сборные: все турниры цикла (ЧМ, Евро, Кубок Америки, КАН, Кубок Азии, Золотой кубок, Лига наций) ==================
   function natView() {
-    const G = g(), s = G.s, N = s.nat, u = G.userTeam();
-    if (!N) return '<div class="card muted">Турнир сборных начнётся со следующего сезона.</div>';
-    const sub = UI.natSub || (N.ko.length ? 'po' : 'group');
-    const tabs = `<div class="seg eu-tabs">${[['group', 'Отбор'], ['po', 'Финальный турнир']].map(([k, n]) => `<button data-nsub="${k}" class="${k === sub ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    const head = `<h3 style="margin:4px 0 12px">${icon('trophyF', 'tro')} ${esc(N.name)}${N.winner ? ` · победитель — ${esc(T(N.winner).name)}` : ''}</h3>`;
-    if (sub === 'po') {
-      const cols = N.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0]].date), ties: R.ties.map((id) => cupTie(s.matches[id])) }));
-      return tabs + head + (cols.length ? `<div class="card">${bracket(cols, N.winner, N.name)}</div>` : '<div class="card muted">Финальный турнир — в июне: 16 сборных (по две лучших из каждой группы отбора), игры на вылет.</div>');
+    const G = g(), s = G.s, NT = s.nt, u = G.userTeam();
+    if (!NT || !NT.list.length) return '<div class="card muted">Турниры сборных начнутся со следующего сезона.</div>';
+    const list = NT.list;
+    const mineT = list.find((T) => T.teams.includes(u.id) && !T.done) || list.find((T) => T.teams.includes(u.id));
+    let T = UI.ntSel === 'hist' ? null : list.find((x) => x.id === UI.ntSel) || mineT || list.find((x) => !x.done && x.kind !== 'qual') || list[0];
+    const chips = `<div class="seg eu-tabs nt-chips">${list.map((x) => `<button data-ntsel="${x.id}" class="${T && x.id === T.id ? 'on' : ''}">${x.teams.includes(u.id) ? '<i class="nt-me"></i>' : ''}${esc(x.short)}${x.done && x.winner ? ' ✓' : ''}</button>`).join('')}<button data-ntsel="hist" class="${!T ? 'on' : ''}">Победители</button></div>`;
+    if (!T) return chips + ntHistory();
+    const flag = (id) => `${badge(T_(id), 'sm')} <span data-team="${id}">${esc(T_(id).name)}</span>`;
+    const status = T.winner ? `победитель — ${esc(T_(T.winner).name)}` : T.pend ? 'участники определятся в отборе' : T.done ? 'завершён' : '';
+    const head = `<h3 class="nt-head">${icon('trophyF', 'tro')} ${esc(T.name)}${status ? `<span class="small muted"> · ${status}</span>` : ''}</h3>${T.hostsText ? `<div class="small muted" style="margin:-6px 0 10px">Хозяева: ${esc(T.hostsText)}</div>` : T.hosts && T.hosts.length ? `<div class="small muted" style="margin:-6px 0 10px">Хозяева: ${T.hosts.map((id) => esc(T_(id).name)).join(', ')}</div>` : ''}`;
+    if (T.pend) {
+      const got = [...new Set((T.direct || []).concat(...T.pend.map((id) => (G.ntT(id) || {}).qualified || [])))];
+      return chips + head + `<div class="card"><div class="small muted" style="margin-bottom:10px">${T.size} сборных. Жеребьёвка групп — сразу после отбора, турнир — ${FM.fmtDate(T.gDates[0])}. Уже известны: ${got.length}.</div>
+        <div class="nt-qlist">${got.map((id) => `<span class="nt-q">${flag(id)}</span>`).join('') || '<span class="muted small">пока никого</span>'}</div></div>`;
     }
-    return tabs + head + `<div class="nat-groups">${N.groups.map((lid) => { const L = s.leagues[lid], tab = G.table(lid);
+    const hasKo = T.ko.length || T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' || T.kind === 'ip' || (T.po || 0) > 0;
+    const sub = !T.groups.length ? 'po' : UI.natSub && (UI.natSub !== 'po' || hasKo) ? UI.natSub : T.ko.length && T.gdone ? 'po' : 'group';
+    const koName = T.kind === 'qual' || T.kind === 'ip' ? 'Стыки' : 'Плей-офф';
+    const tabs = T.groups.length && hasKo ? `<div class="seg eu-tabs">${[['group', T.kind === 'nl' ? 'Группы' : T.kind === 'qual' ? 'Группы отбора' : 'Группы'], ['po', koName]].map(([k, n]) => `<button data-nsub="${k}" class="${k === sub ? 'on' : ''}">${n}</button>`).join('')}</div>` : '';
+    if (sub === 'po') {
+      const cols = T.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0]].date), ties: R.ties.map((id) => cupTie(s.matches[id])) }));
+      const wait = T.kind === 'final' ? `Плей-офф — с ${FM.fmtDate(T.koDates[0])}: по две лучшие сборные из групп${T.groups.length * 2 < 2 ** Math.ceil(Math.log2(T.groups.length * 2)) ? ' и лучшие третьи' : ''}, игры на вылет.` : T.kind === 'nl' ? `1/4 финала (${FM.fmtDate(T.koDates[0])}) — по две лучшие сборные из групп Лиги A, «Финал четырёх» — в июне.` : `Стыки — ${FM.fmtDate(T.koDates[0])}.`;
+      return chips + head + tabs + (cols.length ? `<div class="card">${bracket(cols, T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' ? T.winner : null, T.name)}</div>` : `<div class="card muted">${wait}</div>`);
+    }
+    // зоны: после отбора — по факту, до — по месту в группе
+    const G0 = T.groups.length, qd = T.kind === 'qual' && T.gdone;
+    const poSet = new Set(T.ko.flatMap((R) => R.ties.flatMap((id) => [s.matches[id].h, s.matches[id].a])));
+    const zone = (r, L) => {
+      if (T.kind === 'qual') {
+        if (qd) return T.qualified.includes(r.id) && !poSet.has(r.id) ? 'ucl' : poSet.has(r.id) ? 'uel' : '';
+        const per = T.dir / G0;
+        return r.pos <= Math.floor(per) ? 'ucl' : r.pos <= Math.ceil(per + (T.po || 0) * 2 / G0) ? 'uel' : '';
+      }
+      if (T.kind === 'nl') return L.nlt === 'A' && r.pos <= 2 ? 'ucl' : L.nlt !== 'A' && r.pos === 1 ? 'up' : r.pos === L.teams.length && L.nlt !== 'C' ? 'down' : '';
+      return r.pos <= 2 ? 'ucl' : r.pos === 3 && G0 * 2 < 2 ** Math.ceil(Math.log2(G0 * 2)) ? 'uel' : '';
+    };
+    const legend = T.kind === 'qual'
+      ? `<span class="zone ucl"></span> путёвка на «${esc(T.target)}» (${T.dir}${G0 > 1 && T.dir !== G0 ? ' лучших по месту и очкам за матч' : G0 > 1 ? ' — победители групп' : ''})${T.po ? ` · <span class="zone uel"></span> стыки (${T.po * 2} сборных, ${FM.fmtDate(T.koDates[0])})` : ''}${T.next !== undefined || ['CONMEBOL', 'AFC', 'CAF', 'CONCACAF'].includes(T.conf) && T.base === 'wcq' ? ' · следующая после путёвок — в межконтинентальные стыки' : ''}`
+      : T.kind === 'nl' ? '<span class="zone ucl"></span> Лига A: 1/4 финала · <span class="zone up"></span> повышение · <span class="zone down"></span> вылет'
+      : `<span class="zone ucl"></span> выход в плей-офф${G0 * 2 < 2 ** Math.ceil(Math.log2(G0 * 2)) ? ' · <span class="zone uel"></span> лучшие третьи места тоже проходят' : ''}`;
+    const groups = T.groups.map((lid) => { const L = s.leagues[lid], tab = G.table(lid);
       const next = L.rounds.flat().map((id) => s.matches[id]).find((m) => !m.played);
       return `<div class="card tight"><h3>${esc(L.short)}${next ? `<span class="small muted"> · след. тур ${brDate(next.date)}</span>` : ''}</h3><table class="lt">
         <tr><th>#</th><th>Сборная</th><th class="num">И</th><th class="num">Мячи</th><th class="num">О</th></tr>
-        ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'ucl' : ''}"></span>${r.pos}</td><td>${badge(T(r.id), 'sm')} <span data-team="${r.id}">${esc(T(r.id).name)}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('')}</div>
-      <div class="small muted" style="margin-top:8px"><span class="zone ucl"></span> две лучшие сборные группы выходят в финальный турнир. Матчи — в окна сборных: сентябрь, октябрь, ноябрь.</div>`;
+        ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${zone(r, L)}"></span>${r.pos}</td><td>${badge(T_(r.id), 'sm')} <span data-team="${r.id}">${esc(T_(r.id).name)}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('');
+    return chips + head + tabs + `<div class="nat-groups${T.groups.length === 1 ? ' one' : ''}">${groups}</div><div class="small muted" style="margin-top:8px">${legend}</div>`;
+  }
+  const T_ = (id) => g().teams[id];
+  function ntTiles(u) {
+    const G = g(), L = (G.s.nt ? G.s.nt.list : []).filter((T) => T.teams.includes(u.id) || T.pend && T.pend.some((id) => (G.ntT(id) || { teams: [] }).teams.includes(u.id)));
+    return L.map((T) => `<div class="mini"><span class="grow ell">${esc(T.short)}</span><b class="small">${esc(T.res[u.id] || (T.pend ? 'впереди' : T.teams.includes(u.id) ? 'идёт' : '—'))}</b></div>`).join('') || '<div class="muted">В этом сезоне — только товарищеские матчи</div>';
+  }
+  function ntHistory() {
+    const h = g().s.ntHist || [];
+    if (!h.length) return '<div class="card muted">Победители появятся, когда завершится первый турнир.</div>';
+    return `<div class="card"><h3>Победители турниров сборных</h3><table class="lt nt-hist"><tr><th>Год</th><th>Турнир</th><th>Победитель</th><th class="hide-m">Финал</th></tr>
+      ${h.map((x) => `<tr><td class="num">${x.year}</td><td>${esc(x.name)}</td><td>${badge(T_(x.winner), 'sm')} <span data-team="${x.winner}">${esc(T_(x.winner).name)}</span></td><td class="hide-m small muted">${x.runner ? `${x.score} — ${esc(T_(x.runner).name)}` : ''}</td></tr>`).join('')}</table></div>`;
   }
 
   // ================== турнирная сетка ==================
@@ -2758,7 +2801,7 @@
     const G = g(), s = G.s;
     const list = G.natMarket();
     if (!list.length) return '';
-    return `<div class="card coach-market"><h3>Сборные</h3><div class="small muted" style="margin-bottom:8px">Тренер сборной не работает в клубе: приняв сборную, вы уйдёте из клуба. Матчи — в окна сборных и летний финальный турнир «${esc(s.nat.name)}»; игроков не покупают, а вызывают.</div>
+    return `<div class="card coach-market"><h3>Сборные</h3><div class="small muted" style="margin-bottom:8px">Тренер сборной не работает в клубе: приняв сборную, вы уйдёте из клуба. Матчи — в окна ФИФА (сентябрь, октябрь, ноябрь, март, июнь) и на турнирах: чемпионат мира, Евро, Кубок Америки, КАН, Кубок Азии, Золотой кубок, Лига наций. Игроков не покупают, а вызывают.</div>
       <div class="cm-list">${list.map((x) => { const t = T(x.id); const [lt, lc] = LEVEL[x.level]; return `<div class="cm-row">${badge(t, 'sm')}<div class="grow"><b data-team="${t.id}">${esc(t.name)}</b><div class="small muted">рейтинг ${t.rep} · ${esc(s.leagues[t.league] ? s.leagues[t.league].short : '')}</div></div>
         <span class="lvl ${lc}">${x.refused ? 'отказали в этом сезоне' : lt}</span>${x.level >= 1 && !x.refused ? `<button class="btn sm ${x.level >= 2 ? 'primary' : ''}" data-apply="${t.id}">${x.level >= 2 ? 'Возглавить' : 'Подать заявку'}</button>` : ''}</div>`; }).join('')}</div></div>`;
   }

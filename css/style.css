@@ -2544,3 +2544,12 @@ html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { pa
 .cu span { display: grid; min-width: 0; } .cu span b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .cu em { font-style: normal; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cu-o { font: 700 var(--fs-base) var(--f-display); }
 .fit-n { font: 600 var(--fs-xs) var(--f-display); margin-left: 6px; color: var(--muted); } .fit-n.warn { color: var(--warn); } .fit-n.bad { color: var(--bad); }
+/* турниры сборных */
+.nt-chips { flex-wrap: wrap; gap: 4px; }
+.nt-chips button { position: relative; }
+.nt-me { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 6px; vertical-align: 1px; }
+.nt-head { margin: 4px 0 12px; }
+.nt-qlist { display: flex; flex-wrap: wrap; gap: 8px; }
+.nt-q { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; background: var(--glass2); font-size: var(--fs-sm); }
+.nat-groups.one { grid-template-columns: minmax(0, 560px); }
+.nt-hist td { vertical-align: middle; }

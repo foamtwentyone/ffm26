@@ -255,6 +255,33 @@
     HUN: ['#cd2a3e', '#ffffff'], SVK: ['#ffffff', '#0b4ea2'], SVN: ['#ffffff', '#005da4'], ARM: ['#d90012', '#0033a0'], AZE: ['#00b5e2', '#ef3340'], BLR: ['#c8313e', '#ffffff'], IRL: ['#169b62', '#ffffff'], WAL: ['#d30731', '#00b140'] };
   const NAT_DATES = { q: ['09-03', '09-07', '10-08', '10-12', '11-12', '11-16'], ko: [['06-05', '1/8 финала'], ['06-10', '1/4 финала'], ['06-15', '1/2 финала'], ['06-20', 'Финал']] };
 
+  // ---- турниры сборных: календарь окон ФИФА ----
+  // осенние даты отбора (по 3 в окно); группе из 4 хватает шести (по 2 в окно)
+  const NT_P = ['09-03', '09-06', '09-09', '10-07', '10-10', '10-13', '11-11', '11-14', '11-17'];
+  // товарищеские — в окна, если у сборной нет официальных матчей рядом
+  const NT_FR = ['09-04', '09-08', '10-08', '10-12', '11-12', '11-16', '03-24', '03-28', '06-05', '06-09'];
+  const ntDate = (y, md) => `${md < '08' ? y + 1 : y}-${md}`;
+  function qDates(y, R) {
+    const all = NT_P.map((d) => `${y}-${d}`);
+    if (R <= 6) return [0, 1, 3, 4, 6, 7].map((i) => all[i]).slice(0, R);
+    if (R <= 9) return all.slice(0, R);
+    return all.concat([`${y + 1}-03-19`, `${y + 1}-03-22`]).slice(0, R);
+  }
+  // круговая система (метод круга); null — пропуск тура
+  function rrRounds(ids, double) {
+    const a = ids.slice(); if (a.length % 2) a.push(null);
+    const n = a.length, R = [];
+    for (let r = 0; r < n - 1; r++) {
+      const pr = [];
+      for (let i = 0; i < n / 2; i++) { const x = a[i], y = a[n - 1 - i]; if (x && y) pr.push(r % 2 ? [y, x] : [x, y]); }
+      R.push(pr); a.splice(1, 0, a.pop());
+    }
+    return double ? R.concat(R.map((pr) => pr.map(([h, w]) => [w, h]))) : R;
+  }
+  // хозяева чемпионатов мира (проходят без отбора)
+  const WC_HOSTS = { 2030: ['ESP', 'POR', 'MAR'], 2034: ['KSA'] };
+  const EURO_HOSTS = { 2028: 'Англия, Шотландия, Уэльс и Ирландия', 2032: 'Италия и Турция' };
+
   class Game {
     constructor(state) {
       this.s = state;
@@ -287,7 +314,8 @@
         if (FM.leagues) this.addMissingRealPlayers();
       }
       // старые сохранения: дополнительных позиций не было (только выученные переучиванием) — раздаём, выученные сохраняем
-      if (!state.nat && FM.leagues && state.date < `${state.season}-09-01`) this._natLater = true;
+      if (!state.nt && !state.nat && FM.leagues && state.date < `${state.season}-09-01`) this._natLater = true;
+      if (state.nat && !state.nt) this._ntMig = true;
       if (!state.staV1) { state.staV1 = true; for (const id in this.players) { const p = this.players[id]; if (!p.sta) p.sta = FM.staFor(p.name, p.pos, p.age); } }
       if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {
@@ -330,6 +358,7 @@
       }
       // старые сохранения: сборные появляются, если отбор этого сезона ещё не начался
       if (this._natLater) { delete this._natLater; this.setupNations(); }
+      if (this._ntMig) { delete this._ntMig; this.ntMigrate(); }
     }
 
     repairStarMoves() {
@@ -826,7 +855,7 @@
       const nearCup = (c, d) => ((s.cups[c] && s.cups[c].rounds) || []).map((R) => R.date).some((c) => Math.abs(FM.parseDate(c) - FM.parseDate(d)) <= 2 * 864e5);
       for (const m of this.todayMatches()) {
         const L = s.leagues[m.comp];
-        if (!L || inEuro.has(m.h) || inEuro.has(m.a) || !FM.chance(0.025)) continue;
+        if (!L || L.national || inEuro.has(m.h) || inEuro.has(m.a) || !FM.chance(0.025)) continue;
         const lastRounds = s.matches[L.rounds[Math.max(0, L.rounds.length - 3)][0]].date;
         busy = busy || this.busyDates();
         this.busyDel(busy, m, m.date);
@@ -1598,7 +1627,7 @@
         if (c && c.md && s.euro && s.euro[E.id]) { const row = this.euroTable(E.id).find((r) => r.id === u.id); if (row) c.pos = row.pos; }
       }
       ce.final = { league: summary.userLeague, pos, cup: Object.values(s.cups).some((c) => c.winner === u.id), euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) };
-      s.history.unshift({ year: y, league: u.national ? `${s.nat ? s.nat.name : 'Сборная'}${s.nat && s.nat.winner === u.id ? ' · победа' : ''}` : summary.userLeague, pos, team: u.id, cup: Object.values(s.cups).some((c) => c.winner === u.id), moved: moved ? (moved.up ? 'up' : 'down') : null,
+      s.history.unshift({ year: y, league: u.national ? (s.nt ? s.nt.list.filter((T) => T.teams.includes(u.id)).map((T) => `${T.short}: ${T.res[u.id] || 'участие'}`).join('; ') : '') || 'Сборная' : summary.userLeague, pos, team: u.id, cup: Object.values(s.cups).some((c) => c.winner === u.id), moved: moved ? (moved.up ? 'up' : 'down') : null,
         euro: Object.keys(summary.euro).filter((id) => summary.euro[id] === u.id) });
       this.msg(`Итоги сезона ${y}/${String(y + 1).slice(2)}`, `«${u.name}» занимает ${pos}-е место (${s.leagues[summary.userLeague].name}). ${verdict}`, 'board');
 
@@ -1701,7 +1730,8 @@
       }
 
       s.season++;
-      s.date = `${s.season}-06-20`;
+      // после летнего турнира сборных межсезонье начинается позже
+      s.date = [`${s.season}-06-20`, FM.addDays(s.date, 1)].sort()[1];
       const added = this.addMissingLeagues();
       if (added.length) this.news(`В игре новые лиги: ${added.map((L) => L.name).join(', ')}.`);
       this.newSeason(false);
@@ -1850,7 +1880,7 @@
         const nc = this.natMarket().filter((x) => x.level >= 2 && !x.refused && (s.jobDeclined || {})[x.id] !== s.season);
         if (nc.length) {
           const t = this.teams[FM.pick(nc.slice(0, 4)).id];
-          this.msg(`Предложение от федерации: ${t.name}`, `Федерация футбола (${t.name}) предлагает вам возглавить национальную сборную. Тренер сборной не работает в клубе: вы уйдёте из «${u.name}». Сборная выступает в турнире «${s.nat.name}».`, 'job', { team: t.id });
+          this.msg(`Предложение от федерации: ${t.name}`, `Федерация футбола (${t.name}) предлагает вам возглавить национальную сборную. Тренер сборной не работает в клубе: вы уйдёте из «${u.name}». ${this.ntMain(t.id) ? `Ближайший турнир — «${this.ntMain(t.id).name}».` : ''}`, 'job', { team: t.id });
           return;
         }
       }
@@ -2057,7 +2087,7 @@
           const r = side.rating[pid];
           ratings[pid] = r;
           const st = SO(p);
-          if (natM) p.caps = (p.caps || 0) + 1;
+          if (natM) { p.caps = (p.caps || 0) + 1; if (!p.ntc && t.natCode) p.ntc = t.natCode; }
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;
@@ -2726,54 +2756,406 @@
     // ================== сборные ==================
     natCode(t) { return t.natCode; }
     // гражданин и может играть за сборную c
-    eligibleFor(p, c) { return p.nat === c || p.nat2 === c || (p.elig || []).includes(c); }
-    // сила страны: 23 лучших игрока
-    natPool(c) { return Object.values(this.players).filter((p) => p.club && this.eligibleFor(p, c)).sort((a, b) => b.ovr - a.ovr); }
-    setupNations() {
-      const s = this.s, y = s.season;
-      // страны с достаточным числом игроков в базе
-      const by = {};
-      for (const id in this.players) { const p = this.players[id]; if (!p.club) continue; for (const c of [p.nat, p.nat2].filter(Boolean)) (by[c] = by[c] || []).push(p.ovr); }
-      const str = Object.entries(by).filter(([, a]) => a.length >= 20).map(([c, a]) => [c, a.sort((x, z) => z - x).slice(0, 18).reduce((x, z) => x + z, 0) / 18]).sort((a, b) => b[1] - a[1]);
-      const keep = s.user && this.teams[s.user] && this.teams[s.user].national ? this.teams[s.user].natCode : null;
-      const list = str.slice(0, 32).map((x) => x[0]);
-      // всегда есть сборная страны клуба тренера и сборная России (если хватает игроков в базе)
-      const must = [keep, 'RUS', this.teams[s.user] && !this.teams[s.user].national ? this.countryOf(this.teams[s.user].league) : null].filter((c) => c && by[c] && by[c].length >= 20);
-      for (const c of must) if (!list.includes(c)) list.splice(list.length - 1 - must.indexOf(c), 1, c);
-      // старые группы убираем
-      for (const lid of Object.keys(s.leagues)) if (s.leagues[lid].national) delete s.leagues[lid];
-      const rate = Object.fromEntries(str);
-      for (const c of list) {
-        const id = `nat_${c}`;
-        const t = this.teams[id] = this.teams[id] || { id, national: true, natCode: c, name: (FM.NAT && FM.NAT[c]) || c, city: (FM.NAT && FM.NAT[c]) || c, stadium: 'Национальный стадион', cap: 55000,
-          colors: NAT_COLORS[c] || ['#2b3a67', '#ffffff'], money: 0, sponsor: 0, players: [], formation: '4-3-3', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 }, form: [], fin: { income: 0, expense: 0, log: [] } };
-        t.rep = Math.round(FM.clamp(30 + (rate[c] - 60) * 2.2, 40, 95));
-        t.form = [];
+    // сыгравший за сборную закреплён за ней (p.ntc) и за другую уже не выступает
+    eligibleFor(p, c) { return p.ntc ? p.ntc === c : p.nat === c || p.nat2 === c || (p.elig || []).includes(c); }
+    // все, кто может играть за сборную c (индекс строится раз в день)
+    natPool(c) {
+      if (!this._np || this._np.d !== this.s.date || this._np.n !== this._npGen) {
+        const idx = {};
+        for (const id in this.players) { const p = this.players[id]; if (!p.club && !p.ntr) continue; for (const k of new Set([p.nat, p.nat2, ...(p.elig || [])].filter(Boolean))) (idx[k] = idx[k] || []).push(p); }
+        for (const k in idx) idx[k].sort((a, b) => b.ovr - a.ovr);
+        this._np = { d: this.s.date, n: this._npGen, idx };
       }
-      // посев: 4 корзины по силе, 8 групп
-      const seeded = list.slice().sort((a, b) => rate[b] - rate[a]);
-      const groups = Array.from({ length: 8 }, () => []);
-      for (let pot = 0; pot < 4; pot++) FM.shuffle(seeded.slice(pot * 8, pot * 8 + 8)).forEach((c, i) => groups[i].push(`nat_${c}`));
-      const letters = 'ABCDEFGH';
-      s.nat = { season: y, name: `Кубок наций ${y + 1}`, groups: [], ko: [], final: null, winner: null, teams: list.map((c) => `nat_${c}`) };
+      return (this._np.idx[c] || []).slice();
+    }
+    // сборные всех стран, у которых в базе хватает игроков (≥ 10), с рейтингом по 18 лучшим
+    ntTeams() {
+      const s = this.s, by = {};
+      for (const id in this.players) { const p = this.players[id]; if (!p.club) continue; for (const c of new Set([p.nat, p.nat2].filter(Boolean))) (by[c] = by[c] || []).push(p.ovr); }
+      const ids = [];
+      for (const [c, a] of Object.entries(by)) {
+        const id = `nat_${c}`;
+        if (!FM.CONF[c] || (a.length < 10 && id !== s.user)) continue;
+        a.sort((x, z) => z - x);
+        const rate = a.slice(0, 18).reduce((x, z) => x + z, 0) / 18;
+        const t = this.teams[id] = this.teams[id] || { id, national: true, natCode: c, name: FM.NAT[c] || c, city: FM.NAT[c] || c, stadium: 'Национальный стадион', cap: 55000,
+          colors: NAT_COLORS[c] || ['#2b3a67', '#ffffff'], money: 0, sponsor: 0, players: [], formation: '4-3-3', lineup: [], bench: [], tactics: { ment: 0, press: 1, tempo: 1 }, form: [], fin: { income: 0, expense: 0, log: [] } };
+        t.rate = Math.round(rate * 10) / 10;
+        this.ntReserves(c, a);
+        t.rep = Math.round(FM.clamp(30 + (rate - 60) * 2.2, 35, 95));
+        t.conf = FM.CONF[c];
+        ids.push(id);
+      }
+      return ids.sort((a, b) => this.teams[b].rate - this.teams[a].rate);
+    }
+    ntBase(keep) {
+      const s = this.s;
+      s.leagues.natall = { id: 'natall', name: 'Сборные', short: 'Сборные', tier: 0, national: true, country: 'INT', ticket: 3, prize: [0, 0, 0, 0], teams: s.nt.teams.slice(), rounds: [], weekday: 4 };
+      for (const id of s.nt.teams) if (!(keep || []).includes(id)) this.teams[id].league = 'natall';
+    }
+    // малым странам не хватает игроков в базе: добираем резервистов из местных лиг (без клуба, вызываются только в сборную)
+    ntReserves(c, ovrs) {
+      const mine = Object.values(this.players).filter((p) => p.nat === c && (p.club || p.ntr));
+      const res = mine.filter((p) => p.ntr && p.age <= 33), gk = mine.filter((p) => p.pos === 'GK' && (p.club || p.age <= 33)).length;
+      const need = Math.max(0, 24 - ovrs.length - res.length), needGk = Math.max(0, 3 - gk);
+      if (!need && !needGk) return;
+      const names = mine.filter((p) => !p.ntr).map((p) => p.name.split(' ')).filter((x) => x.length >= 2);
+      const name = () => names.length >= 4 ? `${FM.pick(names)[0]} ${FM.pick(names).slice(-1)[0]}` : FM.genName(c);
+      const base = ovrs.length ? ovrs[Math.min(ovrs.length - 1, 13)] : 55;
+      const POS = ['CB', 'CM', 'ST', 'CB', 'LB', 'RB', 'DM', 'AM', 'LW', 'RW', 'CM', 'ST'];
+      const total = Math.max(need, needGk);
+      for (let i = 0; i < total; i++) {
+        const pos = i < needGk ? 'GK' : POS[i % POS.length];
+        const p = this.createPlayer({ name: name(), pos, age: FM.ri(20, 31), ovr: Math.round(FM.clamp(base - FM.ri(2, 7), 42, 68)), nat: c, gen: true }, null);
+        p.ntr = c;
+      }
+    }
+    ntT(id) { return this.s.nt && this.s.nt.list.find((T) => T.id === id); }
+    // турнир по коду соревнования (группа или плей-офф)
+    ntOfComp(c) {
+      const s = this.s;
+      if (!s.nt || !FM.isNat(c)) return null;
+      if (s.leagues[c] && s.leagues[c].nt) return this.ntT(s.leagues[c].nt);
+      return s.nt.list.find((T) => (T.kocomp || `natko_${T.id}`) === c) || null;
+    }
+    ntByConf(conf, opts = {}) { return this.s.nt.teams.filter((id) => this.teams[id].conf === conf && !(opts.fifa && FM.NONFIFA.has(this.teams[id].natCode)) && !(opts.not || []).includes(id)); }
+    ntNew(o) {
+      const T = Object.assign({ groups: [], ko: [], koDates: [], winner: null, done: false, gdone: false, qualified: [], res: {}, teams: [] }, o);
+      this.s.nt.list.push(T);
+      return T;
+    }
+    // жеребьёвка по корзинам: в каждой группе по одной сборной из корзины; check — ограничение (напр. конфедерации)
+    drawGroups(ids, G, check, first) {
+      const sorted = ids.slice().sort((a, b) => ((first || []).includes(b) - (first || []).includes(a)) || this.teams[b].rate - this.teams[a].rate);
+      for (let tries = 0; tries < 300; tries++) {
+        const groups = Array.from({ length: G }, () => []);
+        let ok = true;
+        for (let k = 0; k < sorted.length && ok; k += G) {
+          const pot = FM.shuffle(sorted.slice(k, k + G)), lvl = k / G;
+          for (const t of pot) {
+            const cand = FM.shuffle(groups.map((_, i) => i).filter((i) => groups[i].length === lvl && (!check || tries > 250 || check(groups[i], t))));
+            if (!cand.length) { ok = false; break; }
+            groups[cand[0]].push(t);
+          }
+        }
+        if (ok) return groups;
+      }
+      return Array.from({ length: G }, (_, i) => sorted.filter((_, k) => k % G === i));
+    }
+    // групповой этап: dates(R) — даты туров
+    ntGroups(T, groups, { double = true, dates, neutral = false, names } = {}) {
+      const s = this.s, letters = 'ABCDEFGHIJKLMNOP';
       groups.forEach((g, i) => {
-        const lid = `nat${letters[i]}`;
-        const L = s.leagues[lid] = { id: lid, name: `Кубок наций · отбор, группа ${letters[i]}`, short: `Группа ${letters[i]}`, tier: 0, national: true, country: 'INT', ticket: 3, prize: [0, 0, 0, 0], teams: g.slice(), rounds: [], weekday: 4 };
-        // два круга: 6 туров
-        const [a, b, c2, d] = g, pairs = [[[a, b], [c2, d]], [[a, c2], [b, d]], [[a, d], [b, c2]]];
-        const rounds = pairs.concat(pairs.map((r) => r.map(([h, w]) => [w, h])));
-        rounds.forEach((r, k) => { L.rounds.push(r.map(([h, w]) => this.addMatch({ comp: lid, round: k + 1, date: `${y}-${NAT_DATES.q[k]}`, h, a: w }))); });
-        for (const id of g) this.teams[id].league = lid;
-        s.nat.groups.push(lid);
+        const lid = `nat${T.id}_${T.groups.length}`, short = names ? names[i] : `Группа ${letters[i]}`;
+        const R = rrRounds(g, double), ds = dates ? dates(R.length) : qDates(T.y, R.length);
+        const L = s.leagues[lid] = { id: lid, nt: T.id, name: `${T.name} · ${short}`, short, tier: 0, national: true, country: 'INT', ticket: 3, prize: [0, 0, 0, 0], teams: g.slice(), rounds: [], weekday: 4 };
+        R.forEach((r, k) => L.rounds.push(r.map(([h, a]) => this.addMatch({ comp: lid, round: k + 1, date: ds[k], h, a, neutral }))));
+        for (const id of g) { this.teams[id].league = lid; if (!T.teams.includes(id)) T.teams.push(id); }
+        T.groups.push(lid);
       });
-      for (const id of s.nat.teams) { this.natCallup(this.teams[id], true); this.pickFormation(this.teams[id]); }
       this._tables = {};
+    }
+    // отбор: группы → прямые путёвки по месту и очкам за игру → стыки
+    ntQual(o, teams) {
+      const T = this.ntNew(Object.assign({ kind: 'qual' }, o));
+      if (!teams.length) { T.done = true; return T; }
+      const G = o.league ? 1 : Math.max(1, Math.floor(teams.length / (o.gsize || 4))), big = Math.ceil(teams.length / G);
+      // не больше 10 туров: большая группа играет в один круг
+      this.ntGroups(T, this.drawGroups(teams, G), { double: o.double !== false && big <= 6, names: o.league ? ['Таблица'] : null });
+      return T;
+    }
+    // финальный турнир: группы по 4 → лучшие → плей-офф. pend — турниры, чьи участники сюда выходят
+    ntFinal(o) {
+      const T = this.ntNew(Object.assign({ kind: 'final' }, o));
+      if (!o.pend || !o.pend.length) this.ntDraw(T); else T.pend = o.pend;
+      return T;
+    }
+    ntDraw(T) {
+      const s = this.s, fromQ = [];
+      for (const id of T.pend || []) { const S = this.ntT(id); if (S) fromQ.push(...S.qualified); }
+      delete T.pend;
+      let teams = [...new Set((T.direct || []).concat(fromQ))].filter((id) => this.teams[id]);
+      // если в базе не хватило отбора — добираем сильнейших из пула
+      for (const id of (T.fill || []).filter((x) => !teams.includes(x))) { if (teams.length >= T.size) break; teams.push(id); }
+      const G = Math.max(1, Math.floor(Math.min(T.size, teams.length) / 4));
+      teams = teams.slice(0, G * 4);
+      const lim = T.confLimit ? (g, t) => g.filter((x) => this.teams[x].conf === this.teams[t].conf).length < (this.teams[t].conf === 'UEFA' ? 2 : 1) : null;
+      this.ntGroups(T, this.drawGroups(teams, G, lim, T.hosts), { double: false, neutral: true, dates: () => T.gDates });
+      this.news(`Жеребьёвка турнира «${T.name}»: ${G} групп, ${teams.length} сборных.`);
+      if (teams.includes(s.user)) {
+        const L = s.leagues[this.teams[s.user].league];
+        this.msg(`Жеребьёвка: ${T.short}`, `Соперники по группе: ${L.teams.filter((x) => x !== s.user).map((x) => this.teams[x].name).join(', ')}. Первый матч — ${FM.fmtDate(T.gDates[0])}.`, 'cup');
+      }
+    }
+    // плей-офф (одна игра; ko — дополнительное время и пенальти)
+    ntKo(T, pairs, k) {
+      const n = pairs.length * 2, name = (T.koNames && T.koNames[k]) || FM.koName(n);
+      const comp = T.kocomp || `natko_${T.id}`, home = k < (T.koHome || 0);
+      const ties = pairs.map(([h, a]) => this.addMatch({ comp, label: name, date: T.koDates[k], h, a, ko: true, neutral: !home }));
+      T.ko.push({ name, ties });
+      const soon = FM.addDays(this.s.date, 4);
+      for (const id of new Set(pairs.flat())) if (id !== this.s.user && T.koDates[k] <= soon) { this.natCallup(this.teams[id], true); this.pickFormation(this.teams[id]); this.teams[id].cuDate = this.s.date; }
+    }
+    // все группы турнира одной таблицей: место, очки за матч, разница, забитые
+    ntRank(T, lids) {
+      const rows = [];
+      for (const lid of lids || T.groups) for (const r of this.table(lid)) rows.push(Object.assign({}, r, { lid, ppg: r.p ? r.pts / r.p : 0, gdp: r.p ? (r.gf - r.ga) / r.p : 0, gfp: r.p ? r.gf / r.p : 0 }));
+      return rows.sort((a, b) => a.pos - b.pos || b.ppg - a.ppg || b.gdp - a.gdp || b.gfp - a.gfp || this.teams[b.id].rate - this.teams[a.id].rate);
+    }
+    // сетка: сильнейшие посеяны врозь, команды одной группы в первом раунде не встречаются
+    ntSeedPairs(rows) {
+      const n = rows.length;
+      let ord = [1, 2];
+      while (ord.length < n) { const m = ord.length * 2 + 1; ord = ord.flatMap((x) => [x, m - x]); }
+      const pairs = [];
+      for (let i = 0; i < n; i += 2) pairs.push([rows[ord[i] - 1], rows[ord[i + 1] - 1]]);
+      for (let i = 0; i < pairs.length; i++) {
+        if (pairs[i][0].lid !== pairs[i][1].lid) continue;
+        for (let j = 0; j < pairs.length; j++) {
+          if (j === i) continue;
+          const [a, b] = pairs[i], [c, d] = pairs[j];
+          if (a.lid !== d.lid && c.lid !== b.lid) { pairs[i][1] = d; pairs[j][1] = b; break; }
+        }
+      }
+      return pairs.map(([a, b]) => [a.id, b.id]);
+    }
+    ntAfterGroups(T) {
+      const s = this.s;
+      if (T.kind === 'qual') {
+        const rank = this.ntRank(T), dir = Math.min(T.dir, rank.length);
+        T.qualified = rank.slice(0, dir).map((r) => r.id);
+        rank.forEach((r, i) => { T.res[r.id] = i < dir ? 'вышла' : 'не вышла'; });
+        const po = rank.slice(dir, dir + 2 * (T.po || 0));
+        T.next = rank[dir + po.length] ? rank[dir + po.length].id : null;
+        if (po.length >= 2) {
+          const pairs = []; for (let i = 0; i < po.length / 2; i++) pairs.push([po[i].id, po[po.length - 1 - i].id]);
+          po.forEach((r) => { T.res[r.id] = 'стыки'; });
+          T.koNames = ['Стыки']; T.koHome = 1;
+          this.ntKo(T, pairs, 0);
+        }
+        return;
+      }
+      if (T.kind === 'nl') {
+        const byT = {};
+        for (const lid of T.groups) { const L = s.leagues[lid]; (byT[L.nlt] = byT[L.nlt] || []).push(lid); }
+        const tiers = Object.keys(byT).sort(), next = Object.assign({}, s.nlTier);
+        tiers.forEach((tr, ti) => {
+          for (const lid of byT[tr]) {
+            const tab = this.table(lid);
+            tab.forEach((r) => { T.res[r.id] = `Лига ${tr}, ${r.pos}-е место`; });
+            if (ti > 0) { next[this.teams[tab[0].id].natCode] = tiers[ti - 1]; T.res[tab[0].id] += ' · повышение'; }
+            if (ti < tiers.length - 1) { const l = tab[tab.length - 1]; next[this.teams[l.id].natCode] = tiers[ti + 1]; T.res[l.id] += ' · вылет'; }
+          }
+        });
+        s.nlTier = next;
+        // Лига A: по двое из групп → 1/4 финала (дома у победителя группы)
+        const A = (byT.A || []).map((lid) => this.table(lid));
+        if (A.length >= 2) {
+          const pairs = A.map((t, i) => [t[0].id, A[i % 2 ? i - 1 : i + 1][1].id]);
+          T.koHome = 1;
+          this.ntKo(T, pairs, 0);
+        }
+        return;
+      }
+      // финальный турнир: по двое из групп и лучшие третьи до степени двойки
+      const rank = this.ntRank(T), G = T.groups.length;
+      let N = 1; while (N < 2 * G) N *= 2;
+      const q = rank.filter((r) => r.pos <= 2).concat(rank.filter((r) => r.pos === 3).slice(0, N - 2 * G));
+      rank.forEach((r) => { if (!q.includes(r)) T.res[r.id] = 'групповой этап'; });
+      this.ntKo(T, this.ntSeedPairs(q), 0);
+    }
+    progressNations() {
+      const s = this.s, NT = s.nt;
+      if (!NT) return;
+      const played = (ids) => ids.every((id) => s.matches[id] && s.matches[id].played);
+      for (const T of NT.list) {
+        if (T.done) continue;
+        if (T.pend) { if (T.pend.every((id) => { const S = this.ntT(id); return !S || S.done; })) T.kind === 'ip' ? this.ntIp(T) : this.ntDraw(T); continue; }
+        if (!T.gdone) {
+          if (!T.groups.every((lid) => played(s.leagues[lid].rounds.flat()))) continue;
+          T.gdone = true;
+          this.ntAfterGroups(T);
+          if (!T.ko.length) this.ntFinish(T);
+          continue;
+        }
+        if (!T.ko.length) { this.ntFinish(T); continue; }
+        const R = T.ko[T.ko.length - 1];
+        if (!played(R.ties)) continue;
+        const w = R.ties.map((id) => s.matches[id].winner);
+        for (const id of R.ties) { const m = s.matches[id], l = m.winner === m.h ? m.a : m.h; T.res[l] = T.kind === 'qual' || T.kind === 'ip' ? 'проиграла в стыках' : R.name; }
+        if (T.kind === 'qual' || T.kind === 'ip') { T.qualified.push(...w); w.forEach((id) => { T.res[id] = 'вышла через стыки'; }); this.ntFinish(T); continue; }
+        if (w.length === 1) { T.winner = w[0]; T.res[w[0]] = 'победа'; const m = s.matches[R.ties[0]]; T.res[m.winner === m.h ? m.a : m.h] = 'финал'; this.ntFinish(T); continue; }
+        const pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
+        this.ntKo(T, pairs, T.ko.length);
+      }
+    }
+    // межконтинентальные стыки ЧМ: следующие после путёвок сборные Южной Америки, Азии, Африки и КОНКАКАФ
+    ntIp(T) {
+      delete T.pend;
+      const c = (T.src || []).map((id) => this.ntT(id)).map((S) => S && S.next).filter(Boolean).sort((a, b) => this.teams[b].rate - this.teams[a].rate);
+      T.teams = c.slice(); T.gdone = true;
+      if (c.length < 2) { T.qualified = c.slice(0, 1); this.ntFinish(T); return; }
+      const pairs = []; for (let i = 0; i < Math.floor(c.length / 2); i++) pairs.push([c[i], c[c.length - 1 - i]]);
+      T.koNames = ['Стыки'];
+      this.ntKo(T, pairs.slice(0, 2), 0);
+    }
+    // уровень, до которого дошла сборная: 0 — группа … K+1 — победа
+    ntLevel(T, id) {
+      const r = T.res[id], K = T.ko.length;
+      if (r === 'победа') return K + 1;
+      if (r === 'финал') return K;
+      const i = T.ko.findIndex((R) => R.name === r);
+      return i >= 0 ? i + 1 : 0;
+    }
+    ntFinish(T) {
+      const s = this.s, u = this.teams[s.user];
+      T.done = true;
+      if (T.winner) {
+        const fin = T.ko.length ? s.matches[T.ko[T.ko.length - 1].ties[0]] : null;
+        (s.ntHist = s.ntHist || []).unshift({ year: T.year, base: T.base, name: T.name, winner: T.winner, runner: fin ? (fin.winner === fin.h ? fin.a : fin.h) : null, score: fin ? (fin.winner === fin.h ? `${fin.hg}:${fin.ag}${fin.pens ? ` (пен. ${fin.pens[0]}:${fin.pens[1]})` : ''}` : `${fin.ag}:${fin.hg}${fin.pens ? ` (пен. ${fin.pens[1]}:${fin.pens[0]})` : ''}`) : '' });
+        this.news(`${this.teams[T.winner].name} — победитель турнира «${T.name}»!`);
+      } else if (T.kind === 'qual' && T.qualified.length) this.news(`${T.name}: путёвки получили ${T.qualified.map((id) => this.teams[id].name).join(', ')}.`);
+      if (!u || !u.national || !T.teams.includes(u.id)) return;
+      const conf = (d) => { s.board.conf = FM.clamp(s.board.conf + d, 0, 100); };
+      if (T.kind === 'qual' || T.kind === 'ip') {
+        if (T.qualified.includes(u.id)) { conf(10); this.msg('Отбор пройден!', `Сборная вышла на турнир «${T.target}». Федерация довольна.`, 'cup'); }
+        else { const strong = T.teams.indexOf(u.id) >= 0 && T.teams.slice().sort((a, b) => this.teams[b].rate - this.teams[a].rate).indexOf(u.id) < T.qualified.length; conf(strong ? -22 : -8); this.msg('Отбор провален', `Сборная не попала на турнир «${T.target}». ${strong ? 'От фаворита ждали другого — федерация недовольна.' : 'Шансы были невелики, но федерация оценит итоги цикла.'}`, 'board'); }
+        return;
+      }
+      if (T.kind === 'nl') { if (/повышение/.test(T.res[u.id] || '')) { conf(6); this.msg('Повышение в Лиге наций', 'Сборная выиграла группу и в следующем розыгрыше сыграет в лиге выше.', 'cup'); } else if (/вылет/.test(T.res[u.id] || '')) { conf(-8); this.msg('Вылет в Лиге наций', 'Сборная заняла последнее место в группе и опускается в лигу ниже.', 'board'); } }
+      const lv = this.ntLevel(T, u.id), K = T.ko.length, idx = T.teams.slice().sort((a, b) => this.teams[b].rate - this.teams[a].rate).indexOf(u.id);
+      const exp = Math.max(0, K + 0.5 - Math.log2(idx + 1));
+      conf(Math.round((lv - exp) * 7) + (T.winner === u.id ? 20 : 0));
+      if (T.winner === u.id) this.msg(`${T.short}: победа!`, `Сборная выиграла турнир «${T.name}»! Федерация в восторге.`, 'cup');
+      else this.msg(`${T.short}: итог`, `Сборная завершила турнир: ${T.res[u.id] || 'групповой этап'}. ${lv >= exp + 1 ? 'Это выше ожиданий федерации.' : lv <= exp - 1 ? 'Федерация ждала большего.' : 'Результат в рамках ожиданий.'}`, lv <= exp - 1 ? 'board' : 'cup');
+    }
+    // ---- цикл турниров на сезон (сезон y: июль y — июль y+1) ----
+    // чётный y: Лига наций УЕФА, отбор и КАН, Золотой кубок; y%4=2 — ещё Кубок Азии (январь), y%4=0 — Финалиссима;
+    // y%4=3: отбор и Евро, Кубок Америки; y%4=1: отбор чемпионата мира во всех конфедерациях и чемпионат мира (48 команд)
+    setupNations() {
+      const s = this.s, y = s.season, ph = ((y % 4) + 4) % 4, Y = y + 1;
+      for (const lid of Object.keys(s.leagues)) if (s.leagues[lid].national) delete s.leagues[lid];
+      s.nt = { season: y, list: [], teams: [] };
+      s.nt.teams = this.ntTeams();
+      delete s.nat;
+      this.ntBase();
+      const byC = (c, o) => this.ntByConf(c, o);
+      const top = (ids, n) => ids.slice().sort((a, b) => this.teams[b].rate - this.teams[a].rate).slice(0, n);
+      const fd = (list) => list.map((d) => ntDate(y, d));
+      const EU = byC('UEFA'), SA = byC('CONMEBOL'), NA = byC('CONCACAF'), AF = byC('CAF'), AS = byC('AFC');
+      if (ph === 0 || ph === 2) {
+        // Лига наций: лиги A, B, C по рейтингу прошлых розыгрышей
+        if (EU.length >= 8) {
+          const T = this.ntNew({ id: 'nl', base: 'nl', kind: 'nl', name: `Лига наций УЕФА ${y}/${String(Y).slice(2)}`, short: 'Лига наций', conf: 'UEFA', year: Y, y, koDates: fd(['03-23', '06-05', '06-09']) });
+          const tierOf = s.nlTier || {};
+          const seeded = EU.slice().sort((a, b) => ((tierOf[this.teams[a].natCode] || 'Z').localeCompare(tierOf[this.teams[b].natCode] || 'Z')) || this.teams[b].rate - this.teams[a].rate);
+          const chunks = [seeded.slice(0, 16), seeded.slice(16, 32), seeded.slice(32)].filter((c) => c.length >= 3);
+          s.nlTier = {};
+          chunks.forEach((ch, i) => {
+            const tr = 'ABC'[i], G = Math.max(1, Math.floor(ch.length / 4)), from = T.groups.length;
+            for (const id of ch) s.nlTier[this.teams[id].natCode] = tr;
+            this.ntGroups(T, this.drawGroups(ch, G), { names: Array.from({ length: G }, (_, k) => `Лига ${tr} · группа ${k + 1}`) });
+            T.groups.slice(from).forEach((lid) => { s.leagues[lid].nlt = tr; });
+          });
+        }
+        // Кубок африканских наций (24 команды): отбор осенью — 8 групп
+        if (AF.length >= 12) {
+          const size = AF.length >= 30 ? 24 : 16;
+          this.ntQual({ id: 'afq', base: 'afq', name: `Отбор КАН-${Y}`, short: 'Отбор КАН', conf: 'CAF', year: Y, y, dir: size, target: `Кубок африканских наций ${Y}` }, top(AF, 32));
+          this.ntFinal({ id: 'afcon', base: 'afcon', name: `Кубок африканских наций ${Y}`, short: `КАН-${Y}`, conf: 'CAF', year: Y, y, size, pend: ['afq'], fill: top(AF, 40),
+            gDates: fd(['06-05', '06-09', '06-13']), koDates: fd(size === 24 ? ['06-18', '06-23', '06-27', '07-01'] : ['06-19', '06-24', '06-28']) });
+        }
+        // Золотой кубок КОНКАКАФ: 16 команд, недостающих приглашают (как Катар и Саудовскую Аравию)
+        if (NA.length >= 6) {
+          const direct = top(NA, 16);
+          this.ntFinal({ id: 'gold', base: 'gold', name: `Золотой кубок КОНКАКАФ ${Y}`, short: 'Золотой кубок', conf: 'CONCACAF', year: Y, y, size: direct.length >= 12 ? 16 : 8,
+            direct, fill: top(AS, 6), gDates: fd(['06-06', '06-10', '06-14']), koDates: fd(['06-19', '06-24', '06-28']) });
+        }
+        if (ph === 2 && AS.length >= 6) {
+          // Кубок Азии (январь): отбор осенью — две группы по одному кругу
+          const n = Math.min(AS.length, 16), size = AS.length >= 14 ? 12 : 8;
+          this.ntQual({ id: 'asq', base: 'asq', name: `Отбор Кубка Азии ${Y}`, short: 'Отбор Кубка Азии', conf: 'AFC', year: Y, y, dir: size, double: false, gsize: 5, target: `Кубок Азии ${Y}` }, top(AS, n));
+          this.ntFinal({ id: 'asia', base: 'asia', name: `Кубок Азии ${Y}`, short: `Кубок Азии`, conf: 'AFC', year: Y, y, size, pend: ['asq'], fill: top(AS, 16),
+            gDates: fd(['01-08', '01-12', '01-16']), koDates: fd(size === 12 ? ['01-21', '01-25', '01-29'] : ['01-22', '01-27']) });
+        }
+        if (ph === 0) {
+          // Финалиссима: чемпион Европы против чемпиона Южной Америки
+          const h = s.ntHist || [], e = h.find((x) => x.base === 'euro' && x.year === y), c = h.find((x) => x.base === 'copa' && x.year === y);
+          if (e && c && this.teams[e.winner] && this.teams[c.winner] && e.winner !== c.winner) {
+            const T = this.ntNew({ id: 'fin', base: 'fin', kind: 'single', name: `Финалиссима ${Y}`, short: 'Финалиссима', conf: 'WORLD', year: Y, y, koDates: fd(['03-26']), koNames: ['Финал'], gdone: true, teams: [e.winner, c.winner] });
+            this.ntKo(T, [[e.winner, c.winner]], 0);
+          }
+        }
+      }
+      if (ph === 3) {
+        // Евро: отбор (по группам 4–5, победители и 8 лучших вторых — напрямую, ещё 8 — в стыки), финал — 24 команды
+        if (EU.length >= 12) {
+          const size = EU.length >= 32 ? 24 : 16, dir = size === 24 ? 20 : 12;
+          this.ntQual({ id: 'euq', base: 'euq', name: `Отбор Евро-${Y}`, short: 'Отбор Евро', conf: 'UEFA', year: Y, y, dir, po: size - dir, koDates: fd(['03-26']), target: `Евро-${Y}` }, EU);
+          this.ntFinal({ id: 'euro', base: 'euro', name: `Евро-${Y}`, short: `Евро-${Y}`, conf: 'UEFA', year: Y, y, size, pend: ['euq'], fill: EU, hostsText: EURO_HOSTS[Y],
+            gDates: fd(['06-05', '06-09', '06-13']), koDates: fd(size === 24 ? ['06-18', '06-23', '06-27', '07-01'] : ['06-19', '06-24', '06-28']) });
+        }
+        // Кубок Америки: 10 южноамериканских сборных и приглашённые из КОНКАКАФ — 16 команд
+        if (SA.length >= 4) {
+          const direct = SA.concat(top(NA, 16 - SA.length));
+          this.ntFinal({ id: 'copa', base: 'copa', name: `Кубок Америки ${Y}`, short: 'Кубок Америки', conf: 'CONMEBOL', year: Y, y, size: direct.length >= 16 ? 16 : 8, direct,
+            gDates: fd(['06-06', '06-10', '06-14']), koDates: fd(['06-19', '06-24', '06-28']) });
+        }
+      }
+      if (ph === 1) {
+        // чемпионат мира: 48 команд. Европа 16, Африка 9, Азия 8, Южная Америка 6, КОНКАКАФ 6, Океания 1, межконтинентальные стыки 2
+        const hosts = (WC_HOSTS[Y] || []).map((c) => `nat_${c}`).filter((id) => this.teams[id]);
+        const slot = { UEFA: 16, CAF: 9, AFC: 8, CONMEBOL: 6, CONCACAF: 6 }, src = [], ipSrc = [], free = [];
+        const qn = { UEFA: 'Европа', CAF: 'Африка', AFC: 'Азия', CONMEBOL: 'Южная Америка', CONCACAF: 'КОНКАКАФ' };
+        for (const c of Object.keys(slot)) {
+          const pool = byC(c, { fifa: true, not: hosts }), left = slot[c] - hosts.filter((id) => this.teams[id].conf === c).length;
+          if (pool.length <= left) { free.push(...pool); continue; }
+          const o = { id: `wq${c.toLowerCase()}`, base: 'wcq', name: `Отбор ЧМ-${Y} · ${qn[c]}`, short: `Отбор ЧМ · ${qn[c]}`, conf: c, year: Y, y, target: `Чемпионат мира ${Y}` };
+          if (c === 'UEFA') { const G = Math.max(1, Math.floor(pool.length / 4)); Object.assign(o, { dir: Math.min(G, left), po: Math.max(0, left - G), koDates: fd(['03-26']) }); }
+          else if (pool.length <= 10) Object.assign(o, { dir: left, league: true, double: false });
+          else Object.assign(o, { dir: left });
+          this.ntQual(o, pool);
+          src.push(o.id); if (c !== 'UEFA') ipSrc.push(o.id);
+        }
+        const ip = this.ntNew({ id: 'wcip', base: 'wcip', kind: 'ip', name: `Межконтинентальные стыки ЧМ-${Y}`, short: 'Межконт. стыки', conf: 'WORLD', year: Y, y, pend: ipSrc.slice(), src: ipSrc, koDates: fd(['03-30']), target: `Чемпионат мира ${Y}` });
+        const all = s.nt.teams.filter((id) => !FM.NONFIFA.has(this.teams[id].natCode));
+        const oc = byC('OFC');
+        this.ntFinal({ id: 'wc', base: 'wc', name: `Чемпионат мира ${Y}`, short: `ЧМ-${Y}`, conf: 'WORLD', year: Y, y, size: 48, pend: src.concat(ip.id), direct: hosts.concat(top(oc, 1), free), hosts, fill: all, confLimit: true,
+          gDates: fd(['06-04', '06-08', '06-12']), koDates: fd(['06-16', '06-20', '06-24', '06-28', '07-02']) });
+      }
+      for (const id of s.nt.teams) this.teams[id].players = id === s.user ? this.teams[id].players : [];
+      for (const id of s.nt.teams) { const t = this.teams[id]; t.form = []; this.natCallup(t, id !== s.user); if (id !== s.user) this.pickFormation(t); }
+      this._tables = {};
+    }
+    // старое сохранение: «Кубок наций» доигрывается как обычный турнир, со следующего сезона — реальный цикл
+    ntMigrate() {
+      const s = this.s, N = s.nat;
+      s.nt = { season: N.season, list: [], teams: this.ntTeams() };
+      this.ntBase(N.teams);
+      const T = this.ntNew({ id: 'nc', base: 'nc', kind: 'final', name: N.name, short: 'Кубок наций', conf: 'WORLD', year: N.season + 1, y: N.season, kocomp: 'natko',
+        koDates: NAT_DATES.ko.map(([d]) => `${N.season + 1}-${d}`), teams: N.teams.slice(), groups: N.groups.slice(), ko: N.ko, winner: N.winner, gdone: !!N.ko.length, done: !!N.winner });
+      for (const lid of T.groups) if (s.leagues[lid]) s.leagues[lid].nt = 'nc';
+      delete s.nat;
+    }
+    // товарищеские матчи для свободных сборных (за неделю до даты)
+    ntFriendlies(d) {
+      const s = this.s, near = new Set([-2, -1, 0, 1, 2].map((k) => FM.addDays(d, k))), busy = new Set();
+      for (const id in s.matches) { const m = s.matches[id]; if (near.has(m.date) && FM.isNat(m.comp)) { busy.add(m.h); busy.add(m.a); } }
+      const free = FM.shuffle(s.nt.teams.filter((id) => this.teams[id] && !busy.has(id)));
+      while (free.length >= 2) {
+        const a = free.shift(), ta = this.teams[a];
+        let best = 0, bs = Infinity;
+        free.forEach((b, i) => { const tb = this.teams[b], sc = Math.abs(ta.rate - tb.rate) + (ta.conf === tb.conf ? 0 : 6) + Math.random() * 8; if (sc < bs) { bs = sc; best = i; } });
+        const b = free.splice(best, 1)[0];
+        const [h, w] = Math.random() < 0.5 ? [a, b] : [b, a];
+        this.addMatch({ comp: 'natfr', date: d, h, a: w });
+      }
     }
     // вызов: 26 лучших доступных (у сборной пользователя — его выбор, недостающих добирает ассистент)
     natCallup(t, force) {
       const s = this.s, c = t.natCode;
       const mine = t.id === s.user;
-      const pool = this.natPool(c).filter((p) => !p.inj);
+      const taken = this.ntTaken(t), pool = this.natPool(c).filter((p) => !p.inj && !taken.has(p.id) && this.eligibleFor(p, c));
       if (mine && !force && t.players.length) {
         t.players = t.players.filter((id) => this.players[id] && this.players[id].club && this.eligibleFor(this.players[id], c));
         for (const p of pool) { if (t.players.length >= 23) break; if (!t.players.includes(p.id)) t.players.push(p.id); }
@@ -2782,55 +3164,41 @@
       const gk = pool.filter((p) => p.pos === 'GK').slice(0, 3), out = pool.filter((p) => p.pos !== 'GK').slice(0, 23);
       t.players = gk.concat(out).map((p) => p.id);
     }
-    // за 3 дня до окна сборных — новые вызовы ИИ (у пользователя — проверка доступности)
+    // игроки в заявках других сборных (двойное гражданство: первой вызывает сильнейшая)
+    ntTaken(t) {
+      const taken = new Set();
+      for (const id of (this.s.nt ? this.s.nt.teams : [])) { if (id === t.id) continue; const o = this.teams[id]; if (o) for (const pid of o.players) taken.add(pid); }
+      return taken;
+    }
+    // каждый день: жеребьёвки, товарищеские за неделю, вызовы за 3 дня до матчей
     natDay() {
-      const s = this.s;
-      if (!s.nat) return;
-      const soon = Object.values(s.matches).some((m) => FM.isNat(m.comp) && !m.played && m.date === FM.addDays(s.date, 3));
-      if (!soon) return;
-      for (const id of s.nat.teams) { const t = this.teams[id]; if (!t) continue; this.natCallup(t, id !== s.user); if (id !== s.user) this.pickFormation(t); }
-      if (this.teams[s.user] && this.teams[s.user].national) this.msg('Сбор сборной', 'Через три дня — матчи сборной. Проверьте состав вызванных игроков во вкладке «Состав».', 'squad');
-    }
-    // после матчей дня: итоги отбора → сетка финала → следующий раунд
-    progressNations() {
-      const s = this.s, N = s.nat;
-      if (!N || N.winner) return;
-      const all = (ids) => ids.every((id) => s.matches[id].played);
-      if (!N.ko.length) {
-        if (!N.groups.every((lid) => all(s.leagues[lid].rounds.flat()))) return;
-        const first = [], second = [];
-        for (const lid of N.groups) { const t = this.table(lid); first.push(t[0].id); second.push(t[1].id); }
-        // 1/8: победитель группы против второго места соседней
-        const pairs = first.map((w, i) => [w, second[(i + 1) % 8]]);
-        this.natRound(0, pairs);
-        const q = new Set(first.concat(second));
-        if (q.has(s.user)) this.msg('Финальный турнир!', `Сборная вышла в финальный турнир «${N.name}». 1/8 финала — ${FM.fmtDate(`${N.season + 1}-${NAT_DATES.ko[0][0]}`)}.`, 'cup');
-        else if (this.teams[s.user] && this.teams[s.user].national) this.msg('Отбор провален', 'Сборная не смогла выйти в финальный турнир. Федерация оценит итоги цикла.', 'board');
-        this.news(`Определились участники финального турнира «${N.name}»: ${[...q].map((id) => this.teams[id].name).join(', ')}.`);
-        return;
+      const s = this.s, NT = s.nt;
+      if (!NT) return;
+      this.progressNations();
+      for (const md of NT_FR) { const d = ntDate(NT.season, md); if (FM.addDays(s.date, 7) === d) this.ntFriendlies(d); }
+      const soon = FM.addDays(s.date, 3), need = new Set();
+      for (const id in s.matches) { const m = s.matches[id]; if (!m.played && m.date >= s.date && m.date <= soon && FM.isNat(m.comp)) { need.add(m.h); need.add(m.a); } }
+      const old = FM.addDays(s.date, -10);
+      for (const id of [...need].sort((a, b) => (this.teams[b] ? this.teams[b].rate : 0) - (this.teams[a] ? this.teams[a].rate : 0))) {
+        const t = this.teams[id];
+        if (!t || (t.cuDate && t.cuDate > old)) continue;
+        t.cuDate = s.date;
+        this.natCallup(t, id !== s.user);
+        if (id !== s.user) this.pickFormation(t);
+        else this.msg('Сбор сборной', 'Скоро матчи сборной. Проверьте состав вызванных игроков во вкладке «Состав».', 'squad');
       }
-      const R = N.ko[N.ko.length - 1];
-      if (!all(R.ties)) return;
-      const w = R.ties.map((id) => s.matches[id].winner);
-      if (w.length === 1) {
-        N.winner = w[0];
-        this.news(`Сборная «${this.teams[w[0]].name}» — победитель турнира «${N.name}»!`);
-        if (w[0] === s.user) { s.board.conf = Math.min(100, s.board.conf + 30); this.msg(`${N.name} наш!`, 'Сборная выиграла турнир! Федерация в восторге.', 'board'); }
-        return;
-      }
-      const pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
-      this.natRound(N.ko.length, pairs);
     }
-    natRound(k, pairs) {
-      const s = this.s, N = s.nat, [d, name] = NAT_DATES.ko[k];
-      const ties = pairs.map(([h, a]) => this.addMatch({ comp: 'natko', label: `${N.name}: ${name}`, date: `${N.season + 1}-${d}`, h, a, ko: true, neutral: true }));
-      N.ko.push({ name, ties });
-      for (const id of new Set(pairs.flat())) { const t = this.teams[id]; this.natCallup(t, id !== s.user); if (id !== s.user) this.pickFormation(t); }
+    // ближайший (или текущий) турнир сборной — для подписей
+    ntMain(id) {
+      const NT = this.s.nt;
+      if (!NT) return null;
+      const L = NT.list.filter((T) => T.teams.includes(id));
+      return L.find((T) => !T.done && T.kind !== 'qual') || L.find((T) => !T.done) || L[L.length - 1] || null;
     }
     // предложения от федераций: сборные, чей уровень близок к репутации тренера
     natMarket() {
       const s = this.s, cr = this.coachRep();
-      return (s.nat ? s.nat.teams : []).map((id) => this.teams[id]).filter((t) => t && t.id !== s.user).map((t) => {
+      return (s.nt ? s.nt.teams : []).map((id) => this.teams[id]).filter((t) => t && t.id !== s.user && t.rate >= 62).map((t) => {
         const fit = cr - t.rep;
         return { id: t.id, rep: t.rep, level: fit >= 2 ? 3 : fit >= -4 ? 2 : fit >= -9 ? 1 : 0, refused: s.jobRefused && s.jobRefused[t.id] === s.season, national: true };
       }).sort((a, b) => b.rep - a.rep);

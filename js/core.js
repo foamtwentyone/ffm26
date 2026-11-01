@@ -459,3 +459,18 @@ FM.wageFor = (value, tier, age = 26, country = '') => {
   const ageK = age <= 21 ? 0.6 : age <= 23 ? 0.8 : age <= 29 ? 1 : age <= 32 ? 1.2 : 1.35;
   return Math.max([0, 1.5, 0.6, 0.25][tier] || 0.25, value * 0.0021 * ageK * (FM.WAGE_C[country] || 1));
 };
+
+// ---------- конфедерации (для турниров сборных) ----------
+FM.CONF = {};
+for (const [k, list] of Object.entries({
+  UEFA: 'ENG RUS ESP FRA GER ITA NED BLR POR BEL POL CZE TUR DEN SUI AUT KAZ GRE SCO ARM SRB IRL CRO AZE WAL SWE UKR NOR BIH SVK GEO ALB NIR KVX SVN ROU HUN FIN ISL MNE ISR BUL MDA MKD CYP LUX LTU LVA EST FRO MLT AND LIE SMR GIB',
+  CONMEBOL: 'ARG BRA COL URU PAR ECU CHI VEN PER BOL',
+  CONCACAF: 'USA CAN JAM SUR CUW GLP MEX MTQ HAI PAN DOM CRC HON TRI GUY GRN SLV GUA NCA CUB GUF BER',
+  CAF: 'NGA CIV SEN GHA MAR COD CMR MLI ALG GUI GAM GNB CPV ANG BFA CGO TUN TOG SLE RSA COM KEN BEN EGY GAB ZAM ZIM CTA MTN UGA MAD EQG MOZ LBR LBY SDN TAN NIG BDI RWA ETH MWI NAM',
+  AFC: 'KSA UZB JPN AUS KOR IRQ IRN SYR IDN TJK KGZ QAT UAE JOR CHN THA VIE OMA BHR PLE LBN TKM PRK IND',
+  OFC: 'NZL FIJ SOL',
+})) for (const c of list.split(' ')) FM.CONF[c] = k;
+// не члены ФИФА: играют Золотой кубок, но не отбор чемпионата мира
+FM.NONFIFA = new Set(['GLP', 'MTQ', 'GUF']);
+FM.CONF_NAME = { UEFA: 'Европа', CONMEBOL: 'Южная Америка', CONCACAF: 'КОНКАКАФ', CAF: 'Африка', AFC: 'Азия', OFC: 'Океания' };
+FM.koName = (n) => ({ 2: 'Финал', 4: '1/2 финала', 8: '1/4 финала', 16: '1/8 финала', 32: '1/16 финала' })[n] || 'Стыки';
