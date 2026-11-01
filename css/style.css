@@ -2512,3 +2512,13 @@ html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: 100% !important
 html.rot #app { height: var(--rh, 100%); width: var(--rw, 100%); }
 html.rot .mm, html.rot .mm-page, html.rot .sk-page { min-height: var(--rh, 100%) !important; }
 html.rot .modal.nx-modal { height: var(--rh); }
+/* сенсорные экраны: страница закреплена, прокручивается только #app — игру нельзя «оттянуть» пальцем */
+html.tch { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html.tch body { overflow: hidden; overscroll-behavior: none; }
+html.tch:not(.rot) body { height: 100%; }
+html.tch:not(.rot) body { position: fixed; inset: 0; width: 100%; }
+html.tch:not(.rot) #app { height: 100%; }
+html.tch #app { overflow-y: auto; overflow-x: hidden; overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+html.tch:not(.rot) body { padding-bottom: 0; }
+html.tch:not(.rot) #app { padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
+html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { padding-bottom: 0; }

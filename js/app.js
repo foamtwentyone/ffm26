@@ -5,7 +5,8 @@
   const DB_KEY = 'ffm26_db';
   const app = document.getElementById('app');
   // телефон вертикально: вся игра повёрнута на 90° (html.rot), прокручивается #app, а не окно
-  const rotOn = () => document.documentElement.classList.contains('rot');
+  // на телефоне прокручивается #app, а страница целиком закреплена (иначе iOS «оттягивает» всю игру пальцем)
+  const rotOn = () => document.documentElement.classList.contains('rot') || document.documentElement.classList.contains('tch');
   const scrollTop = (y = 0) => { if (rotOn()) app.scrollTop = y; else window.scrollTo(0, y); };
   const scrollPos = () => (rotOn() ? app.scrollTop : window.scrollY);
   // вышла новая версия игры (её скачал офлайн-кэш): плашка с перезапуском, карьера сохраняется
