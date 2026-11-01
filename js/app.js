@@ -1196,6 +1196,28 @@
     if (en) en.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.min(8, UI.euroMd[view] + 1) } }); render(); };
   }
 
+  // ================== турнирная сетка ==================
+  // Пара — карточка: две строки (эмблема, клуб, счёт), победитель ярче, пара с вашим клубом подсвечена.
+  // ties: [{ a, b, sa, sb, note, mids, w, date }]; колонки раундов слева направо, в конце — кубок.
+  function brTie(t) {
+    const uid = g().s.user;
+    const row = (id, sc, win) => id ? `<div class="br-t ${win === id ? 'w' : win ? 'l' : ''} ${id === uid ? 'me' : ''}">${badge(T(id), 'sm')}<span>${esc(T(id).name)}</span><b>${sc ?? ''}</b></div>` : '<div class="br-t tbd"><i></i><span>определится</span><b></b></div>';
+    return `<div class="br-m ${t.a === uid || t.b === uid ? 'mine' : ''} ${t.mids && t.mids.length ? 'click' : ''}" ${t.mids && t.mids.length ? `data-match="${t.mids[t.mids.length - 1]}"` : ''}>
+      ${row(t.a, t.sa, t.w)}${row(t.b, t.sb, t.w)}${t.note || t.date ? `<div class="br-n">${esc(t.note || '')}${t.date ? `<span>${esc(t.date)}</span>` : ''}</div>` : ''}</div>`;
+  }
+  function bracket(cols, winner, title) {
+    const uid = g().s.user;
+    return `<div class="br-wrap"><div class="br">${cols.map((c, i) => `<div class="br-col ${c.ties.some((t) => t.a === uid || t.b === uid) ? 'path' : ''}"><div class="br-h">${esc(c.name)}${c.date ? `<span>${esc(c.date)}</span>` : ''}</div><div class="br-list">${c.ties.length ? c.ties.map(brTie).join('') : `<div class="br-empty">${esc(c.empty || 'Жеребьёвка после предыдущего раунда')}</div>`}</div></div>${i < cols.length - 1 ? '<div class="br-arrow">' + icon('play') + '</div>' : ''}`).join('')}
+      <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
+  }
+  const brDate = (d) => FM.fmtDate(d).replace(/ (\S{3})\S*$/, ' $1');
+  // одиночный матч кубка → пара сетки
+  const cupTie = (m) => ({ a: m.h, b: m.a, sa: m.played ? m.hg : null, sb: m.played ? m.ag : null, w: m.played ? (m.winner || (m.hg > m.ag ? m.h : m.a)) : null, mids: m.played ? [m.id] : [], note: m.pens ? `пен. ${m.pens[0]}:${m.pens[1]}` : m.et ? 'д.в.' : '', date: m.played ? '' : brDate(m.date) });
+  // пара из двух матчей еврокубка → сумма
+  const euroTie = (t) => { const s = g().s, [l1, l2] = t.legs.map((x) => s.matches[x]); const A = l1.h, B = l1.a; const ga = (l1.played ? l1.hg : 0) + (l2 && l2.played ? l2.ag : 0), gb = (l1.played ? l1.ag : 0) + (l2 && l2.played ? l2.hg : 0);
+    const any = l1.played; const note = l1.played ? `${l1.hg}:${l1.ag}${l2 && l2.played ? `, ${l2.ag}:${l2.hg}` : ''}${l2 && l2.pens ? ` · пен.` : ''}` : '';
+    return { a: A, b: B, sa: any ? ga : null, sb: any ? gb : null, w: t.winner || null, mids: t.legs.filter((x) => s.matches[x].played), note, date: any ? '' : brDate(l1.date) }; };
+
   function cupView() {
     const G = g(), s = G.s;
     const list = Object.keys(s.cups);
@@ -1209,10 +1231,12 @@
       const m = s.matches[id];
       return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`;
     };
-    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}${c.winner ? ` · ${icon('trophyF', 'tro')} ${esc(T(c.winner).name)}` : ''}</h3>
-      <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(min(400px,100%),1fr))">${c.rounds.map((R, i) => `<div class="card"><h3>${esc(R.name)} · ${FM.fmtDate(R.date)}</h3>
-      ${R.matches.length ? R.matches.map(line).join('') : `<div class="muted small">${i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => esc(T(id).name)).join(', ')}` : 'Жеребьёвка после предыдущего раунда'}</div>`}
-      ${i === c.rounds.length - 1 && c.winner ? `<div class="note">${icon('trophyF', 'tro')} ${esc(T(c.winner).name)}</div>` : ''}</div>`).join('')}</div>`;
+    void line;
+    const uid = G.s.user;
+    // мой клуб — первым в колонке, дальше по дате
+    const cols = c.rounds.map((R, i) => ({ name: R.name, date: brDate(R.date), ties: R.matches.map((id) => s.matches[id]).sort((x, y) => ((y.h === uid || y.a === uid) - (x.h === uid || x.a === uid))).map(cupTie),
+      empty: i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => T(id).name).join(', ')}` : 'Жеребьёвка после предыдущего раунда' }));
+    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}</h3>${bracket(cols, c.winner, c.name)}`;
   }
 
   function euroView(id) {
@@ -1226,8 +1250,10 @@
     if (!cur) { cur = 1; e.md.forEach((md, i) => { if (md.some((mid) => s.matches[mid].played)) cur = i + 1; }); }
     UI.euroMd = Object.assign(UI.euroMd || {}, { [id]: cur });
     const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
-    const ko = e.ko.map((R) => `<div class="card"><h3>${esc(R.name)}</h3>${R.ties.map((t) => `${t.legs.map(line).join('')}${t.winner ? `<div class="small muted" style="margin:-2px 0 8px">Дальше: <b class="good">${esc(T(t.winner).name)}</b></div>` : ''}`).join('')}</div>`).join('');
-    const fin = e.final ? `<div class="card"><h3>Финал · ${esc(T(s.matches[e.final].h).name)} — ${esc(T(s.matches[e.final].a).name)}</h3>${line(e.final)}${e.winner ? `<div class="note">${icon('trophyF', 'tro')} ${esc(T(e.winner).name)}</div>` : ''}</div>` : '';
+    const koCols = e.ko.map((R) => ({ name: R.name, ties: R.ties.map(euroTie) }));
+    if (e.final) koCols.push({ name: 'Финал', date: brDate(s.matches[e.final].date), ties: [cupTie(s.matches[e.final])] });
+    const brk = koCols.length ? `<div class="card"><h3>${esc(E.name)} · плей-офф</h3>${bracket(koCols, e.winner, E.name)}</div>` : '';
+    const ko = '', fin = '';
     return `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
         <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
@@ -1236,7 +1262,7 @@
       <div style="display:grid;gap:16px;align-content:start">
         <div class="card"><div class="row" style="margin:14px 0 8px"><button class="btn sm" id="ep">‹</button><b class="grow center">${cur}-й тур · ${FM.fmtDate(s.matches[e.md[cur - 1][0]].date)}</b><button class="btn sm" id="en">›</button></div>${e.md[cur - 1].map(line).join('')}</div>
         ${ko}${fin}
-      </div></div>`;
+      </div></div>${brk ? `<div style="margin-top:16px">${brk}</div>` : ''}`;
   }
 
   // дни тура без перенесённых матчей: «25–26 июля» или «31 октября»
@@ -1876,17 +1902,30 @@
 
   // ================== карточка клуба ==================
   function teamModal(tid) {
-    const G = g(), s = G.s;
+    const G = g(), s = G.s, u = G.userTeam();
     const t = T(tid);
     const sq = G.squad(t).sort((a, b) => FM.POS.indexOf(a.pos) - FM.POS.indexOf(b.pos) || b.ovr - a.ovr);
     const row = G.table(t.league).find((r) => r.id === tid);
-    modal(`<div class="row">${badge(t, 'lg')}<div class="grow"><h2 style="margin:0">${esc(t.name)}</h2><div class="muted">${esc(t.city)} · ${esc(t.stadium)} (${t.cap.toLocaleString('ru-RU')})</div>
-      <div class="small">${esc(s.leagues[t.league].name)}: ${row.pos}-е место, ${row.pts} очк. ${form(row.form)}</div></div></div>
+    // состав ИИ на сегодня (у пользователя — его), сравнение линий с вашей командой
+    if (tid !== s.user && (!t.lineup || !t.lineup.length)) G.pickFormation(t);
+    const st = teamStrength(t), us = teamStrength(u);
+    const top = G.squad(t).slice().sort((a, b) => b.ovr - a.ovr).slice(0, 3);
+    const age = sq.length ? (sq.reduce((a, p) => a + p.age, 0) / sq.length).toFixed(1) : '—';
+    const cmp = (n, a, b) => { const tot = a + b || 1; return `<div class="tm-cmp"><div class="tm-cn"><b>${Math.round(a)}</b><span>${n}</span><b>${Math.round(b)}</b></div><div class="tm-cb"><i style="width:${(a / tot * 100).toFixed(1)}%"></i><i style="width:${(b / tot * 100).toFixed(1)}%"></i></div></div>`; };
+    const hc = glow(t);
+    modal(`<div class="tm-hero" style="--hcb:${hc};--acb:${awayColor(hc, u)}">${badge(t, 'xl')}
+        <div class="tm-hn"><h2>${esc(t.name)}</h2><span>${esc(t.city)} · ${esc(t.stadium)} · ${t.cap.toLocaleString('ru-RU')} мест</span>
+          <div class="tm-hl">${flag(G.countryOf(t.league))}<b>${esc(s.leagues[t.league].name)}</b>${row ? `<span class="tm-pos">${row.pos}-е · ${row.pts} очк.</span>${form(row.form)}` : ''}</div></div>
+      </div>
       ${(() => { if (tid === s.user || t.reserveOf) return ''; const m = G.coachMarket().find((x) => x.id === tid); const [lt, lc] = LEVEL[m ? m.level : 0];
         return `<div class="note job-note"><div class="row"><span class="grow">Интерес к вам как к тренеру: <span class="lvl ${lc}">${m && m.refused ? 'отказал в этом сезоне' : lt}</span>${m && m.vacancy ? ' · <span class="warn">ищут тренера</span>' : ''}</span>${m && m.level >= 1 && !m.refused ? `<button class="btn sm ${m.level >= 2 ? 'primary' : ''}" data-apply="${tid}">${m.level >= 2 ? 'Возглавить команду' : 'Подать заявку'}</button>` : ''}</div></div>`; })()}
-      <div class="kv"><div><span>Стоимость состава</span><b>${FM.money(G.squadValue(t))}</b></div><div><span>Репутация</span><b>${t.rep}</b></div><div><span>Схема</span><b>${t.formation}</b></div><div><span>Игроков</span><b>${t.players.length}</b></div></div>
+      <div class="tm-grid">
+        <div class="tm-facts"><div><span>Стоимость</span><b>${FM.money(G.squadValue(t))}</b></div><div><span>Репутация</span><b>${t.rep}</b></div><div><span>Схема</span><b>${t.formation}</b></div><div><span>Игроков</span><b>${t.players.length}</b></div><div><span>Ср. возраст</span><b>${age}</b></div><div><span>Бюджет</span><b>${FM.money(t.money)}</b></div></div>
+        ${tid !== s.user ? `<div class="tm-vs"><div class="tm-vh"><span>${esc(t.name)}</span><b>Сравнение составов</b><span>${esc(u.name)}</span></div>${cmp('Атака', st.att, us.att)}${cmp('Полузащита', st.mid, us.mid)}${cmp('Защита', st.def, us.def)}</div>` : ''}
+        <div class="tm-stars"><div class="label">Лидеры команды</div><div class="tm-sl">${top.map((p) => futMini(p, `${FM.POS_RU[p.pos]} · ${FM.money(p.value)}`, [])).join('')}</div></div>
+      </div>
       <div class="tbl-wrap"><table><tr><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th class="num">И</th><th class="num">Г</th><th class="num">Цена</th></tr>
-      ${sq.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}</table></div>`, 'wide');
+      ${sq.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${flag(p.nat)} ${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num">${p.st.apps}</td><td class="num">${p.st.g}</td><td class="num">${FM.money(p.value)}</td></tr>`).join('')}</table></div>`, 'wide tm-modal');
     const el = document.getElementById('modal');
     el.querySelectorAll('[data-apply]').forEach((b) => b.onclick = () => {
       if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Точно уйти из клуба? Нажмите ещё раз'; b.classList.add('danger'); return; }
@@ -2425,15 +2464,42 @@
 
   // ================== почта ==================
   // ================== новости ==================
+  // ================== новости: спортивная лента ==================
+  const NEWS_CAT = [
+    ['transfer', 'Трансферы', 'swap', '#3d8bff', /переход|подписал|аренд|трансфер|перейд[её]т|расторг|свободн/i],
+    ['trophy', 'Трофеи', 'trophy', '#f2c14e', /обладател|победител|чемпион|Золотой мяч|повыша|понижа|выходит в|трофе/i],
+    ['coach', 'Тренеры', 'user', '#b07cff', /тренер|возглав|покидает|отказал/i],
+    ['match', 'Матчи', 'ball', '#2ef08f', /\d+:\d+|дерби|финал|матч/i],
+  ];
+  const newsCat = (t) => NEWS_CAT.find((c) => c[4].test(t)) || ['other', 'Разное', 'news', '#8f9bcc'];
+  // клубы, упомянутые в тексте «в кавычках»
+  let teamByName = null;
+  const newsTeams = (t) => {
+    const G = g();
+    if (!teamByName || teamByName.n !== Object.keys(G.teams).length) { teamByName = { n: Object.keys(G.teams).length, m: new Map(Object.values(G.teams).map((x) => [x.name, x])) }; }
+    return [...t.matchAll(/«([^»]+)»/g)].map((m) => teamByName.m.get(m[1])).filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).slice(0, 2);
+  };
   function viewNews(main) {
-    const s = g().s;
+    const G = g(), s = G.s, u = G.userTeam();
+    const f = UI.newsF || 'all', mine = !!UI.newsMine;
+    const all = s.news.map((n) => ({ ...n, cat: newsCat(n.text), teams: newsTeams(n.text) }));
+    const list = all.filter((n) => (f === 'all' || n.cat[0] === f) && (!mine || n.teams.some((t) => t.id === u.id) || n.text.includes(u.name)));
+    // главная новость — самая весомая из свежих: трофей, затем громкий трансфер или тренер
+    const w = (n) => ({ trophy: 4, coach: 3, transfer: /Громкий/.test(n.text) ? 3 : 2, match: 1, other: 0 }[n.cat[0]] || 0);
+    const fresh = list.filter((n) => n.date === (list[0] && list[0].date));
+    const hero = fresh.slice().sort((a, b) => w(b) - w(a))[0];
+    const rest = list.filter((n) => n !== hero);
+    const card = (n) => `<div class="nw" style="--nc:${n.cat[3]}"><div class="nw-k">${icon(n.cat[2])}<span>${n.cat[1]}</span></div><div class="nw-b">${n.teams.map((t) => badge(t, 'sm')).join('')}<p>${esc(n.text)}</p></div></div>`;
     let last = '';
-    main.innerHTML = `<div class="card tight news-list">${s.news.map((n) => {
-      const d = n.date && n.date !== last ? `<div class="news-date">${FM.fmtDateWd(n.date)}</div>` : '';
-      last = n.date;
-      return `${d}<div class="news-item">${esc(n.text)}</div>`;
-    }).join('') || '<div style="padding:14px" class="muted">Новостей пока нет</div>'}</div>`;
+    main.innerHTML = `<div class="nw-top"><div class="seg">${[['all', 'Все']].concat(NEWS_CAT.map((c) => [c[0], c[1]])).map(([k, n]) => `<button data-nf="${k}" class="${k === f ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <label class="check small"><input type="checkbox" id="nw-mine" ${mine ? 'checked' : ''}> Только «${esc(u.name)}»</label></div>
+      ${hero ? `<div class="nw-hero" style="--nc:${hero.cat[3]}"><div class="nw-hb">${hero.teams.length ? hero.teams.map((t) => badge(t, 'xl')).join('') : `<span class="nw-hic">${icon(hero.cat[2])}</span>`}</div>
+        <div class="nw-ht"><span class="nw-k">${icon(hero.cat[2])}<span>Главное · ${hero.cat[1]}</span></span><h2>${esc(hero.text)}</h2><span class="small muted">${FM.fmtDateWd(hero.date)}</span></div></div>` : '<div class="card muted">Новостей пока нет</div>'}
+      <div class="nw-list">${rest.map((n) => { const d = n.date !== last ? `<div class="nw-date">${FM.fmtDateWd(n.date)}</div>` : ''; last = n.date; return d + card(n); }).join('')}</div>`;
+    main.querySelectorAll('[data-nf]').forEach((b) => b.onclick = () => { UI.newsF = b.dataset.nf; render(); });
+    main.querySelector('#nw-mine').onchange = (e) => { UI.newsMine = e.target.checked; render(); };
   }
+
 
   // ================== тренер ==================
   // ================== зал славы ==================
