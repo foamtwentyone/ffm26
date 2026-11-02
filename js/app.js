@@ -24,6 +24,7 @@
   window.UI = UI;
   // для проверок и отладки: открыть карточку игрока или переговоры по id
   UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id), team: (id) => teamModal(id) };
+  UI.openEvent = (id) => eventModal(id);
 
   // ================== помощники ==================
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -126,6 +127,22 @@
     bra: '#00a859', arg: '#4aa8ff', mex: '#00843d', jpn: '#d7263d', kor: '#2f5bea', egy: '#c8102e', irn: '#239f40', per: '#d91023',
     chi: '#d52b1e', col: '#fcd116', uru: '#5cbfeb', par: '#0038a8', mar: '#c1272d', rsa: '#007a4d' };
   const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', lib: '#d4af37', sud: '#2bb3a3', acl: '#e2425a', cafcl: '#2e9e4f', ccc: '#3a6fe0', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166', super: '#c08bff' };
+  // ================== мораль: лицо, как в FC ==================
+  // пять состояний: злой (красный), грустный (оранжевый), нейтральный (жёлтый), довольный (салатовый), счастливый (зелёный)
+  const MOOD = [[25, 'злой', '#ff4d5e'], [45, 'расстроен', '#ff9a3c'], [60, 'нейтрально', '#ffd23f'], [78, 'доволен', '#8fe05a'], [101, 'счастлив', '#2ee87e']];
+  const moodOf = (m) => MOOD.findIndex(([lim]) => (m ?? 60) < lim);
+  function moodFace(m, cls = '') {
+    const i = moodOf(m), [, label, c] = MOOD[i];
+    const mouth = ['M14 25q6-6 12 0', 'M14 24q6-3 12 0', 'M14 23h12', 'M14 22q6 4 12 0', 'M13 21q7 8 14 0z'][i];
+    const brows = i === 0 ? '<path d="M11 13l6 2.5M29 13l-6 2.5" stroke="#1a1325" stroke-width="2.2" stroke-linecap="round"/>' : i === 1 ? '<path d="M11 14.5l5-1.5M29 14.5l-5-1.5" stroke="#1a1325" stroke-width="1.8" stroke-linecap="round"/>' : '';
+    const eyes = i === 4 ? '<path d="M13 17q2.5-3 5 0M22 17q2.5-3 5 0" stroke="#1a1325" stroke-width="2.2" fill="none" stroke-linecap="round"/>' : '<circle cx="15.5" cy="17.5" r="2.1" fill="#1a1325"/><circle cx="24.5" cy="17.5" r="2.1" fill="#1a1325"/>';
+    return `<svg class="mood ${cls}" viewBox="0 0 40 40" role="img" aria-label="${label}"><title>Настроение: ${label} (${Math.round(m ?? 60)})</title>
+      <defs><radialGradient id="mg${i}" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="${c}"/><stop offset="1" stop-color="${c}" stop-opacity=".85"/></radialGradient></defs>
+      <circle cx="20" cy="20" r="17" fill="url(#mg${i})" stroke="rgba(0,0,0,.25)" stroke-width="1"/>${brows}${eyes}
+      <path d="${mouth}" stroke="#1a1325" stroke-width="2.2" fill="${i === 4 ? '#1a1325' : 'none'}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+  const moodLabel = (m) => MOOD[moodOf(m)][1];
+
   // ================== фирменный стиль турниров ==================
   // У каждого турнира — два цвета, фоновый узор и рисованная эмблема (не логотип): шапки разделов, плашки матчей,
   // сетки плей-офф, заставки финала и чемпиона, полка трофеев.
@@ -888,6 +905,16 @@
 
   // Случайное событие: окно с выбором; после решения — итог и «Продолжить»
   const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar', agent: 'mail', rumor: 'news', heat: 'alert', snow: 'calendar', legend: 'star', kits: 'shirt', leak: 'news', doping: 'medic', boardmoney: 'coin', audit: 'coin', fanaward: 'medal', captain: 'user', clique: 'swap', sellout: 'trophy', language: 'globe', family: 'user', physio: 'medic', flares: 'alert', callup: 'globe' };
+  // кто участвует в событии: позиция, возраст, рейтинг, место в составе, характер, настроение, зарплата и контракт
+  function evPlayer(G, pid) {
+    const p = G.players[pid];
+    if (!p) return '';
+    const rank = G.squadRank(p), pers = p.pers && FM.PERS[p.pers] ? FM.PERS[p.pers][0] : '';
+    const role = rank <= 11 ? 'основа' : rank <= 16 ? 'ротация' : 'запас';
+    return `<div class="evp" data-player="${p.id}">${moodFace(p.morale)}<div class="grow"><b>${esc(p.name)}</b>
+      <span>${FM.POS_NAME[p.pos]} · ${FM.yrs(p.age)} · рейтинг <em>${p.ovr}</em> · ${role} (${FM.pl(p.st.apps, 'матч', 'матча', 'матчей')}, ${p.st.g} г., ${p.st.a} п.)${pers ? ` · <i>${pers}</i>` : ''}</span>
+      <span>${moodLabel(p.morale)} · ${FM.money(p.wage)}/нед · контракт до лета ${p.contract + 1}</span></div></div>`;
+  }
   function eventModal(id) {
     const G = g(), u = G.userTeam(), m = G.s.inbox.find((x) => x.id === id);
     if (!m || !m.data) return;
@@ -895,6 +922,7 @@
     const el = modal(`<div class="evm" style="--c1:${glow(u)}">
       <div class="evm-head"><span class="evm-ic">${icon(EV_ICON[d.ev] || 'alert')}</span><div><div class="evm-k">Событие в клубе · ${FM.fmtDate(m.date)}</div><h2>${esc(m.title)}</h2></div></div>
       <p class="evm-text">${esc(m.text)}</p>
+      ${((d.ctx && d.ctx.who) || []).map((pid) => evPlayer(G, pid)).join('')}
       <div class="evm-opts">${d.closed ? `<div class="evm-res">${icon('check')}<span>${esc(d.result)}</span></div><button class="btn primary" id="evm-ok">Продолжить</button>`
         : d.opts.map((o, i) => `<button class="evm-o" data-evo="${i}"><b>${esc(o.t)}</b>${o.h ? `<span>${esc(o.h)}</span>` : ''}${o.cost ? `<em>${FM.money(o.cost)}</em>` : ''}</button>`).join('')}</div>
       ${d.closed ? '' : `<div class="small muted" style="margin-top:10px">Можно решить позже в «Сообщениях» — до ${FM.fmtDate(d.until)}.</div>`}</div>`);
@@ -1181,7 +1209,7 @@
         <tr><th></th><th>Поз</th><th>Игрок</th><th class="num">Возр</th><th class="num">Рейт</th><th title="Физическая готовность: падает после матчей, восстанавливается каждый день">Готовн.</th><th class="num hide-m" title="Выносливость: как быстро устаёт и восстанавливается">Вын</th><th class="num hide-m">И</th><th class="num hide-m">Г</th><th class="num hide-m">П</th><th class="num hide-m">Оц</th><th class="num hide-m">Цена</th></tr>
         ${sq.map((p) => { const mk = markOf(p); return `<tr class="click ${p.id === selCur ? 'sel' : ''} ${mk ? mk.cls : ''}" data-row="${p.id}">
           <td>${inXI.has(p.id) ? '<span class="lineup-mark" title="В стартовом составе">ОСН</span>' : onBench.has(p.id) ? '<span class="bench-mark" title="На скамейке">ЗАП</span>' : ''}</td>
-          <td class="nowrap">${pos(p.pos)}${(p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : ''}${p.train ? `<span class="pos-alt" title="Переучивается">→${FM.POS_RU[p.train.to]}</span>` : ''}</td><td>${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
+          <td class="nowrap">${pos(p.pos)}${(p.alt || []).length ? `<span class="pos-alt" title="Также играет: ${p.alt.map((x) => FM.POS_NAME[x]).join(', ')}">+${p.alt.map((x) => FM.POS_RU[x]).join(',')}</span>` : ''}${p.train ? `<span class="pos-alt" title="Переучивается">→${FM.POS_RU[p.train.to]}</span>` : ''}</td><td>${moodFace(p.morale, 'sm')}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)}${mk && mk.tag ? ` <span class="fit-tag">${mk.tag}</span>` : ''}</td><td class="num">${p.age}</td><td class="num">${ovrCell(p)}</td>
           <td>${fitBar(Math.round(p.fit))}<span class="fit-n ${p.fit < 70 ? 'bad' : p.fit < 88 ? 'warn' : ''}">${Math.round(p.fit)}</span></td><td class="num hide-m"><span class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : 'muted'}">${p.sta || 65}</span></td><td class="num hide-m">${p.st.apps}</td><td class="num hide-m">${p.st.g}</td><td class="num hide-m">${p.st.a}</td>
           <td class="num hide-m">${p.st.apps ? rt(p.st.rsum / p.st.apps) : '—'}</td><td class="num hide-m">${FM.money(p.value)}</td></tr>`; }).join('')}
       </table></div><div class="small muted" style="padding:10px">Нажмите на позицию на поле или на скамейке, затем на игрока. Без выбора позиции — откроется карточка игрока. «*» — сгенерированный игрок.</div></div>
@@ -1925,7 +1953,7 @@
         <div><span>Контракт до</span><b>лето ${p.contract + 1}</b>${p.bon && (p.bon.goal || p.bon.euro) ? `<small>бонусы: ${[p.bon.goal ? `${FM.money(p.bon.goal)} за гол` : '', p.bon.euro ? `${FM.money(p.bon.euro)} за еврокубки` : ''].filter(Boolean).join(', ')}</small>` : ''}${p.sellOn && g().teams[p.sellOn.club] ? `<small>${p.sellOn.pct}% с продажи — «${esc(g().teams[p.sellOn.club].name)}»</small>` : ''}</div>
         <div><span>Физ. готовность</span><b class="${p.fit < 70 ? 'bad' : p.fit < 88 ? 'warn' : 'good'}">${Math.round(p.fit)}%</b><small>${p.inj ? 'травма' : p.fit >= 97 ? 'свежий' : `сейчас · +${(3 + (p.sta || 65) / 22 - Math.max(0, p.age - 31) * 0.3).toFixed(1)}% в день`}</small></div>
         <div><span>Выносливость</span><b class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : ''}">${p.sta || 65}</b><small>${(p.sta || 65) >= 78 ? 'почти не устаёт' : (p.sta || 65) < 55 ? 'быстро устаёт' : 'обычная'} · постоянная</small></div>
-        <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
+        <div class="mood-tile"><span>Настроение</span><b>${moodFace(p.morale, 'lg')}${moodLabel(p.morale)}</b><small>${Math.round(p.morale ?? 60)} из 100</small></div>
       </div></div></div>
       ${formBlock(p)}${heatBlock(p)}
       ${mine && !p.loan ? retrainBlock(p) : ''}
@@ -2900,7 +2928,7 @@
     if (u.national) return '';
     const d = G.dressing(u), P = (id) => G.players[id];
     const mcls = (m) => (m < 35 ? 'bad' : m < 55 ? 'warn' : 'good');
-    const row = (id, tag) => { const p = P(id); return `<div class="dr-row"><span class="grow"><b data-player="${p.id}">${esc(p.name)}</b> <span class="small muted">${tag}${p.pers === 'leader' ? ' · лидер по характеру' : ''}</span></span><b class="${mcls(p.morale || 60)}">${Math.round(p.morale || 60)}</b></div>`; };
+    const row = (id, tag) => { const p = P(id); return `<div class="dr-row"><span class="grow"><b data-player="${p.id}">${esc(p.name)}</b> <span class="small muted">${tag}${p.pers === 'leader' ? ' · лидер по характеру' : ''}</span></span>${moodFace(p.morale)}</div>`; };
     return `<div class="card dress-card"><h3>Раздевалка</h3>
       <div class="brd-row">${ring(d.atmosphere, mcls(d.atmosphere), 'атмосфера')}
         <div class="grow">${d.leaders.map((id, i) => row(id, i === 0 ? ((u.sp || {}).cap ? 'капитан' : 'капитан (авто)') : 'лидер')).join('')}</div></div>

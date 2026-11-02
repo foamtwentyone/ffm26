@@ -60,6 +60,8 @@ FM.fmtDate = (s, withYear = false) => {
 FM.fmtDateWd = (s) => `${WD[FM.weekday(s)]}, ${FM.fmtDate(s)}`;
 
 // ---------- деньги (всё хранится в тысячах евро) ----------
+FM.pl = (n, a, b, c) => { const m = Math.abs(n) % 100, d = m % 10; return `${n} ${m > 10 && m < 20 ? c : d === 1 ? a : d > 1 && d < 5 ? b : c}`; };
+FM.yrs = (n) => FM.pl(n, 'год', 'года', 'лет');
 FM.money = (k) => {
   const neg = k < 0;
   k = Math.abs(k);

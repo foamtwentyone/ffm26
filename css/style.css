@@ -2710,3 +2710,16 @@ html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page
 .when .show-m { display: none; color: var(--muted); font-weight: 400; }
 @media (max-width: 860px), (max-height: 500px) and (orientation: landscape) { .when .show-m { display: inline; } }
 html.rot .when .show-m { display: inline; }
+/* настроение — лицо */
+.mood { width: 22px; height: 22px; flex: none; vertical-align: middle; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
+.mood.sm { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; }
+.mood.lg { width: 30px; height: 30px; margin-right: 8px; vertical-align: -8px; }
+.dr-row .mood { width: 24px; height: 24px; }
+.mood-tile b { display: flex; align-items: center; }
+/* окно события: кто участвует */
+.evp { display: flex; gap: 12px; align-items: center; margin: 8px 0; padding: 10px 12px; border-radius: var(--r-md); background: var(--glass); border: 1px solid var(--line); cursor: pointer; }
+.evp .mood { width: 34px; height: 34px; }
+.evp b { display: block; font-size: var(--fs-md); }
+.evp span { display: block; font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; }
+.evp em { font-style: normal; color: var(--text); font-weight: 700; }
+.evp i { font-style: normal; color: var(--accent); }
