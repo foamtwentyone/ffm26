@@ -755,7 +755,7 @@
         <button class="next-btn" id="go">${s.seasonOver ? 'Новый сезон' : 'Далее'} <span>${icon('play')}</span></button>
       </div></header>
       <div class="strip"><div class="strip-in">
-        <div class="when">Сезон ${seasonLabel(s)}<span class="hide-m"> · Неделя ${weekNo(s)} · ${FM.fmtDateWd(s.date)}</span></div>
+        <div class="when"><span class="hide-m">Сезон ${seasonLabel(s)} · Неделя ${weekNo(s)} · </span><b class="when-d">${FM.fmtDateWd(s.date)}</b><span class="show-m when-s"> · ${seasonLabel(s)}</span></div>
         <div class="chips">
           <button class="chip" data-tab="squad" title="Травмированные игроки"><b class="cross">${icon('medic')}</b>${injured}</button>
           <button class="chip" data-tab="inbox" title="Непрочитанные письма">${icon('mail')} ${unread}</button>
