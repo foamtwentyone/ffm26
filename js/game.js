@@ -426,7 +426,7 @@
       if (state.nat && !state.nt) this._ntMig = true;
       // «Черноморец»: в данных были истёкшие контракты прошлого сезона — продлеваем на 1–2 года (один раз)
       if (!state.chmV1) { state.chmV1 = true; const t = state.teams.chernomorets; if (t) for (const id of t.players) { const p = this.players[id]; if (p && p.contract <= state.season) p.contract = state.season + 1 + (id % 2); } }
-      if (!state.staV1) { state.staV1 = true; for (const id in this.players) { const p = this.players[id]; if (!p.sta) p.sta = FM.staFor(p.name, p.pos, p.age); } }
+      if (!state.staV2) { state.staV2 = true; delete state.staV1; for (const id in this.players) delete this.players[id].sta; }
       if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {
         state.altV1 = true;
@@ -666,7 +666,7 @@
       const tier = team ? this.tierOf(team) : 2;
       const p = {
         id, name: d.name, pos: d.pos, age: d.age, nat: d.nat || 'RUS', ovr, pot, vmul,
-        alt: d.alt || FM.altFor(d.name, d.pos), pers: FM.persFor(d.name) || undefined, sta: FM.staFor(d.name, d.pos, d.age),
+        alt: d.alt || FM.altFor(d.name, d.pos), pers: FM.persFor(d.name) || undefined,
         value: d.value || FM.roundValue(base), club: team ? team.id : null,
         wage: 0, contract: d.until ? Math.max(s.season, d.until - 1) : s.season + (d.gen ? FM.ri(1, 4) : FM.ri(0, 3)), fit: 100, morale: 60, inj: 0, sus: 0, ycAcc: 0,
         gen: !!d.gen, listed: false,
@@ -2890,8 +2890,8 @@
           p.inj--;
           if (p.inj === 0 && p.club === s.user) this.msg('Восстановление', `${p.name} восстановился после травмы.`, 'squad');
         }
-        // восстановление за день: зависит от выносливости и возраста (≈ 9–12 % в день)
-        p.fit = Math.min(100, p.fit + (p.inj ? 4 : 3 + (p.sta || 65) / 22 - Math.max(0, p.age - 31) * 0.3));
+        // восстановление за день: ≈ 6 % (у игроков старше 31 — медленнее)
+        p.fit = Math.min(100, p.fit + (p.inj ? 4 : FM.fitRec(p)));
       }
       this.natDay();
       if (monday) this.weekly();

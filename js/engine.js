@@ -547,7 +547,7 @@
         if (!pace) continue;
         const age = o.p.age;
         const a = age > 31 ? 1.2 : age < 21 ? 0.95 : 1;
-        const st = 1.35 - (o.p.sta || 65) / 150; // выносливость: 95 — устаёт на треть медленнее, 40 — быстрее
+        const st = 0.92;
         const f = s.fitness[id] = Math.max(0, s.fitness[id] - k * a * st * (o.slot === 'GK' ? 0.25 : 1) * (0.85 + Math.random() * 0.3));
         if (f < 70) tired += 70 - f;
       }
