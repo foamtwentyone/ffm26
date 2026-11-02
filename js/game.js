@@ -2556,7 +2556,10 @@
       for (const c in s.cups) if (s.cups[c].winner) cups[c] = s.cups[c].winner;
       const euro = {};
       for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) euro[E.id] = s.euro[E.id].winner;
-      H.seasons.unshift({ year: s.season, champs, cups, euro, scorers });
+      const supers = {};
+      for (const k in s.supers || {}) if (s.supers[k].winner) supers[k] = s.supers[k].winner;
+      const cwc = s.cwc && s.cwc.winner && s.cwc.year === s.season + 1 ? s.cwc.winner : null;
+      H.seasons.unshift({ year: s.season, champs, cups, euro, scorers, supers, cwc });
     }
 
     createMatch(m, live) {
@@ -2611,6 +2614,8 @@
           ratings[pid] = r;
           const st = SO(p);
           if (natM) { p.caps = (p.caps || 0) + 1; if (!p.ntc && t.natCode) p.ntc = t.natCode; }
+          const sm = side.slotMin && side.slotMin[pid];
+          if (sm) { p.hm = p.hm || {}; for (const k in sm) p.hm[k] = (p.hm[k] || 0) + sm[k]; }
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;

@@ -126,6 +126,97 @@
     bra: '#00a859', arg: '#4aa8ff', mex: '#00843d', jpn: '#d7263d', kor: '#2f5bea', egy: '#c8102e', irn: '#239f40', per: '#d91023',
     chi: '#d52b1e', col: '#fcd116', uru: '#5cbfeb', par: '#0038a8', mar: '#c1272d', rsa: '#007a4d' };
   const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', lib: '#d4af37', sud: '#2bb3a3', acl: '#e2425a', cafcl: '#2e9e4f', ccc: '#3a6fe0', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166', super: '#c08bff' };
+  // ================== фирменный стиль турниров ==================
+  // У каждого турнира — два цвета, фоновый узор и рисованная эмблема (не логотип): шапки разделов, плашки матчей,
+  // сетки плей-офф, заставки финала и чемпиона, полка трофеев.
+  const TS = {
+    league: { c1: '#0c1d3a', pat: 'pitch', emb: 'shield' },
+    cup: { c1: '#2b1d05', c2: '#e8b84a', pat: 'stripes', emb: 'cup' },
+    cupRUS: { c1: '#0b1f4d', c2: '#e23b3b', pat: 'tri', emb: 'cup' },
+    ucl: { c1: '#06123f', c2: '#5b8cff', pat: 'stars', emb: 'starball' },
+    uel: { c1: '#2e1600', c2: '#ff8a1f', pat: 'arcs', emb: 'bigcup' },
+    uecl: { c1: '#00301f', c2: '#1fe07a', pat: 'arcs', emb: 'cup' },
+    lib: { c1: '#15110a', c2: '#d4af37', pat: 'rays', emb: 'bigcup' },
+    sud: { c1: '#05302c', c2: '#2bb3a3', pat: 'stripes', emb: 'cup' },
+    acl: { c1: '#2a0610', c2: '#e2425a', pat: 'arcs', emb: 'starball' },
+    cafcl: { c1: '#062b13', c2: '#3cb36a', pat: 'rays', emb: 'bigcup' },
+    ccc: { c1: '#071a40', c2: '#3a8af0', pat: 'stars', emb: 'cup' },
+    super: { c1: '#1d0b33', c2: '#c08bff', pat: 'rays', emb: 'plate' },
+    cwc: { c1: '#041c2c', c2: '#3fd0ff', pat: 'globe', emb: 'globe' },
+    po: { c1: '#2a0712', c2: '#ff4d6d', pat: 'diag', emb: 'shield' },
+    natwc: { c1: '#1b1404', c2: '#e9c46a', pat: 'globe', emb: 'wc' },
+    nateuro: { c1: '#051b44', c2: '#3d7bff', pat: 'stars', emb: 'bigcup' },
+    natcopa: { c1: '#071d3a', c2: '#7cc3ff', pat: 'stripes', emb: 'cup' },
+    natafcon: { c1: '#062712', c2: '#46c27a', pat: 'rays', emb: 'cup' },
+    natasia: { c1: '#2a0f05', c2: '#ff8a3d', pat: 'arcs', emb: 'cup' },
+    natgold: { c1: '#241a02', c2: '#f2c230', pat: 'rays', emb: 'cup' },
+    natnl: { c1: '#0b0f2a', c2: '#8a9cff', pat: 'diag', emb: 'plate' },
+    natfin: { c1: '#1d0b33', c2: '#e0b0ff', pat: 'rays', emb: 'plate' },
+    natqual: { c1: '#121a2a', c2: '#9fb3d1', pat: 'diag', emb: 'shield' },
+    natfr: { c1: '#16202e', c2: '#9aa7b8', pat: 'pitch', emb: 'ball' },
+  };
+  const NT_STYLE = { wc: 'natwc', nc: 'natwc', euro: 'nateuro', copa: 'natcopa', afcon: 'natafcon', asia: 'natasia', gold: 'natgold', nl: 'natnl', fin: 'natfin' };
+  // эмблемы: простая рисованная графика в currentColor
+  const EMB = {
+    cup: '<path d="M15 6h18v4h6v5c0 6-4 10-9 11a9 9 0 0 1-4 4v5h6v4H16v-4h6v-5a9 9 0 0 1-4-4c-5-1-9-5-9-11v-5h6V6zm-2 8v1c0 3 2 6 4 7-1-2-2-5-2-8h-2zm20 0c0 3-1 6-2 8 2-1 4-4 4-7v-1h-2z"/>',
+    bigcup: '<path d="M18 5h12c0 8-1 15-3 19-1 2-2 3-3 3s-2-1-3-3c-2-4-3-11-3-19zM16 9c-5 0-8 3-8 7s4 8 10 8l-1-3c-4 0-6-2-6-5 0-2 2-4 5-4V9zm16 0v3c3 0 5 2 5 4 0 3-2 5-6 5l-1 3c6 0 10-4 10-8s-3-7-8-7zM21 28h6v6h4v4H17v-4h4z"/>',
+    starball: '<circle cx="24" cy="24" r="9"/><g>' + Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4, x = 24 + 17 * Math.cos(a), y = 24 + 17 * Math.sin(a); return `<path transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(.45)" d="M0-8l2.4 5.2 5.6.6-4.2 3.8 1.2 5.6L0 4.4l-5 2.8 1.2-5.6L-8-2.2l5.6-.6z"/>`; }).join('') + '</g>',
+    globe: '<circle cx="24" cy="20" r="13" fill="none" stroke="currentColor" stroke-width="3"/><path d="M11 20h26M24 7c-6 7-6 19 0 26M24 7c6 7 6 19 0 26" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M17 35h14l3 7H14z"/>',
+    wc: '<circle cx="24" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M16 12h16M24 4c-3 4-3 12 0 16" fill="none" stroke="currentColor" stroke-width="2"/><path d="M18 19c2 6 2 11 0 16h12c-2-5-2-10 0-16-3 2-9 2-12 0zM15 36h18v6H15z"/>',
+    plate: '<circle cx="24" cy="21" r="15" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="24" cy="21" r="8"/><path d="M19 36h10l2 6H17z"/>',
+    shield: '<path d="M24 4l16 5v12c0 11-7 18-16 23C15 39 8 32 8 21V9z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M24 13l3 6 6 .7-4.6 4.2 1.3 6.3L24 27l-5.7 3.2 1.3-6.3L15 19.7l6-.7z"/>',
+    ball: '<circle cx="24" cy="24" r="17" fill="none" stroke="currentColor" stroke-width="3"/><path d="M24 15l7 5-3 8h-8l-3-8z"/><path d="M24 7v8M31 20l9-3M28 28l5 8M20 28l-5 8M17 20l-9-3" stroke="currentColor" stroke-width="2.4"/>',
+  };
+  const emb = (k, cls = '') => `<svg class="emb ${cls}" viewBox="0 0 48 48" fill="currentColor" aria-hidden="true">${EMB[k] || EMB.cup}</svg>`;
+  function tourKey(comp) {
+    const G = g();
+    if (!comp) return 'league';
+    if (euroOf(comp)) return comp;
+    if (comp === 'cup') return 'cupRUS';
+    if (FM.isCup(comp)) return 'cup';
+    if (comp.startsWith('super_')) return 'super';
+    if (comp === 'cwc') return 'cwc';
+    if (comp === 'po') return 'po';
+    if (comp === 'natfr') return 'natfr';
+    if (FM.isNat(comp)) { const T = G.ntOfComp(comp); return T ? NT_STYLE[T.base] || (T.kind === 'qual' || T.kind === 'ip' ? 'natqual' : 'natwc') : 'natqual'; }
+    return 'league';
+  }
+  // стиль: { key, c1, c2, pat, emb }; у лиг второй цвет — цвет лиги
+  function tourStyle(key, lid) {
+    const st = Object.assign({ key }, TS[key] || TS.league);
+    if (key === 'league') st.c2 = (lid && LEAGUE_THEME[lid]) || '#4d8dff';
+    if (key === 'league' && lid && g().countryOf(lid) === 'RUS') st.pat = 'tri';
+    return st;
+  }
+  const tourOf = (comp) => tourStyle(tourKey(comp), g().s.leagues[comp] && !g().s.leagues[comp].national ? comp : null);
+  const tvars = (st) => `--t1:${st.c1};--t2:${st.c2}`;
+  // плашка турнира у матча: эмблема + название (+ стадия)
+  function tchip(m, withRound = true) {
+    const st = tourOf(m.comp), rt = withRound ? roundText(m) : '';
+    return `<span class="tchip" style="${tvars(st)}">${emb(st.emb)}<span>${esc(compName(m.comp))}${rt ? ` · ${esc(rt)}` : ''}</span></span>`;
+  }
+  const holder = (id, label) => (id && T(id) ? `${badge(T(id), 'lg')}<div><span>${label}</span><b>${esc(T(id).name)}</b></div>` : '');
+  // шапка раздела турнира: узор, эмблема, название, подпись (стадия, действующий победитель)
+  function tourBanner(st, title, sub, right = '') {
+    return `<div class="tban tp-${st.pat}" style="${tvars(st)}"><div class="tban-emb">${emb(st.emb)}</div><div class="tban-tx">${sub ? `<span class="tban-k">${sub}</span>` : ''}<h2>${esc(title)}</h2></div>${right ? `<div class="tban-r">${right}</div>` : ''}</div>`;
+  }
+  // путь команды к финалу: её матчи плей-офф этого турнира
+  function finPath(m, tid) {
+    const s = g().s;
+    return Object.values(s.matches).filter((x) => x.comp === m.comp && x.played && x.id !== m.id && (x.h === tid || x.a === tid) && (x.ko || x.leg || /финал|стыки|раунд/i.test(x.label || '')))
+      .sort((a, b) => (a.date < b.date ? -1 : 1)).slice(-6)
+      .map((x) => { const home = x.h === tid; const opp = T(home ? x.a : x.h); const gf = home ? x.hg : x.ag, ga = home ? x.ag : x.hg;
+        return `<div><span class="${gf > ga ? 'good' : gf < ga ? 'bad' : ''}">${gf}:${ga}</span> ${esc(opp.name)} <span class="small" style="opacity:.6">· ${esc((x.label || '').replace(/^.*: /, '').replace(/, (1-й|ответный) матч$/, ''))}</span></div>`; }).join('') || '<div style="opacity:.6">—</div>';
+  }
+  // заставка финала: кубок на постаменте, место, путь обеих команд
+  function finalBlock(m) {
+    const st = tourOf(m.comp), h = T(m.h), a = T(m.a);
+    return `<div class="fin-block" style="${tvars(st)}"><div class="fin-path"><h4>Путь «${esc(h.name)}»</h4>${finPath(m, m.h)}</div>
+      <div class="fin-cup">${emb(st.emb)}<div class="podium"></div><b>Финал</b><span>${esc(compName(m.comp))}</span><br><span>${m.neutral ? 'нейтральное поле' : esc(h.stadium || '')} · ${esc(FM.fmtDateWd(m.date))}</span></div>
+      <div class="fin-path away"><h4>Путь «${esc(a.name)}»</h4>${finPath(m, m.a)}</div></div>`;
+  }
+  // финал ли это
+  const isFinal = (m) => /(^|: )финал$/i.test(roundText(m) || '') || /^Финал$/.test(m.label || '');
   function themeOf(comp, m) {
     if (!comp) return null;
     if (euroOf(comp)) return m && m.neutral ? ['final', COMP_THEME.final] : [comp, COMP_THEME[comp]];
@@ -719,14 +810,18 @@
     const G = g(), s = G.s, uid = s.user;
     const done = new Set(s.celebrated || []);
     const key = (k) => `${s.season}:${k}`;
-    for (const c in s.cups || {}) if (s.cups[c].winner === uid && !done.has(key('cup:' + c))) return { key: key('cup:' + c), kind: 'cup', title: 'Обладатель кубка', name: s.cups[c].name || FM.cupName(c), color: COMP_THEME.cup };
-    for (const E of FM.EURO) { const e = s.euro && s.euro[E.id]; if (e && e.winner === uid && !done.has(key('euro:' + E.id))) return { key: key('euro:' + E.id), kind: 'euro', title: 'Победитель', name: E.name, color: COMP_THEME[E.id] || COMP_THEME.final }; }
+    const withSt = (t, st) => Object.assign(t, { color: st.c2, emb: st.emb });
+    for (const c in s.cups || {}) if (s.cups[c].winner === uid && !done.has(key('cup:' + c))) return withSt({ key: key('cup:' + c), kind: 'cup', title: 'Обладатель кубка', name: s.cups[c].name || FM.cupName(c) }, tourStyle(c === 'RUS' ? 'cupRUS' : 'cup'));
+    for (const E of FM.EURO) { const e = s.euro && s.euro[E.id]; if (e && e.winner === uid && !done.has(key('euro:' + E.id))) return withSt({ key: key('euro:' + E.id), kind: 'euro', title: 'Победитель', name: E.name }, tourStyle(E.id)); }
+    for (const c in s.supers || {}) if (s.supers[c].winner === uid && !done.has(key('super:' + c))) return withSt({ key: key('super:' + c), kind: 'cup', title: 'Обладатель суперкубка', name: s.supers[c].name }, tourStyle('super'));
+    if (s.cwc && s.cwc.winner === uid && !done.has(key('cwc'))) return withSt({ key: key('cwc'), kind: 'euro', title: 'Чемпион мира', name: `Клубный чемпионат мира ${s.cwc.year}` }, tourStyle('cwc'));
+    for (const NT of (s.nt && s.nt.list) || []) if (NT.winner === uid && !done.has(key('nt:' + NT.id))) return withSt({ key: key('nt:' + NT.id), kind: 'euro', title: 'Победитель', name: NT.name }, tourStyle(NT_STYLE[NT.base] || 'natwc'));
     const lid = G.userTeam().league, tab = G.table(lid);
     if (tab.length > 1 && tab[0].id === uid && !done.has(key('league:' + lid))) {
       const second = tab[1];
       const left = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === second.id || m.a === second.id)).length;
       const mine = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === uid || m.a === uid)).length;
-      if (tab[0].p > 0 && tab[0].pts - second.pts > left * 3) return { key: key('league:' + lid), kind: 'league', title: 'Чемпион', name: s.leagues[lid].name, color: LEAGUE_THEME[lid] || glow(G.userTeam()), early: mine };
+      if (tab[0].p > 0 && tab[0].pts - second.pts > left * 3) return { key: key('league:' + lid), kind: 'league', title: 'Чемпион', name: s.leagues[lid].name, color: LEAGUE_THEME[lid] || glow(G.userTeam()), emb: 'shield', early: mine };
     }
     return null;
   }
@@ -741,7 +836,7 @@
     el.className = `champ ${t.kind}`;
     el.style.setProperty('--cc', c); el.style.setProperty('--tc', t.color);
     el.innerHTML = `<div class="ch-rays"></div><div class="ch-in">
-        <div class="ch-cup">${icon('trophyF')}</div>
+        <div class="ch-cup">${emb(t.emb || 'cup')}</div>
         <div class="ch-badge">${badge(u, 'xl')}</div>
         <div class="ch-k">${esc(t.name)} · ${seasonLabel(s)}</div>
         <h1 class="ch-t">${esc(t.title)}!</h1>
@@ -881,8 +976,9 @@
       const dRec = G.derbyOf(nm) ? G.derbyRecord(nm.h, nm.a) : null;
       const days = Math.round((FM.parseDate(nm.date) - FM.parseDate(s.date)) / 864e5);
       const duel = (label, x, y) => { const w = (v) => FM.clamp((v - 40) * 2.2, 6, 100); return `<div class="bc-duel"><b>${x}</b><div class="bc-bar l"><i style="width:${w(x)}%"></i></div><span>${label}</span><div class="bc-bar r"><i style="width:${w(y)}%"></i></div><b>${y}</b></div>`; };
-      hero = `<section class="bc" data-go="fixtures" style="--hcb:${glow(h)};--acb:${glow(a)}">
-        <div class="bc-head"><span class="comp-pill">${esc(compName(nm.comp))}${roundText(nm) ? ` · ${esc(roundText(nm))}` : ''}</span>${bigTag(nm)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
+      const hfin = isFinal(nm);
+      hero = `<section class="bc ${hfin ? 'final' : ''}" data-go="fixtures" style="--hcb:${glow(h)};--acb:${glow(a)};${tvars(tourOf(nm.comp))}">
+        <div class="bc-head">${tchip(nm)}${hfin ? `<span class="fin-rib">${emb(tourOf(nm.comp).emb)}Финал</span>` : ''}${bigTag(nm)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
         <div class="bc-vs">${side(h)}
           <div class="bc-kick"><span class="bc-when">${days === 0 ? 'сегодня' : days === 1 ? 'завтра' : esc(FM.fmtDateWd(nm.date))}</span><span class="bc-v">VS</span><span class="bc-where">${nm.neutral ? 'нейтральное поле' : esc(h.stadium || '')}</span></div>
           ${side(a, true)}</div>
@@ -929,7 +1025,7 @@
       ${u.national ? tile('Турниры сборной', 'tables:nat', ntTiles(u), '', 'trophy') : ''}${u.national && !L.nt ? '' : tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><span class="hide-m">${form(r.form)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       ${tile('Ближайшие матчи', 'fixtures', upcoming.slice(0, 4).map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
+        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="tmini" style="${tvars(tourOf(m.comp))}" title="${esc(compName(m.comp))}">${emb(tourOf(m.comp).emb)}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
       }).join('') || '<div class="muted">Сезон завершён</div>', '', 'calendar')}
       ${tile(u.national ? 'Сборная' : 'Клуб', 'club', `${u.national ? `<div class="kvl"><span>Турнир</span><b>${esc((G.ntMain(u.id) || {}).name || 'товарищеские матчи')}</b></div>` : `<div class="kvl"><span>Деньги</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>`}
         <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
@@ -1186,7 +1282,7 @@
           cls = my > op ? 'W' : my < op ? 'L' : 'D';
           if (m.winner && my === op) cls = m.winner === u.id ? 'W' : 'L';
         }
-        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''} ${bigTag(m)}</td>
+        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted"><span class="tmini" style="${tvars(tourOf(m.comp))}">${emb(tourOf(m.comp).emb)}</span>${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''} ${bigTag(m)}</td>
           <td class="small muted">${m.h === u.id ? 'дома' : 'в гостях'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
@@ -1221,7 +1317,8 @@
         L.rounds.forEach((r, i) => { if (r.some((id) => s.matches[id].played)) last = i + 1; });
         cur = last || 1;
       }
-      body = `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
+      const lstyle = tourStyle('league', lid), played = L.rounds.filter((r) => r.length && r.every((id) => s.matches[id].played)).length;
+      body = `${tourBanner(lstyle, L.name, `${flag(G.countryOf(lid))} ${esc(FM.NAT[G.countryOf(lid)] || '')} · ${L.tier === 1 ? 'высший дивизион' : `${L.tier}-й уровень`} · сыграно ${played} из ${rounds} туров`, tab[0] && tab[0].p ? holder(tab[0].id, L.zmap || L.grp ? 'Лидирует' : 'Лидер') : holder((s.lastTables && s.lastTables[lid] || [])[0], 'Действующий чемпион'))}<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><div class="tbl-wrap"><table class="lt">
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
         ${tab.map((r) => `${L.grp && (r.pos === 1 || r.grp !== tab[r.pos - 2].grp) ? `<tr class="grp-h"><td colspan="9">${r.grp === 'gold' ? 'Группа «Золото»' : 'Группа «Серебро»'} · ${L.grp.stage}-й этап</td></tr>` : ''}${L.zmap && (r.pos === 1 || r.zone !== tab[r.pos - 2].zone) ? `<tr class="grp-h"><td colspan="9">${esc(L.znames[r.zone - 1])}</td></tr>` : ''}<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${L.zmap ? r.zpos : r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
@@ -1265,7 +1362,8 @@
     if (!T) return chips + ntHistory();
     const flag = (id) => `${badge(T_(id), 'sm')} <span data-team="${id}">${esc(T_(id).name)}</span>`;
     const status = T.winner ? `победитель — ${esc(T_(T.winner).name)}` : T.pend ? 'участники определятся в отборе' : T.done ? 'завершён' : '';
-    const head = `<h3 class="nt-head">${icon('trophyF', 'tro')} ${esc(T.name)}${status ? `<span class="small muted"> · ${status}</span>` : ''}</h3>${T.hostsText ? `<div class="small muted" style="margin:-6px 0 10px">Хозяева: ${esc(T.hostsText)}</div>` : T.hosts && T.hosts.length ? `<div class="small muted" style="margin:-6px 0 10px">Хозяева: ${T.hosts.map((id) => esc(T_(id).name)).join(', ')}</div>` : ''}`;
+    const hostTx = T.hostsText ? `Хозяева: ${esc(T.hostsText)}` : T.hosts && T.hosts.length ? `Хозяева: ${T.hosts.map((id) => esc(T_(id).name)).join(', ')}` : '';
+    const head = tourBanner(tourStyle(NT_STYLE[T.base] || (T.kind === 'qual' || T.kind === 'ip' ? 'natqual' : 'natwc')), T.name, [status, hostTx].filter(Boolean).join(' · ') || (T.kind === 'qual' ? 'Отбор' : T.kind === 'nl' ? 'Лига наций' : 'Финальный турнир'), T.winner ? holder(T.winner, 'Победитель') : '');
     if (T.pend) {
       const got = [...new Set((T.direct || []).concat(...T.pend.map((id) => (G.ntT(id) || {}).qualified || [])))];
       return chips + head + `<div class="card"><div class="small muted" style="margin-bottom:10px">${T.size} сборных. Жеребьёвка групп — сразу после отбора, турнир — ${FM.fmtDate(T.gDates[0])}. Уже известны: ${got.length}.</div>
@@ -1278,7 +1376,7 @@
     if (sub === 'po') {
       const cols = T.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0]].date), ties: R.ties.map((id) => cupTie(s.matches[id])) }));
       const wait = T.kind === 'final' ? `Плей-офф — с ${FM.fmtDate(T.koDates[0])}: по две лучшие сборные из групп${T.groups.length * 2 < 2 ** Math.ceil(Math.log2(T.groups.length * 2)) ? ' и лучшие третьи' : ''}, игры на вылет.` : T.kind === 'nl' ? `1/4 финала (${FM.fmtDate(T.koDates[0])}) — по две лучшие сборные из групп Лиги A, «Финал четырёх» — в июне.` : `Стыки — ${FM.fmtDate(T.koDates[0])}.`;
-      return chips + head + tabs + (cols.length ? `<div class="card">${bracket(cols, T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' ? T.winner : null, T.name)}</div>` : `<div class="card muted">${wait}</div>`);
+      return chips + head + tabs + (cols.length ? `<div class="card">${bracket(cols, T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' ? T.winner : null, T.name, tourStyle(NT_STYLE[T.base] || 'natqual'))}</div>` : `<div class="card muted">${wait}</div>`);
     }
     // зоны: после отбора — по факту, до — по месту в группе
     const G0 = T.groups.length, qd = T.kind === 'qual' && T.gdone;
@@ -1324,7 +1422,7 @@
     return `<div class="br-m ${t.a === uid || t.b === uid ? 'mine' : ''} ${t.mids && t.mids.length ? 'click' : ''}" data-k="${t.k || ''}" data-from="${(t.from || []).join(' ')}" ${t.mids && t.mids.length ? `data-match="${t.mids[t.mids.length - 1]}"` : ''}>
       ${row(t.a, t.sa, t.w)}${row(t.b, t.sb, t.w)}${t.note || t.date ? `<div class="br-n">${esc(t.note || '')}${t.date ? `<span>${esc(t.date)}</span>` : ''}</div>` : ''}</div>`;
   }
-  function bracket(cols, winner, title) {
+  function bracket(cols, winner, title, st) {
     const uid = g().s.user;
     // связи раундов: пара следующего раунда «растёт» из пар, где победили её участники.
     // Колонки упорядочиваем с конца, чтобы источники стояли рядом со своей парой, — тогда линии не перекрещиваются.
@@ -1335,8 +1433,8 @@
     }
     cols.forEach((c, i) => c.ties.forEach((t, j) => { t.k = `${i}-${j}`; }));
     cols.forEach((c, i) => { if (i) c.ties.forEach((t) => { t.from = cols[i - 1].ties.filter((x) => x.w && (x.w === t.a || x.w === t.b)).map((x) => x.k); }); });
-    return `<div class="br-wrap"><div class="br">${cols.map((c, i) => `<div class="br-col ${c.ties.some((t) => t.a === uid || t.b === uid) ? 'path' : ''}"><div class="br-h">${esc(c.name)}${c.date ? `<span>${esc(c.date)}</span>` : ''}</div><div class="br-list">${c.ties.length ? c.ties.map(brTie).join('') : `<div class="br-empty">${esc(c.empty || 'Жеребьёвка после предыдущего раунда')}</div>`}</div></div>${i < cols.length - 1 ? '<div class="br-arrow">' + icon('play') + '</div>' : ''}`).join('')}
-      <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
+    return `<div class="br-wrap ${st ? 'themed' : ''}" ${st ? `style="${tvars(st)}"` : ''}><div class="br">${cols.map((c, i) => `<div class="br-col ${c.ties.some((t) => t.a === uid || t.b === uid) ? 'path' : ''}"><div class="br-h">${esc(c.name)}${c.date ? `<span>${esc(c.date)}</span>` : ''}</div><div class="br-list">${c.ties.length ? c.ties.map(brTie).join('') : `<div class="br-empty">${esc(c.empty || 'Жеребьёвка после предыдущего раунда')}</div>`}</div></div>${i < cols.length - 1 ? '<div class="br-arrow">' + icon('play') + '</div>' : ''}`).join('')}
+      <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${st ? emb(st.emb) : icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
   }
   const brDate = (d) => FM.fmtDate(d).replace(/ (\S{3})\S*$/, ' $1');
   // Линии сетки рисуются после вёрстки: от правого края пары-источника к левому краю пары следующего раунда
@@ -1395,7 +1493,7 @@
     // мой клуб — первым в колонке, дальше по дате
     const cols = c.rounds.map((R, i) => ({ name: R.name, date: brDate(R.date), ties: R.matches.map((id) => s.matches[id]).sort((x, y) => ((y.h === uid || y.a === uid) - (x.h === uid || x.a === uid))).map(cupTie),
       empty: i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => T(id).name).join(', ')}` : 'Жеребьёвка после предыдущего раунда' }));
-    return `${pick}${sup}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}</h3>${bracket(cols, c.winner, c.name)}`;
+    return `${pick}${tourBanner(tourStyle('cup'), c.name, `${esc(FM.NAT[cc] || cc)} · ${c.winner ? 'турнир завершён' : esc((c.rounds[c.cur] || {}).name || '')}`, c.winner ? holder(c.winner, 'Обладатель') : holder((s.lastCupWinners || {})[cc], 'Действующий обладатель'))}${sup}${bracket(cols, c.winner, c.name, tourStyle('cup'))}`;
   }
 
   // клубный чемпионат мира: группы и сетка
@@ -1407,9 +1505,9 @@
         ${tab.map((r) => `<tr class="${r.id === uid ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'up' : ''}"></span>${r.pos}</td><td>${badge(T(r.id), 'sm')} <span data-team="${r.id}">${esc(T(r.id).name)}</span> <span class="small muted">${flag(G.countryOf(T(r.id).league))}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('')}</div>`;
     const cols = C.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0].legs[0]].date), ties: R.ties.map((t) => cupTie(s.matches[t.legs[0]])) }));
     const hist = (s.cwcHist || []).length ? `<div class="small muted" style="margin-top:10px">Прошлые победители: ${s.cwcHist.map((h) => `${h.year} — ${esc(T(h.winner).name)}`).join(', ')}</div>` : '';
-    return `<h3 style="margin:4px 0 12px">${icon('trophyF', 'tro')} Клубный чемпионат мира ${C.year}${C.winner ? ` · победитель — ${esc(T(C.winner).name)}` : ''}</h3>${groups}
+    return `${tourBanner(tourStyle('cwc'), `Клубный чемпионат мира ${C.year}`, C.winner ? 'Турнир завершён' : C.ko.length ? C.ko[C.ko.length - 1].name : 'Групповой этап · 32 клуба', C.winner ? holder(C.winner, 'Победитель') : (s.cwcHist || [])[0] ? holder(s.cwcHist[0].winner, `Чемпион ${s.cwcHist[0].year}`) : '')}${groups}
       <div class="small muted" style="margin:8px 0 14px"><span class="zone up"></span> выход в 1/8 финала · все матчи на нейтральных полях, плей-офф — один матч</div>
-      ${cols.length ? `<div class="card">${bracket(cols, C.winner, 'Клубный ЧМ')}</div>` : ''}${hist}`;
+      ${cols.length ? `<div class="card">${bracket(cols, C.winner, 'Клубный ЧМ', tourStyle('cwc'))}</div>` : ''}${hist}`;
   }
 
   // Кубок России: Путь РПЛ (группы и плей-офф) и Путь регионов (отбор и плей-офф), финал — победители путей
@@ -1421,17 +1519,17 @@
     const tieOf = (t) => (t.legs.length > 1 ? euroTie(t) : cupTie(s.matches[t.legs[0]]));
     const col = (R) => ({ name: R.name.replace(/^Путь (РПЛ|регионов): /, ''), date: brDate(R.date), ties: R.ties.map(tieOf), empty: 'Жеребьёвка после предыдущей стадии' });
     const F = c.rounds.find((R) => R.key === 'f');
-    const head = `<h3 style="margin:4px 0 12px">${flag('RUS')} ${esc(c.name)}${c.winner ? ` · победитель — ${esc(T(c.winner).name)}` : ''}</h3>`;
+    const head = tourBanner(tourStyle('cupRUS'), c.name, `${sub === 'rpl' ? 'Путь РПЛ' : 'Путь регионов'} · сезон ${seasonLabel(s)}`, c.winner ? holder(c.winner, 'Обладатель') : holder((s.lastCupWinners || {}).RUS, 'Действующий обладатель'));
     if (sub === 'reg') {
       const cols = c.rounds.filter((R) => R.path === 'reg').map(col).concat([col(F)]);
-      return tabs + head + `<div class="card">${bracket(cols, c.winner, c.name)}</div><div class="small muted" style="margin-top:8px">Отбор: клубы Первой и Второй лиги${c.byes.length ? ` (${c.byes.length} сильнейших стартуют со 2-го раунда)` : ''}. В 1/8 финала к 4 победителям отбора присоединяются клубы РПЛ, занявшие третьи места в группах; дома играет клуб не из РПЛ. 1/4 и 1/2 — по два матча.</div>`;
+      return tabs + head + `<div class="card">${bracket(cols, c.winner, c.name, tourStyle('cupRUS'))}</div><div class="small muted" style="margin-top:8px">Отбор: клубы Первой и Второй лиги${c.byes.length ? ` (${c.byes.length} сильнейших стартуют со 2-го раунда)` : ''}. В 1/8 финала к 4 победителям отбора присоединяются клубы РПЛ, занявшие третьи места в группах; дома играет клуб не из РПЛ. 1/4 и 1/2 — по два матча.</div>`;
     }
     const groups = `<div class="nat-groups">${c.groups.map((g0, i) => { const tab = G.rusGroupTable(c, i);
       return `<div class="card tight"><h3>Группа ${'ABCDEFGH'[i]}</h3><table class="lt"><tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">Мячи</th><th class="num">О</th></tr>
         ${tab.map((r) => `<tr class="${r.id === uid ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'up' : r.pos === 3 ? 'po' : ''}"></span>${r.pos}</td><td>${badge(T(r.id), 'sm')} <span data-team="${r.id}">${esc(T(r.id).name)}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('')}</div>
       <div class="small muted" style="margin:8px 0 14px"><span class="zone up"></span> 1/8 финала Пути РПЛ (дома — второе место) &nbsp; <span class="zone po"></span> 1/8 финала Пути регионов &nbsp; 4-е место выбывает. Шесть туров: август — ноябрь.</div>`;
     const cols = c.rounds.filter((R) => R.path === 'rpl' && R.key !== 'grp').map(col).concat([col(F)]);
-    return tabs + head + groups + `<div class="card">${bracket(cols, c.winner, c.name)}</div>`;
+    return tabs + head + groups + `<div class="card">${bracket(cols, c.winner, c.name, tourStyle('cupRUS'))}</div>`;
   }
 
   function euroView(id) {
@@ -1440,7 +1538,7 @@
     if (E.format === 'ko') {
       const cols = e.ko.map((R) => ({ name: R.name, ties: R.ties.map(euroTie) }));
       if (e.final) cols.push({ name: 'Финал', date: brDate(s.matches[e.final].date), ties: [cupTie(s.matches[e.final])] });
-      return `<div class="card"><h3>${esc(E.name)}</h3><div class="small muted" style="margin-bottom:10px">16 клубов, игры на вылет: 1/8, 1/4 и 1/2 финала — по два матча, финал — один матч на нейтральном поле.</div>${bracket(cols, e.winner, E.name)}</div>`;
+      return `${tourBanner(tourStyle(id), E.name, e.winner ? 'Турнир завершён' : `${e.final ? 'Финал' : (e.ko[e.ko.length - 1] || {}).name || ''} · 16 клубов, игры на вылет`, e.winner ? holder(e.winner, 'Победитель') : holder((s.lastEuro || {})[id], 'Действующий победитель'))}<div class="card">${bracket(cols, e.winner, E.name, tourStyle(id))}</div>`;
     }
     const tab = G.euroTable(id);
     const zone = (pos) => (pos <= 4 ? 'up' : pos <= 12 ? 'po' : '');
@@ -1452,14 +1550,16 @@
     const line = (mid) => { const m = s.matches[mid]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; };
     const koCols = e.ko.map((R) => ({ name: R.name, ties: R.ties.map(euroTie) }));
     if (e.final) koCols.push({ name: 'Финал', date: brDate(s.matches[e.final].date), ties: [cupTie(s.matches[e.final])] });
-    const brk = koCols.length ? `<div class="card"><h3>${esc(E.name)} · плей-офф</h3>${bracket(koCols, e.winner, E.name)}</div>` : '';
+    const brk = koCols.length ? `<div class="card">${bracket(koCols, e.winner, E.name, tourStyle(id))}</div>` : '';
     const ko = '', fin = '';
     // вкладки: общий этап / плей-офф (после общего этапа — по умолчанию плей-офф)
     UI.euroSub = UI.euroSub || {};
     const sub = UI.euroSub[id] || (e.ko.length ? 'po' : 'group');
+    const mdDone = e.md.filter((md) => md.every((mid) => s.matches[mid].played)).length;
+    const ban = tourBanner(tourStyle(id), E.name, e.winner ? 'Турнир завершён' : e.final ? 'Финал' : e.ko.length ? `Плей-офф · ${e.ko[e.ko.length - 1].name}` : `Общий этап · ${mdDone} из ${e.md.length} туров`, e.winner ? holder(e.winner, 'Победитель') : holder((s.lastEuro || {})[id], 'Действующий победитель'));
     const tabs = `<div class="seg eu-tabs">${[['group', 'Общий этап'], ['po', 'Плей-офф']].map(([k, n]) => `<button data-eus="${k}" data-eid="${id}" class="${k === sub ? 'on' : ''}">${n}</button>`).join('')}</div>`;
-    if (sub === 'po') return tabs + (brk || `<div class="card muted">Плей-офф начнётся после общего этапа: 1–4 места — сразу в 1/4 финала, 5–12 — стыки.</div>`);
-    return tabs + `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
+    if (sub === 'po') return ban + tabs + (brk || `<div class="card muted">Плей-офф начнётся после общего этапа: 1–4 места — сразу в 1/4 финала, 5–12 — стыки.</div>`);
+    return ban + tabs + `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><h3>${esc(E.name)} · общий этап</h3><div class="tbl-wrap"><table>
         <tr><th>#</th><th>Клуб</th><th class="hide-m">Лига</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th></tr>
         ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${zone(r.pos)}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="hide-m small muted">${esc(s.leagues[T(r.id).league].short)}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}
@@ -1501,7 +1601,7 @@
     }
     const mine = (gr) => gr.ties.some((t) => t.up === s.user || t.low === s.user);
     groups.sort((a, b) => mine(b) - mine(a));
-    return groups.map((gr) => `<h3 style="margin:14px 0 8px">${esc(gr.title)}</h3><div class="grid">${gr.ties.map(card).join('')}</div>`).join('');
+    return tourBanner(tourStyle('po'), 'Плей-офф и стыки', 'Повышение и сохранение места в лиге', '') + groups.map((gr) => `<h3 style="margin:14px 0 8px">${esc(gr.title)}</h3><div class="grid">${gr.ties.map(card).join('')}</div>`).join('');
   }
 
   // ================== статистика ==================
@@ -1791,7 +1891,7 @@
         <div><span>Выносливость</span><b class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : ''}">${p.sta || 65}</b><small>${(p.sta || 65) >= 78 ? 'почти не устаёт' : (p.sta || 65) < 55 ? 'быстро устаёт' : 'обычная'}</small></div>
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div></div></div>
-      ${formBlock(p)}
+      ${formBlock(p)}${heatBlock(p)}
       ${mine && !p.loan ? retrainBlock(p) : ''}
       ${citBlock(p)}
       ${p.inj ? `<div class="note bad">Травма: ещё ${G.injText(p.inj)}</div>` : ''}${p.sus ? `<div class="note bad">Дисквалификация: ${p.sus} матч(а)</div>` : ''}
@@ -1904,6 +2004,22 @@
       if (r.status === 'accept') { toast(esc(r.text), 5000); playerModal(pid); render(); return; }
       renewPanel(res, pid, { status: r.status, text: r.text, wage: r.status === 'counter' ? r.wage : t.wage });
     };
+  }
+
+  // Тепловая карта: где игрок провёл минуты (по позициям в матчах); если матчей ещё нет — по его амплуа
+  const HEAT_XY = { GK: [50, 92], CB: [50, 77], LB: [16, 70], RB: [84, 70], DM: [50, 62], CM: [50, 50], AM: [50, 35], LW: [17, 30], RW: [83, 30], ST: [50, 15] };
+  const POS_RU = { GK: 'вратарь', CB: 'центр защиты', LB: 'левый защитник', RB: 'правый защитник', DM: 'опорный', CM: 'центр поля', AM: 'атакующий полузащитник', LW: 'левый вингер', RW: 'правый вингер', ST: 'нападающий' };
+  function heatBlock(p) {
+    let hm = p.hm, real = true;
+    if (!hm || !Object.keys(hm).length) { real = false; hm = { [p.pos]: 3 }; for (const a of p.alt || []) hm[a] = 1; }
+    const tot = Object.values(hm).reduce((a, b) => a + b, 0) || 1, max = Math.max(...Object.values(hm));
+    const blobs = Object.entries(hm).filter(([k]) => HEAT_XY[k]).map(([k, v]) => { const [x, y] = HEAT_XY[k], r = 14 + 16 * v / max;
+      return `<circle cx="${x}" cy="${y * 1.05}" r="${r.toFixed(1)}" fill="url(#hg)" opacity="${(0.35 + 0.65 * v / max).toFixed(2)}"/>`; }).join('');
+    const legend = Object.entries(hm).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `<div><span>${POS_RU[k] || k}</span><b>${real ? Math.round(100 * v / tot) + '%' : ''}</b></div>`).join('');
+    return `<div class="card tight" style="margin-top:12px;padding:14px"><div class="row" style="margin-bottom:8px"><b class="grow">Тепловая карта</b><span class="small muted">${real ? `${Math.round(tot)} мин. в матчах` : 'по амплуа — матчей ещё нет'}</span></div>
+      <div class="heat-wrap"><div class="heat"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><radialGradient id="hg"><stop offset="0" stop-color="#ffe14d"/><stop offset=".45" stop-color="#ff7a1a" stop-opacity=".85"/><stop offset="1" stop-color="#ff3b3b" stop-opacity="0"/></radialGradient></defs>
+        <g fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".8"><rect x="4" y="4" width="92" height="102"/><path d="M4 55h92"/><circle cx="50" cy="55" r="11"/><rect x="26" y="4" width="48" height="16"/><rect x="26" y="90" width="48" height="16"/></g>${blobs}</svg></div>
+        <div class="heat-leg grow">${legend}</div></div></div>`;
   }
 
   // Форма игрока: оценки за последние матчи столбиками (зелёный — от 7.5, красный — ниже 6)
@@ -2174,7 +2290,7 @@
     const ratAll = Object.entries(m.ratings || {}).map(([pid, r]) => [G.players[pid], r]).filter(([p]) => p);
     const mvp = m.mvp && G.players[m.mvp];
     modal(`<div class="bc rep" style="--hcb:${glow(h)};--acb:${glow(a)}">
-        <div class="bc-head"><span class="comp-pill">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</span>${bigTag(m)}<span class="small muted">${FM.fmtDateWd(m.date)}${m.att ? ` · ${m.att.toLocaleString('ru-RU')} зрителей` : ''}</span></div>
+        <div class="bc-head">${tchip(m)}${bigTag(m)}<span class="small muted">${FM.fmtDateWd(m.date)}${m.att ? ` · ${m.att.toLocaleString('ru-RU')} зрителей` : ''}</span></div>
         <div class="rep-sc"><div class="rep-t">${badge(h, 'xl')}<b>${esc(h.name)}</b><div class="scorers">${goals('h')}</div></div>
           <div class="rep-mid"><div class="rep-score">${m.hg}<span>:</span>${m.ag}</div>${m.pens ? `<div class="small muted">пен. ${m.pens[0]}:${m.pens[1]}</div>` : '<div class="label">финальный счёт</div>'}</div>
           <div class="rep-t">${badge(a, 'xl')}<b>${esc(a.name)}</b><div class="scorers">${goals('a')}</div></div></div>
@@ -2212,10 +2328,12 @@
     const xiList = (t) => { const xi = xiOf(t);
       return `<div class="pv-xi"><h3>${esc(t.name)} <span class="muted">· ${t.formation}</span></h3>${xi.map(({ p, slot }) => `<div class="pv-row"><span class="pv-kit">${kitSvg(t, slot === 'GK')}</span>${pos(slot)}<span class="grow ell" data-player="${p.id}">${esc(p.name)}</span>${ovr(p.ovr)}</div>`).join('')}</div>`; };
     const star = (t) => { const p = xiOf(t).map((x) => x.p).sort((a, b) => b.ovr - a.ovr)[0]; return p ? `<div class="pv-star"><span class="label">Главный игрок</span>${futMini(p)}</div>` : ''; };
-    const el = modal(`<div class="bc pv" style="--hcb:${glow(h)};--acb:${glow(a)}">
-        <div class="bc-head"><span class="comp-pill">${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''}</span>${bigTag(m)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
+    const fin = isFinal(m), fst = tourOf(m.comp);
+    const el = modal(`<div class="bc pv ${fin ? 'final' : ''}" style="--hcb:${glow(h)};--acb:${glow(a)};${tvars(fst)}">
+        <div class="bc-head">${tchip(m)}${bigTag(m)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
         <div class="bc-vs">${side(h)}<div class="bc-kick"><span class="bc-when">${esc(FM.fmtDateWd(m.date))}</span><span class="bc-v">VS</span><span class="bc-where">${m.neutral ? 'нейтральное поле' : esc(h.stadium || '')}</span></div>${side(a, true)}</div>
       </div>
+      ${fin ? finalBlock(m) : ''}
       ${extra}
       <div class="pv-grid">${star(h)}${xiList(h)}${xiList(a)}${star(a)}</div>
       ${problems.length ? `<div class="note warn small">${problems.map(esc).join('<br>')}<br>Свободные места займут лучшие доступные игроки.</div>` : ''}
@@ -2685,14 +2803,16 @@
     const row = G.table(u.league).find((r) => r.id === u.id);
     const conf = Math.round(s.board.conf);
     // трофеи клуба за время карьеры
-    const tro = { league: [], cup: [], euro: [] };
+    const tro = { league: [], cup: [], euro: [], sup: [], cwc: [] };
     for (const x of H.seasons || []) {
       for (const lid in x.champs) if (x.champs[lid] === u.id) tro.league.push([x.year, s.leagues[lid] ? s.leagues[lid].name : lid]);
       for (const c in x.cups) if (x.cups[c] === u.id) tro.cup.push([x.year, s.cups[c] ? s.cups[c].name : 'Кубок']);
       for (const e in x.euro) if (x.euro[e] === u.id) tro.euro.push([x.year, euroOf(e) ? euroOf(e).name : e]);
+      for (const k in x.supers || {}) if (x.supers[k] === u.id) tro.sup.push([x.year, FM.superName(k)]);
+      if (x.cwc === u.id) tro.cwc.push([x.year, 'Клубный чемпионат мира']);
     }
-    const nT = tro.league.length + tro.cup.length + tro.euro.length;
-    const shelf = [['Чемпионат', tro.league, 'gold'], ['Кубок', tro.cup, 'silver'], ['Еврокубки', tro.euro, 'euro']];
+    const nT = tro.league.length + tro.cup.length + tro.euro.length + tro.sup.length + tro.cwc.length;
+    const shelf = [['Чемпионат', tro.league, 'league', 'shield'], ['Кубок', tro.cup, 'cup', 'cup'], ['Суперкубки', tro.sup, 'super', 'plate'], ['Континентальные', tro.euro, 'euro', 'bigcup'], ['Клубный ЧМ', tro.cwc, 'cwc', 'globe']];
     // места по сезонам (история тренера в этом клубе)
     const hist = s.history.filter((x) => x.team === u.id).slice().reverse();
     const pts = hist.map((x) => ({ y: x.pos, label: `${x.year}/${String(x.year + 1).slice(2)}`, short: `${String(x.year).slice(2)}/${String(x.year + 1).slice(2)}`, cls: x.pos === 1 ? 'gold' : '' }));
@@ -2713,7 +2833,7 @@
           <div class="small muted">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
         ${dressCard(G, u)}
         <div class="card"><h3>Трофеи <span class="muted small">· за карьеру: ${nT}</span></h3>
-          <div class="shelf">${shelf.map(([n, list, cls]) => `<div class="sh-col ${list.length ? '' : 'empty'}"><div class="sh-cups">${list.length ? list.map(([y, nm]) => `<span class="sh-cup ${cls}" title="${esc(nm)} · ${y}/${String(y + 1).slice(2)}">${icon('trophyF')}</span>`).join('') : `<span class="sh-cup none">${icon('trophyF')}</span>`}</div><b>${list.length}</b><span>${n}</span></div>`).join('')}</div></div>
+          <div class="shelf">${shelf.map(([n, list, cls, e]) => `<div class="sh-col ${list.length ? '' : 'empty'}"><div class="sh-cups">${list.length ? list.map(([y, nm]) => `<span class="sh-cup t-${cls}" title="${esc(nm)} · ${y}/${String(y + 1).slice(2)}">${emb(e)}</span>`).join('') : `<span class="sh-cup none">${emb(e)}</span>`}</div><b>${list.length}</b><span>${n}</span></div>`).join('')}</div></div>
         <div class="card club-chart" style="--chc:${glow(u)}"><h3>Места по сезонам</h3>${lineChart(pts, { id: 'cl', invert: true, min: 1, max: Math.max(...pts.map((p) => p.y), 6), fmt: (v) => `${Math.round(v)}-е`, ticks: [1, Math.round((1 + Math.max(...pts.map((p) => p.y), 6)) / 2), Math.max(...pts.map((p) => p.y), 6)], area: false, title: 'Места по сезонам', empty: 'Здесь появятся места команды по итогам ваших сезонов в клубе.' })}</div>
         <div class="card"><h3>Рекорды клуба при вас</h3>
           <div class="recs">${[['Бомбардиры', 'g', 'гол.'], ['Больше всех матчей', 'a', 'матч.'], ['Ассистенты', 'as', 'пас.']].map(([n, k, u2]) => `<div class="rec"><span class="label">${n}</span>${best(k).map((x, i) => `<div class="rec-r"><i>${i + 1}</i>${flag(x.nat)}<span title="${esc(x.n)}">${esc(x.n.split(' ').slice(-1)[0])}</span><b>${x[k]}</b><em>${u2}</em></div>`).join('') || '<div class="muted small">Пока нет данных</div>'}</div>`).join('')}</div></div>

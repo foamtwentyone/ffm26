@@ -543,6 +543,9 @@
         const st = 1.35 - (o.p.sta || 65) / 150; // выносливость: 95 — устаёт на треть медленнее, 40 — быстрее
         s.fitness[o.p.id] = Math.max(0, s.fitness[o.p.id] - k * a * st * (o.slot === 'GK' ? 0.25 : 1) * (0.7 + Math.random() * 0.6));
         s.mins[o.p.id] = (s.mins[o.p.id] || 0) + 1;
+        // минуты по позициям — для тепловой карты игрока
+        const sm = s.slotMin || (s.slotMin = {}), r = sm[o.p.id] || (sm[o.p.id] = {});
+        r[o.slot] = (r[o.slot] || 0) + 1;
       }
       if (this.minute % 5 === 0) s.recalc();
     }
