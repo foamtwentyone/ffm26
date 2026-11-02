@@ -324,6 +324,8 @@
       // старые сохранения: дополнительных позиций не было (только выученные переучиванием) — раздаём, выученные сохраняем
       if (!state.nt && !state.nat && FM.leagues && state.date < `${state.season}-09-01`) this._natLater = true;
       if (state.nat && !state.nt) this._ntMig = true;
+      // «Черноморец»: в данных были истёкшие контракты прошлого сезона — продлеваем на 1–2 года (один раз)
+      if (!state.chmV1) { state.chmV1 = true; const t = state.teams.chernomorets; if (t) for (const id of t.players) { const p = this.players[id]; if (p && p.contract <= state.season) p.contract = state.season + 1 + (id % 2); } }
       if (!state.staV1) { state.staV1 = true; for (const id in this.players) { const p = this.players[id]; if (!p.sta) p.sta = FM.staFor(p.name, p.pos, p.age); } }
       if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {
