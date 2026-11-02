@@ -2703,3 +2703,5 @@ html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page
 .heat-card .heat-leg .hb-main { display: block; }
 .heat-card .heat-leg .hb-row { display: grid; }
 .pf-rv span { font-size: 9px; letter-spacing: .05em; }
+.heat-scale { position: absolute; left: 8px; bottom: 6px; display: inline-flex; align-items: center; gap: 6px; font: 700 9px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+.heat-scale i { display: inline-block; width: 46px; height: 5px; border-radius: 3px; background: linear-gradient(90deg, #285aff, #18c978, #ffe600, #ff7a00, #ff1e1e); }

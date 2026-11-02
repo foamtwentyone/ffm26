@@ -1923,8 +1923,8 @@
         <div><span>Потенциал</span><b>${G.potLabel(p)}</b>${p.pot - p.ovr > 1 ? `<span>может вырасти до ${p.pot}</span>` : ''}</div>
         <div><span>Зарплата</span><b>${FM.money(p.wage)}/нед</b></div>
         <div><span>Контракт до</span><b>лето ${p.contract + 1}</b>${p.bon && (p.bon.goal || p.bon.euro) ? `<small>бонусы: ${[p.bon.goal ? `${FM.money(p.bon.goal)} за гол` : '', p.bon.euro ? `${FM.money(p.bon.euro)} за еврокубки` : ''].filter(Boolean).join(', ')}</small>` : ''}${p.sellOn && g().teams[p.sellOn.club] ? `<small>${p.sellOn.pct}% с продажи — «${esc(g().teams[p.sellOn.club].name)}»</small>` : ''}</div>
-        <div><span>Физ. готовность</span><b>${Math.round(p.fit)}%</b></div>
-        <div><span>Выносливость</span><b class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : ''}">${p.sta || 65}</b><small>${(p.sta || 65) >= 78 ? 'почти не устаёт' : (p.sta || 65) < 55 ? 'быстро устаёт' : 'обычная'}</small></div>
+        <div><span>Физ. готовность</span><b class="${p.fit < 70 ? 'bad' : p.fit < 88 ? 'warn' : 'good'}">${Math.round(p.fit)}%</b><small>${p.inj ? 'травма' : p.fit >= 97 ? 'свежий' : `сейчас · +${(3 + (p.sta || 65) / 22 - Math.max(0, p.age - 31) * 0.3).toFixed(1)}% в день`}</small></div>
+        <div><span>Выносливость</span><b class="${(p.sta || 65) >= 78 ? 'good' : (p.sta || 65) < 55 ? 'bad' : ''}">${p.sta || 65}</b><small>${(p.sta || 65) >= 78 ? 'почти не устаёт' : (p.sta || 65) < 55 ? 'быстро устаёт' : 'обычная'} · постоянная</small></div>
         <div><span>Мораль</span><b>${p.morale >= 70 ? 'отличная' : p.morale >= 50 ? 'нормальная' : 'плохая'}</b></div>
       </div></div></div>
       ${formBlock(p)}${heatBlock(p)}
@@ -2042,37 +2042,74 @@
     };
   }
 
-  // Тепловая карта: горизонтальное поле (атака вправо), размытые пятна по минутам на позициях, шкала по позициям.
-  // Если матчей ещё нет — по амплуа игрока.
-  const HEAT_XY = { GK: [[7, 34]], CB: [[22, 25], [22, 43]], LB: [[30, 8]], RB: [[30, 60]], DM: [[40, 34]], CM: [[52, 27], [52, 41]], AM: [[68, 34]], LW: [[76, 9]], RW: [[76, 59]], ST: [[90, 34]] };
+  // Тепловая карта как в разборах матчей: вокруг каждой позиции разбрасываются «касания» (их число — по минутам,
+  // разброс — по роли: фланговые вытянуты вдоль бровки, опорный и центр поля — шире), плотность считается по сетке
+  // и раскрашивается шкалой синий → зелёный → жёлтый → красный. Случайность фиксирована по игроку — картинка не «прыгает».
+  const HEAT_ZONES = { GK: [[6, 34, 3, 6]], CB: [[21, 25, 8, 6], [21, 43, 8, 6]], LB: [[36, 8, 17, 5]], RB: [[36, 60, 17, 5]], DM: [[40, 34, 10, 10]],
+    CM: [[52, 26, 13, 9], [52, 42, 13, 9]], AM: [[70, 34, 11, 11]], LW: [[74, 10, 16, 6]], RW: [[74, 58, 16, 6]], ST: [[88, 34, 9, 9]] };
   const POS_RU = { GK: 'вратарь', CB: 'центр защиты', LB: 'левый защитник', RB: 'правый защитник', DM: 'опорный', CM: 'центр поля', AM: 'под нападающими', LW: 'левый фланг атаки', RW: 'правый фланг атаки', ST: 'нападающий' };
+  const heatCache = new Map();
+  function heatImage(hm, seed) {
+    const key = seed + '|' + JSON.stringify(hm);
+    if (heatCache.has(key)) return heatCache.get(key);
+    const W = 210, H = 136, S = 2; // сетка: 2 точки на метр
+    let r = seed * 2654435761 >>> 0;
+    const rnd = () => { r = (r + 0x6D2B79F5) >>> 0; let t = r; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+    const grid = new Float32Array(W * H);
+    const KR = 11, ker = []; for (let dy = -KR; dy <= KR; dy++) for (let dx = -KR; dx <= KR; dx++) { const d2 = dx * dx + dy * dy; if (d2 <= KR * KR) ker.push([dx, dy, Math.exp(-d2 / (2 * 4.4 * 4.4))]); }
+    const tot = Object.values(hm).reduce((a, b) => a + b, 0) || 1;
+    for (const [k, v] of Object.entries(hm)) {
+      const zones = HEAT_ZONES[k]; if (!zones) continue;
+      const n = Math.round(1400 * v / tot) + 30;
+      for (let i = 0; i < n; i++) {
+        const [cx, cy, sx, sy] = zones[i % zones.length];
+        const x = Math.round((cx + gauss() * sx) * S), y = Math.round((cy + gauss() * sy) * S);
+        for (const [dx, dy, w] of ker) { const xx = x + dx, yy = y + dy; if (xx >= 0 && yy >= 0 && xx < W && yy < H) grid[yy * W + xx] += w; }
+      }
+    }
+    let max = 0; for (const v of grid) if (v > max) max = v;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const cx = cv.getContext('2d'), img = cx.createImageData(W, H);
+    const stops = [[0, [40, 90, 255]], [0.3, [24, 201, 120]], [0.55, [255, 230, 0]], [0.78, [255, 122, 0]], [1, [255, 30, 30]]];
+    const color = (t) => { for (let i = 1; i < stops.length; i++) if (t <= stops[i][0]) { const [a0, c0] = stops[i - 1], [a1, c1] = stops[i], f = (t - a0) / (a1 - a0); return c0.map((c, j) => c + (c1[j] - c) * f); } return stops[stops.length - 1][1]; };
+    for (let i = 0; i < grid.length; i++) {
+      const t = Math.pow(grid[i] / (max || 1), 0.7);
+      if (t < 0.06) continue;
+      const [R, G, B] = color(t);
+      img.data[i * 4] = R; img.data[i * 4 + 1] = G; img.data[i * 4 + 2] = B; img.data[i * 4 + 3] = Math.round(255 * Math.min(0.88, (t - 0.06) * 1.6));
+    }
+    cx.putImageData(img, 0, 0);
+    const url = cv.toDataURL('image/png');
+    heatCache.set(key, url);
+    return url;
+  }
   function heatBlock(p) {
     let hm = p.hm, real = true;
     if (!hm || !Object.keys(hm).length) { real = false; hm = { [p.pos]: 3 }; for (const a of p.alt || []) hm[a] = 1; }
-    const list = Object.entries(hm).filter(([k]) => HEAT_XY[k]).sort((a, b) => b[1] - a[1]);
+    const list = Object.entries(hm).filter(([k]) => HEAT_ZONES[k]).sort((a, b) => b[1] - a[1]);
     const tot = list.reduce((a, [, v]) => a + v, 0) || 1, max = list[0] ? list[0][1] : 1;
     const uid = 'h' + p.id;
-    // пятна: чем больше минут, тем крупнее и ярче; несколько слоёв дают мягкий переход жёлтый → красный
-    const blobs = list.map(([k, v]) => { const w = v / max; return HEAT_XY[k].map(([x, y]) => `
-      <ellipse cx="${x}" cy="${y}" rx="${(9 + 10 * w).toFixed(1)}" ry="${(7 + 8 * w).toFixed(1)}" fill="#ff3d2e" opacity="${(0.25 + 0.5 * w).toFixed(2)}"/>
-      <ellipse cx="${x}" cy="${y}" rx="${(5 + 6 * w).toFixed(1)}" ry="${(4 + 5 * w).toFixed(1)}" fill="#ff9f1c" opacity="${(0.3 + 0.6 * w).toFixed(2)}"/>
-      ${w > 0.45 ? `<ellipse cx="${x}" cy="${y}" rx="${(2 + 3 * w).toFixed(1)}" ry="${(2 + 2.5 * w).toFixed(1)}" fill="#fff36b" opacity="${(0.5 + 0.5 * w).toFixed(2)}"/>` : ''}`).join(''); }).join('');
-    const stripes = Array.from({ length: 10 }, (_, i) => `<rect x="${i * 10.5}" y="0" width="10.5" height="68" fill="${i % 2 ? '#2a7d43' : '#2f8a4a'}"/>`).join('');
+    const stripes = Array.from({ length: 12 }, (_, i) => `<rect x="${(i * 105 / 12).toFixed(2)}" y="0" width="${(105 / 12).toFixed(2)}" height="68" fill="${i % 2 ? '#2a7d43' : '#2f8a4a'}"/>`).join('');
     const top = list[0];
     const bars = list.slice(0, 5).map(([k, v], i) => `<div class="hb-row ${i === 0 ? 'top' : ''}"><span class="hb-n">${POS_RU[k] || k}</span><b>${real ? Math.round(100 * v / tot) + '%' : i === 0 ? 'основная' : 'может'}</b><span class="hb-bar"><i style="width:${Math.max(4, 100 * v / max).toFixed(0)}%"></i></span></div>`).join('');
+    let src = '';
+    try { src = heatImage(Object.fromEntries(list), p.id); } catch (e) { src = ''; }
     return `<div class="pcard heat-card"><div class="pc-head"><b>Тепловая карта</b><span>${real ? `${Math.round(tot)} мин. в матчах` : 'по амплуа — матчей ещё нет'}</span></div>
       <div class="heat-wrap"><div class="heat"><svg viewBox="0 0 105 68" preserveAspectRatio="xMidYMid meet">
-        <defs><filter id="${uid}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.2"/></filter>
-          <clipPath id="${uid}c"><rect x="0" y="0" width="105" height="68" rx="3"/></clipPath></defs>
+        <defs><clipPath id="${uid}c"><rect x="0" y="0" width="105" height="68" rx="3"/></clipPath>
+          <radialGradient id="${uid}v" cx="50%" cy="50%" r="70%"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>
         <g clip-path="url(#${uid}c)">${stripes}
-          <g filter="url(#${uid})">${blobs}</g>
-          <g fill="none" stroke="rgba(255,255,255,.7)" stroke-width=".5">
+          ${src ? `<image href="${src}" x="0" y="0" width="105" height="68" preserveAspectRatio="none" style="image-rendering:auto"/>` : ''}
+          <g fill="none" stroke="rgba(255,255,255,.75)" stroke-width=".45">
             <rect x="2" y="2" width="101" height="64"/><path d="M52.5 2v64"/><circle cx="52.5" cy="34" r="9.15"/>
             <rect x="2" y="13.8" width="16.5" height="40.3"/><rect x="2" y="24.8" width="5.5" height="18.3"/>
             <rect x="86.5" y="13.8" width="16.5" height="40.3"/><rect x="97.5" y="24.8" width="5.5" height="18.3"/>
             <path d="M18.5 26.7a9.15 9.15 0 0 1 0 14.6M86.5 26.7a9.15 9.15 0 0 0 0 14.6"/></g>
-          <circle cx="52.5" cy="34" r=".7" fill="#fff"/></g></svg>
-        <span class="heat-dir">атака →</span></div>
+          <circle cx="52.5" cy="34" r=".6" fill="#fff"/><circle cx="13" cy="34" r=".5" fill="#fff"/><circle cx="92" cy="34" r=".5" fill="#fff"/>
+          <rect x="0" y="0" width="105" height="68" fill="url(#${uid}v)"/></g></svg>
+        <span class="heat-dir">атака →</span>
+        <span class="heat-scale"><i></i>реже · чаще</span></div>
         <div class="heat-leg">${top ? `<div class="hb-main"><span>Основная зона</span><b>${POS_RU[top[0]] || top[0]}</b></div>` : ''}${bars}</div></div></div>`;
   }
 
