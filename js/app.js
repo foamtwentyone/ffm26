@@ -2042,31 +2042,70 @@
     };
   }
 
-  // Тепловая карта: где игрок провёл минуты (по позициям в матчах); если матчей ещё нет — по его амплуа
-  const HEAT_XY = { GK: [50, 92], CB: [50, 77], LB: [16, 70], RB: [84, 70], DM: [50, 62], CM: [50, 50], AM: [50, 35], LW: [17, 30], RW: [83, 30], ST: [50, 15] };
-  const POS_RU = { GK: 'вратарь', CB: 'центр защиты', LB: 'левый защитник', RB: 'правый защитник', DM: 'опорный', CM: 'центр поля', AM: 'атакующий полузащитник', LW: 'левый вингер', RW: 'правый вингер', ST: 'нападающий' };
+  // Тепловая карта: горизонтальное поле (атака вправо), размытые пятна по минутам на позициях, шкала по позициям.
+  // Если матчей ещё нет — по амплуа игрока.
+  const HEAT_XY = { GK: [[7, 34]], CB: [[22, 25], [22, 43]], LB: [[30, 8]], RB: [[30, 60]], DM: [[40, 34]], CM: [[52, 27], [52, 41]], AM: [[68, 34]], LW: [[76, 9]], RW: [[76, 59]], ST: [[90, 34]] };
+  const POS_RU = { GK: 'вратарь', CB: 'центр защиты', LB: 'левый защитник', RB: 'правый защитник', DM: 'опорный', CM: 'центр поля', AM: 'под нападающими', LW: 'левый фланг атаки', RW: 'правый фланг атаки', ST: 'нападающий' };
   function heatBlock(p) {
     let hm = p.hm, real = true;
     if (!hm || !Object.keys(hm).length) { real = false; hm = { [p.pos]: 3 }; for (const a of p.alt || []) hm[a] = 1; }
-    const tot = Object.values(hm).reduce((a, b) => a + b, 0) || 1, max = Math.max(...Object.values(hm));
-    const blobs = Object.entries(hm).filter(([k]) => HEAT_XY[k]).map(([k, v]) => { const [x, y] = HEAT_XY[k], r = 14 + 16 * v / max;
-      return `<circle cx="${x}" cy="${y * 1.05}" r="${r.toFixed(1)}" fill="url(#hg)" opacity="${(0.35 + 0.65 * v / max).toFixed(2)}"/>`; }).join('');
-    const legend = Object.entries(hm).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, v]) => `<div><span>${POS_RU[k] || k}</span><b>${real ? Math.round(100 * v / tot) + '%' : ''}</b></div>`).join('');
-    return `<div class="card tight" style="margin-top:12px;padding:14px"><div class="row" style="margin-bottom:8px"><b class="grow">Тепловая карта</b><span class="small muted">${real ? `${Math.round(tot)} мин. в матчах` : 'по амплуа — матчей ещё нет'}</span></div>
-      <div class="heat-wrap"><div class="heat"><svg viewBox="0 0 100 110" preserveAspectRatio="none"><defs><radialGradient id="hg"><stop offset="0" stop-color="#ffe14d"/><stop offset=".45" stop-color="#ff7a1a" stop-opacity=".85"/><stop offset="1" stop-color="#ff3b3b" stop-opacity="0"/></radialGradient></defs>
-        <g fill="none" stroke="rgba(255,255,255,.35)" stroke-width=".8"><rect x="4" y="4" width="92" height="102"/><path d="M4 55h92"/><circle cx="50" cy="55" r="11"/><rect x="26" y="4" width="48" height="16"/><rect x="26" y="90" width="48" height="16"/></g>${blobs}</svg></div>
-        <div class="heat-leg grow">${legend}</div></div></div>`;
+    const list = Object.entries(hm).filter(([k]) => HEAT_XY[k]).sort((a, b) => b[1] - a[1]);
+    const tot = list.reduce((a, [, v]) => a + v, 0) || 1, max = list[0] ? list[0][1] : 1;
+    const uid = 'h' + p.id;
+    // пятна: чем больше минут, тем крупнее и ярче; несколько слоёв дают мягкий переход жёлтый → красный
+    const blobs = list.map(([k, v]) => { const w = v / max; return HEAT_XY[k].map(([x, y]) => `
+      <ellipse cx="${x}" cy="${y}" rx="${(9 + 10 * w).toFixed(1)}" ry="${(7 + 8 * w).toFixed(1)}" fill="#ff3d2e" opacity="${(0.25 + 0.5 * w).toFixed(2)}"/>
+      <ellipse cx="${x}" cy="${y}" rx="${(5 + 6 * w).toFixed(1)}" ry="${(4 + 5 * w).toFixed(1)}" fill="#ff9f1c" opacity="${(0.3 + 0.6 * w).toFixed(2)}"/>
+      ${w > 0.45 ? `<ellipse cx="${x}" cy="${y}" rx="${(2 + 3 * w).toFixed(1)}" ry="${(2 + 2.5 * w).toFixed(1)}" fill="#fff36b" opacity="${(0.5 + 0.5 * w).toFixed(2)}"/>` : ''}`).join(''); }).join('');
+    const stripes = Array.from({ length: 10 }, (_, i) => `<rect x="${i * 10.5}" y="0" width="10.5" height="68" fill="${i % 2 ? '#2a7d43' : '#2f8a4a'}"/>`).join('');
+    const top = list[0];
+    const bars = list.slice(0, 5).map(([k, v], i) => `<div class="hb-row ${i === 0 ? 'top' : ''}"><span class="hb-n">${POS_RU[k] || k}</span><b>${real ? Math.round(100 * v / tot) + '%' : i === 0 ? 'основная' : 'может'}</b><span class="hb-bar"><i style="width:${Math.max(4, 100 * v / max).toFixed(0)}%"></i></span></div>`).join('');
+    return `<div class="pcard heat-card"><div class="pc-head"><b>Тепловая карта</b><span>${real ? `${Math.round(tot)} мин. в матчах` : 'по амплуа — матчей ещё нет'}</span></div>
+      <div class="heat-wrap"><div class="heat"><svg viewBox="0 0 105 68" preserveAspectRatio="xMidYMid meet">
+        <defs><filter id="${uid}" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3.2"/></filter>
+          <clipPath id="${uid}c"><rect x="0" y="0" width="105" height="68" rx="3"/></clipPath></defs>
+        <g clip-path="url(#${uid}c)">${stripes}
+          <g filter="url(#${uid})">${blobs}</g>
+          <g fill="none" stroke="rgba(255,255,255,.7)" stroke-width=".5">
+            <rect x="2" y="2" width="101" height="64"/><path d="M52.5 2v64"/><circle cx="52.5" cy="34" r="9.15"/>
+            <rect x="2" y="13.8" width="16.5" height="40.3"/><rect x="2" y="24.8" width="5.5" height="18.3"/>
+            <rect x="86.5" y="13.8" width="16.5" height="40.3"/><rect x="97.5" y="24.8" width="5.5" height="18.3"/>
+            <path d="M18.5 26.7a9.15 9.15 0 0 1 0 14.6M86.5 26.7a9.15 9.15 0 0 0 0 14.6"/></g>
+          <circle cx="52.5" cy="34" r=".7" fill="#fff"/></g></svg>
+        <span class="heat-dir">атака →</span></div>
+        <div class="heat-leg">${top ? `<div class="hb-main"><span>Основная зона</span><b>${POS_RU[top[0]] || top[0]}</b></div>` : ''}${bars}</div></div></div>`;
   }
 
-  // Форма игрока: оценки за последние матчи столбиками (зелёный — от 7.5, красный — ниже 6)
+  // Форма: линия оценок за последние матчи с зонами (≥7.5 — отлично, <6 — плохо), средняя в кольце, тренд и итоги
   function formBlock(p) {
     const rh = (p.rh || []).map((x) => x / 10);
     if (!rh.length) return '';
-    const avg = rh.reduce((a, b) => a + b, 0) / rh.length;
-    const lo = 5, hi = 8.5;
-    const trend = rh.length >= 4 ? (rh.slice(-3).reduce((a, b) => a + b, 0) / 3) - (rh.slice(0, -3).reduce((a, b) => a + b, 0) / (rh.length - 3)) : 0;
-    return `<div class="pform"><div class="row"><b class="grow">Форма</b><span class="small muted">последние ${rh.length} матч${rh.length === 1 ? '' : rh.length < 5 ? 'а' : 'ей'} · средняя</span><b class="pf-avg ${avg >= 7.2 ? 'good' : avg < 6.3 ? 'bad' : ''}">${avg.toFixed(2)}</b>${Math.abs(trend) >= 0.25 ? `<span class="pf-tr ${trend > 0 ? 'good' : 'bad'}">${icon(trend > 0 ? 'up' : 'down', 'sm')}</span>` : ''}</div>
-      <div class="pf-bars">${rh.map((r) => `<div class="pf-b ${r >= 7.5 ? 'hi' : r < 6 ? 'lo' : ''}"><span>${r.toFixed(1)}</span><i style="height:${((Math.min(hi, Math.max(lo, r)) - lo) / (hi - lo) * 100).toFixed(0)}%"></i></div>`).join('')}</div></div>`;
+    const n = rh.length, avg = rh.reduce((a, b) => a + b, 0) / n;
+    const trend = n >= 4 ? (rh.slice(-3).reduce((a, b) => a + b, 0) / 3) - (rh.slice(0, -3).reduce((a, b) => a + b, 0) / (n - 3)) : 0;
+    const W = 300, H = 120, pl = 30, pr = 10, pt = 16, pb = 14, lo = 4.5, hi = 9;
+    const X = (i) => (n === 1 ? W / 2 : pl + (W - pl - pr) * i / (n - 1)), Y = (r) => pt + (H - pt - pb) * (1 - (Math.min(hi, Math.max(lo, r)) - lo) / (hi - lo));
+    const pts = rh.map((r, i) => [X(i), Y(r)]);
+    // сглаженная линия (кривые Безье по соседним точкам)
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2; d += ` C${cx.toFixed(1)},${y0.toFixed(1)} ${cx.toFixed(1)},${y1.toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`; }
+    const area = `${d} L${pts[n - 1][0].toFixed(1)},${H - pb} L${pts[0][0].toFixed(1)},${H - pb} Z`;
+    const cls = (r) => (r >= 7.5 ? 'hi' : r < 6 ? 'lo' : r >= 6.8 ? 'ok' : 'mid');
+    const col = { hi: '#2ef08f', ok: '#7fd3ff', mid: '#ffc94d', lo: '#ff5a6e' };
+    const uid = 'f' + p.id;
+    const ring = (v) => { const R = 30, C = 2 * Math.PI * R, k = Math.min(1, Math.max(0, (v - 5) / 4)); return `<svg viewBox="0 0 76 76" class="pf-ring"><circle cx="38" cy="38" r="${R}" class="rb"/><circle cx="38" cy="38" r="${R}" class="rv" stroke="${col[cls(v)]}" stroke-dasharray="${(C * k).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 38 38)"/></svg>`; };
+    const best = Math.max(...rh), worst = Math.min(...rh), good = rh.filter((r) => r >= 7.5).length;
+    return `<div class="pcard pform2"><div class="pc-head"><b>Форма</b><span>последние ${n} матч${n === 1 ? '' : n < 5 ? 'а' : 'ей'}</span></div>
+      <div class="pf-wrap"><div class="pf-sum"><div class="pf-ringw">${ring(avg)}<div class="pf-rv"><b style="color:${col[cls(avg)]}">${avg.toFixed(2)}</b><span>средняя</span></div></div>
+        ${Math.abs(trend) >= 0.15 ? `<span class="pf-trend ${trend > 0 ? 'good' : 'bad'}">${icon(trend > 0 ? 'up' : 'down', 'sm')}${trend > 0 ? '+' : ''}${trend.toFixed(2)}</span>` : '<span class="pf-trend">стабильно</span>'}</div>
+        <div class="pf-chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          <defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f8cff" stop-opacity=".45"/><stop offset="1" stop-color="#6f8cff" stop-opacity="0"/></linearGradient></defs>
+          <rect x="0" y="${pt}" width="${W}" height="${(Y(7.5) - pt).toFixed(1)}" fill="rgba(46,240,143,.07)"/>
+          <rect x="0" y="${Y(6).toFixed(1)}" width="${W}" height="${(H - pb - Y(6)).toFixed(1)}" fill="rgba(255,90,110,.07)"/>
+          <path d="M0 ${Y(7.5).toFixed(1)}H${W}" class="pf-ln good"/><path d="M0 ${Y(6).toFixed(1)}H${W}" class="pf-ln bad"/><path d="M0 ${Y(avg).toFixed(1)}H${W}" class="pf-ln avg"/>
+          <path d="${area}" fill="url(#${uid})"/><path d="${d}" class="pf-line"/></svg>
+          ${pts.map(([x, y], i) => `<span class="pf-pt ${cls(rh[i])} ${i === n - 1 ? 'last' : ''}" style="left:${(100 * x / W).toFixed(2)}%;top:${(100 * y / H).toFixed(2)}%"><em>${rh[i].toFixed(1)}</em></span>`).join('')}
+          <span class="pf-tag good" style="top:${(100 * Y(7.5) / H).toFixed(1)}%">7.5</span><span class="pf-tag bad" style="top:${(100 * Y(6) / H).toFixed(1)}%">6.0</span></div></div>
+      <div class="pf-facts"><span>лучший матч <b class="good">${best.toFixed(1)}</b></span><span>худший <b class="bad">${worst.toFixed(1)}</b></span><span>оценка 7.5+ <b>${good} из ${n}</b></span></div></div>`;
   }
 
   // Гражданство, статус легионера в лиге клуба и натурализация
