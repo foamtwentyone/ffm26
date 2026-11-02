@@ -158,6 +158,8 @@
       this.used = new Set(xi.map((x) => x.pid));
       this.subsLeft = 5;
       this.sp = Object.assign({}, team.sp || {});
+      // капитан по умолчанию — самый авторитетный игрок (раздевалка, game.captainOf)
+      if (!this.sp.cap && game.captainOf) this.sp.cap = game.captainOf(team);
       this.goals = 0;
       this.stats = { shots: 0, sot: 0, xg: 0, corners: 0, fouls: 0, yc: 0, rc: 0, possTicks: 0 };
       this.rating = {};

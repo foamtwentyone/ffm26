@@ -122,6 +122,14 @@
         { t: (g, c) => `Поддержать: ${g.players[c.b].name}`, h: 'Один доволен, другой обижен', run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(b, 8); mor(a, -15); return `Вы приняли сторону: ${b.name}. ${a.name} затаил обиду.`; } },
         { t: 'Собрание команды', h: 'Оба слегка недовольны, команда сплотится', run: (g, c, p, u) => { mor(g.players[c.a], -4); mor(g.players[c.b], -4); g.teamMorale(u, 2); return 'На собрании всё обсудили. Конфликт исчерпан.'; } },
       ], def: 2 },
+    { id: 'clique', w: 6, title: 'Группировка в раздевалке',
+      when: (g, u) => { if (u.national) return null; const gr = g.dressing(u).groups.filter((x) => x.mood < 45).sort((a, b) => a.mood - b.mood)[0]; return gr && { key: gr.key, name: gr.name, ids: gr.ids }; },
+      text: (g, c) => `${c.name} держатся отдельно и всё громче выражают недовольство: ${c.ids.slice(0, 3).map((id) => g.players[id].name).join(', ')}${c.ids.length > 3 ? ' и другие' : ''}. Капитан просит вмешаться.`,
+      opts: [
+        { t: 'Встретиться с группой', h: 'Группа воспрянет, остальные заметят особое отношение', run: (g, c, p, u) => { for (const id of c.ids) mor(g.players[id], 7); g.teamMorale(u, -1); return 'Разговор помог: группа почувствовала, что её слышат.'; } },
+        { t: 'Поручить капитану', h: 'Зависит от авторитета капитана', run: (g, c, p, u) => { const cap = g.players[g.captainOf(u)]; const ok = cap && (cap.pers === 'leader' || cap.morale >= 60); for (const id of c.ids) mor(g.players[id], ok ? 5 : -3); if (cap) mor(cap, ok ? 3 : -4); return ok ? `${cap.name} собрал всех и разрядил обстановку.` : `${cap ? cap.name : 'Капитан'} не справился — недовольство только выросло.`; } },
+        { t: 'Жёстко пресечь', h: 'Группа обидится, руководство поддержит', run: (g, c, p, u) => { for (const id of c.ids) mor(g.players[id], -8); g.boardConf(2); g.teamMorale(u, 1); return 'Вы дали понять, что в команде не будет отдельных лагерей.'; } },
+      ], def: 1 },
     { id: 'post', w: 6, title: 'Скандальный пост',
       when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && x.age <= 28)); return p && { pid: p.id }; },
       text: (g, c) => `${g.players[c.pid].name} опубликовал в соцсетях пост с критикой судейства в последнем матче. Федерация может выписать штраф клубу.`,
@@ -766,6 +774,8 @@
       this._tables = {};
       this.setupCups();
       this.setupEuro();
+      this.setupSupers();
+      this.cwcSetup();
       this.setupNations();
       this.spreadRounds();
       s.playoff = null;
@@ -1422,6 +1432,181 @@
     // и в гостях (со своей — тоже). 1–4 места сразу в 1/4 финала, 5–12 играют стыки, 13–24 выбывают.
     // Места страны в турнире: места стран, которых нет в базе (или российские при выключенной настройке),
     // по очереди отдаются сильнейшим лигам
+    // ================== раздевалка: капитан, лидеры, группировки ==================
+    // капитан: назначенный тренером, иначе — опытный и авторитетный игрок основы (лидер по характеру — в приоритете)
+    autoCaptain(t) {
+      const sq = this.squad(t).filter((p) => !p.loan || p.club === t.id);
+      const sc = (p) => p.age * 2 + p.ovr + (p.pers === 'leader' ? 15 : 0) - (this.squadRank(p) > 16 ? 30 : 0);
+      const best = sq.sort((a, b) => sc(b) - sc(a))[0];
+      return best ? best.id : null;
+    }
+    captainOf(t) { const c = t.sp && t.sp.cap; return c && t.players.includes(c) ? c : this.autoCaptain(t); }
+    dressing(t) {
+      const sq = this.squad(t).filter((p) => p.club === t.id);
+      const cap = this.captainOf(t), c = this.countryOf(t.league);
+      const leaders = [cap].concat(sq.filter((p) => p.id !== cap && (p.pers === 'leader' || (p.age >= 29 && this.squadRank(p) <= 14)))
+        .sort((a, b) => (b.pers === 'leader') - (a.pers === 'leader') || b.age - a.age).slice(0, 2).map((p) => p.id)).filter(Boolean);
+      const avg = (ps) => (ps.length ? ps.reduce((x, p) => x + (p.morale || 60), 0) / ps.length : 60);
+      const groups = [];
+      const byNat = {};
+      for (const p of sq) if (!t.national && p.nat !== c) (byNat[p.nat] = byNat[p.nat] || []).push(p);
+      for (const [n, ps] of Object.entries(byNat)) if (ps.length >= 3) groups.push({ key: `nat:${n}`, name: `Легионеры: ${FM.NAT[n] || n}`, flag: n, ids: ps.map((p) => p.id), mood: Math.round(avg(ps)) });
+      const vet = sq.filter((p) => p.age >= 31), young = sq.filter((p) => p.age <= 21);
+      if (vet.length >= 3) groups.push({ key: 'vet', name: 'Ветераны', ids: vet.map((p) => p.id), mood: Math.round(avg(vet)) });
+      if (young.length >= 3) groups.push({ key: 'young', name: 'Молодёжь', ids: young.map((p) => p.id), mood: Math.round(avg(young)) });
+      const L = leaders.map((id) => this.players[id]).filter(Boolean);
+      return { cap, leaders, groups, unhappy: sq.filter((p) => (p.morale || 60) < 35).map((p) => p.id),
+        leaderMood: Math.round(avg(L)), atmosphere: Math.round(avg(sq) * 0.7 + avg(L) * 0.3) };
+    }
+    // раз в неделю (команда пользователя): лидеры в духе — недовольные понемногу успокаиваются; недовольный лидер
+    // тянет вниз всю команду; настроение группировки передаётся её участникам
+    dressingWeek(t) {
+      const d = this.dressing(t), P = (id) => this.players[id];
+      if (d.leaderMood >= 65) for (const id of d.unhappy) mor(P(id), 2);
+      const angry = d.leaders.map(P).find((p) => p && (p.morale || 60) < 35);
+      if (angry) {
+        this.teamMorale(t, -1, angry);
+        const s = this.s;
+        if (!t.drWarn || FM.addDays(t.drWarn, 28) <= s.date) {
+          t.drWarn = s.date;
+          this.msg('Недовольный лидер', `${angry.name}${angry.id === d.cap ? ' (капитан)' : ''} недоволен — его настроение передаётся раздевалке. Поговорите с ним, дайте игровое время или смените капитана (вкладка «Состав»).`, 'squad');
+        }
+      }
+      for (const g of d.groups) {
+        if (g.mood < 35) for (const id of g.ids) mor(P(id), -1);
+        else if (g.mood >= 72) for (const id of g.ids) mor(P(id), 1);
+      }
+    }
+
+    // ================== клубный чемпионат мира (раз в 4 года, лето 2029, 2033…) ==================
+    // 32 клуба: Европа 12, Южная Америка 6, Азия 4, Африка 4, КОНКАКАФ 4 и ещё 2 сильнейших клуба мира.
+    // Сначала — победители главного континентального турнира за 4 сезона, остальные — по силе (не больше двух от страны).
+    // Жеребьёвка 2 июня, группы 10–18 июня, плей-офф с 1/8 (22 июня), финал 4 июля — до старта нового сезона.
+    cwcSetup() {
+      const s = this.s, y = s.season;
+      if (((y % 4) + 4) % 4 !== 0) { if (s.cwc && s.cwc.year !== y + 1) delete s.cwc; return; }
+      s.cwc = { year: y + 1, drawDate: `${y + 1}-06-02`, teams: [], groups: [], gm: [], ko: [], winner: null };
+      this.news(`Летом ${y + 1} года пройдёт клубный чемпионат мира: 32 клуба, победители континентальных турниров последних четырёх сезонов и сильнейшие клубы мира.`);
+    }
+    cwcDraw() {
+      const s = this.s, C = s.cwc, y = C.year;
+      const TOP = { UEFA: 'ucl', CONMEBOL: 'lib', AFC: 'acl', CAF: 'cafcl', CONCACAF: 'ccc' }, SLOTS = { UEFA: 12, CONMEBOL: 6, AFC: 4, CAF: 4, CONCACAF: 4 };
+      const confOf = (id) => FM.CONF[this.countryOf(this.teams[id].league)];
+      const ok = (id) => this.teams[id] && !this.teams[id].reserveOf && !this.teams[id].national && this.s.leagues[this.teams[id].league] && this.s.leagues[this.teams[id].league].tier === 1;
+      const picked = [], perC = {};
+      const take = (id) => { if (!id || picked.includes(id) || !ok(id)) return false; picked.push(id); const c = this.countryOf(this.teams[id].league); perC[c] = (perC[c] || 0) + 1; return true; };
+      const hist = (s.contHist || []).filter((h) => h.year >= y - 4);
+      const pool = this.clubs().filter((t) => ok(t.id)).sort((a, b) => b.rep - a.rep);
+      for (const conf in SLOTS) {
+        let n = 0;
+        for (const h of hist) if (h.cup === TOP[conf] && n < SLOTS[conf] && take(h.winner)) n++;
+        for (const t of pool) { if (n >= SLOTS[conf]) break; if (confOf(t.id) !== conf) continue; if ((perC[this.countryOf(t.league)] || 0) >= 2) continue; if (take(t.id)) n++; }
+      }
+      for (const t of pool) { if (picked.length >= 32) break; if ((perC[this.countryOf(t.league)] || 0) >= 2) continue; take(t.id); }
+      for (const t of pool) { if (picked.length >= 32) break; take(t.id); }
+      C.teams = picked.slice(0, 32);
+      // корзины по силе, клубы одной конфедерации (кроме Европы — до двух) в группе разведены
+      const sorted = C.teams.slice().sort((a, b) => this.teams[b].rep - this.teams[a].rep);
+      let groups = null;
+      for (let tries = 0; tries < 400 && !groups; tries++) {
+        const g = Array.from({ length: 8 }, () => []);
+        let bad = false;
+        for (let k = 0; k < 4 && !bad; k++) for (const id of FM.shuffle(sorted.slice(k * 8, k * 8 + 8))) {
+          const cand = FM.shuffle(g.map((_, i) => i).filter((i) => g[i].length === k && (tries > 300 || g[i].filter((x) => confOf(x) === confOf(id)).length < (confOf(id) === 'UEFA' ? 2 : 1))));
+          if (!cand.length) { bad = true; break; }
+          g[cand[0]].push(id);
+        }
+        if (!bad) groups = g;
+      }
+      C.groups = groups;
+      const days = ['06-10', '06-14', '06-18'];
+      groups.forEach((g, gi) => [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]].forEach((pairs, k) => pairs.forEach(([i, j]) => {
+        C.gm.push(this.addMatch({ comp: 'cwc', cg: gi, label: `группа ${'ABCDEFGH'[gi]}, ${k + 1}-й тур`, date: `${y}-${days[k]}`, h: g[i], a: g[j], neutral: true }));
+      })));
+      for (const id of C.teams) this.teams[id].money += 3000;
+      this.news(`Жеребьёвка клубного чемпионата мира ${y}: ${C.teams.length} клубов, 8 групп.`);
+      if (C.teams.includes(s.user)) {
+        const g = groups.find((x) => x.includes(s.user));
+        this.finLog(this.userTeam(), 'Клубный чемпионат мира: участие', 3000);
+        this.msg('Клубный чемпионат мира!', `Команда сыграет на клубном чемпионате мира ${y}. Соперники по группе: ${g.filter((x) => x !== s.user).map((x) => this.teams[x].name).join(', ')}. Первый матч — 10 июня.`, 'cup');
+      }
+    }
+    cwcTable(gi) { const C = this.s.cwc; return this.tableFrom(C.groups[gi], C.gm.filter((mid) => this.s.matches[mid].cg === gi)); }
+    cwcRound(name, date, pairs) {
+      const s = this.s, C = s.cwc;
+      const ties = pairs.map(([a, b]) => { const mid = this.addMatch({ comp: 'cwc', label: name, date: `${C.year}-${date}`, h: a, a: b, ko: true, neutral: true }); return { a, b, legs: [mid], winner: null }; });
+      C.ko.push({ name, ties });
+      for (const t of ties) if (t.a === s.user || t.b === s.user) this.msg(`Клубный чемпионат мира: ${name}`, `Соперник — «${this.teams[t.a === s.user ? t.b : t.a].name}», ${FM.fmtDate(`${C.year}-${date}`)}.`, 'cup');
+    }
+    progressCwc() {
+      const s = this.s, C = s.cwc;
+      if (!C || C.winner) return;
+      if (!C.groups.length) { if (s.date >= C.drawDate) this.cwcDraw(); return; }
+      const played = (ids) => ids.every((id) => s.matches[id].played);
+      if (!C.ko.length) {
+        if (!played(C.gm)) return;
+        const tabs = C.groups.map((_, i) => this.cwcTable(i));
+        for (const t of tabs) for (const r of t.slice(2)) if (r.id === s.user) this.msg('Клубный чемпионат мира', 'Команда не вышла из группы.', 'cup');
+        const P = (a, b) => [tabs[a][0].id, tabs[b][1].id];
+        this.cwcRound('1/8 финала', '06-22', [P(0, 1), P(2, 3), P(4, 5), P(6, 7), P(1, 0), P(3, 2), P(5, 4), P(7, 6)]);
+        return;
+      }
+      const R = C.ko[C.ko.length - 1];
+      if (!played(R.ties.map((t) => t.legs[0]))) return;
+      for (const t of R.ties) { t.winner = s.matches[t.legs[0]].winner; const l = t.winner === t.a ? t.b : t.a; if (l === s.user) this.msg('Клубный чемпионат мира', `Команда выбыла: ${R.name}.`, 'cup'); this.teams[t.winner].money += 1000; }
+      const w = R.ties.map((t) => t.winner);
+      if (w.length === 1) {
+        C.winner = w[0];
+        (s.cwcHist = s.cwcHist || []).unshift({ year: C.year, winner: C.winner });
+        this.teams[C.winner].money += 10000;
+        this.news(`«${this.teams[C.winner].name}» — победитель клубного чемпионата мира ${C.year}!`);
+        if (C.winner === s.user) { s.board.conf = Math.min(100, s.board.conf + 30); this.userTeam().rep = Math.min(99, this.userTeam().rep + 3); this.finLog(this.userTeam(), 'Клубный чемпионат мира: победа', 10000); this.msg('Чемпионы мира!', 'Команда выиграла клубный чемпионат мира! Исторический успех.', 'board'); }
+        return;
+      }
+      const pairs = []; for (let i = 0; i < w.length; i += 2) pairs.push([w[i], w[i + 1]]);
+      const next = { 8: ['1/4 финала', '06-26'], 4: ['1/2 финала', '06-30'], 2: ['Финал', '07-04'] }[w.length];
+      this.cwcRound(next[0], next[1], pairs);
+    }
+
+    // ================== суперкубки ==================
+    // чемпион страны против обладателя кубка (если это один клуб — против серебряного призёра), за неделю до старта
+    // чемпионата; Суперкубок УЕФА (победители ЛЧ и ЛЕ) и Рекопа (Либертадорес и Южноамериканский кубок)
+    setupSupers() {
+      const s = this.s, lt = s.lastTables || {}, lcw = s.lastCupWinners || {}, le = s.lastEuro || {};
+      s.supers = {};
+      const add = (key, date, h, a) => {
+        if (!h || !a || h === a || !this.teams[h] || !this.teams[a]) return;
+        if (date <= s.date) date = FM.addDays(s.date, 3);
+        const mid = this.addMatch({ comp: `super_${key}`, label: 'Суперкубок', date, h, a, ko: true, neutral: true });
+        s.supers[key] = { name: FM.superName(key), mid, winner: null };
+        if (h === s.user || a === s.user) this.msg(FM.superName(key), `${FM.fmtDate(date)} — матч за ${FM.superName(key)} против «${this.teams[h === s.user ? a : h].name}» (нейтральное поле).`, 'cup');
+      };
+      for (const lid of s.order) {
+        const L = s.leagues[lid];
+        if (L.tier !== 1) continue;
+        const c = this.countryOf(lid), tab = (lt[lid] || []).filter((id) => this.teams[id] && !this.teams[id].reserveOf);
+        if (tab.length < 2 || !FM.SUPER_NAME[c]) continue; // суперкубки — только там, где они есть
+        const cw = lcw[c] && this.teams[lcw[c]] && lcw[c] !== tab[0] ? lcw[c] : tab[1];
+        const first = L.rounds.flat().map((id) => s.matches[id].date).sort()[0];
+        add(c, FM.addDays(first, -7), tab[0], cw);
+      }
+      for (const [key, a, b, md] of FM.SUPER_CONT) add(key, FM.nextWeekday(`${md < '07' ? s.season + 1 : s.season}-${md}`, 3), le[a], le[b]);
+      this.fixClashes();
+    }
+    progressSupers() {
+      const s = this.s;
+      for (const key in s.supers || {}) {
+        const S = s.supers[key], m = s.matches[S.mid];
+        if (S.winner || !m || !m.played) continue;
+        S.winner = m.winner;
+        const w = this.teams[S.winner], l = this.teams[S.winner === m.h ? m.a : m.h];
+        this.news(`«${w.name}» — обладатель трофея «${S.name}» (${m.hg}:${m.ag}${m.pens ? `, пен. ${m.pens[0]}:${m.pens[1]}` : ''} с «${l.name}»).`);
+        w.money += 300;
+        if (S.winner === s.user) { this.finLog(w, `${S.name}: победа`, 300); s.board.conf = Math.min(100, s.board.conf + 4); this.teamMorale(w, 5); this.msg(`${S.name} наш!`, `Команда выиграла ${S.name}. Хорошее начало сезона!`, 'cup'); }
+        else if (l.id === s.user) this.msg(S.name, `Команда уступила «${w.name}» в матче за ${S.name}.`, 'cup');
+      }
+    }
+
     euroQuota(E) {
       const s = this.s;
       const have = new Set(s.order.filter((lid) => s.leagues[lid].tier === 1).map((lid) => this.countryOf(lid)));
@@ -1438,14 +1623,14 @@
     // Какие места высшей лиги страны ведут в еврокубки: { places: { место: 'ucl' | 'uel' | 'uecl' }, cupTo }.
     // Первая путёвка страны в ЛЕ (или в ЛК, если мест в ЛЕ нет) — у обладателя кубка, поэтому по таблице её нет.
     euroPlaces(c) {
-      const places = {};
+      const places = {}, names = {};
       let pos = 1, cupTo = null;
       for (const E of FM.EURO) {
         let n = this.euroQuota(E)[c] || 0;
-        if (E.id !== 'ucl' && !cupTo && n > 0) { n--; cupTo = E.id; }
-        for (let k = 0; k < n; k++) places[pos++] = E.id;
+        if (!E.top && E.id !== 'ucl' && !cupTo && n > 0) { n--; cupTo = E.id; }
+        for (let k = 0; k < n; k++) { places[pos++] = E.zone || E.id; names[E.zone || E.id] = E.name; }
       }
-      return { places, cupTo };
+      return { places, cupTo, names };
     }
 
     setupEuro() {
@@ -1466,7 +1651,8 @@
       const lcw = s.lastCupWinners || {};
       const cupWOf = (c) => (lcw[c] && this.teams[lcw[c]] && !this.teams[lcw[c]].reserveOf ? lcw[c] : null);
       const cupDone = {};
-      const nextOf = (c, E) => ranked[c].find((id) => !taken.has(id) && !(E.id !== 'ucl' && !cupDone[c] && id === cupWOf(c)));
+      const low = (E) => !E.top && E.id !== 'ucl';
+      const nextOf = (c, E) => ranked[c].find((id) => !taken.has(id) && !(low(E) && !cupDone[c] && id === cupWOf(c)));
       for (const E of FM.EURO) {
         const quota = this.euroQuota(E);
         const teams = [];
@@ -1474,25 +1660,39 @@
           if (!ranked[c]) continue;
           const cupW = cupWOf(c);
           for (let i = 0; i < quota[c]; i++) {
-            let id = E.id !== 'ucl' && i === 0 && !cupDone[c] && cupW && !taken.has(cupW) ? cupW : nextOf(c, E);
-            if (!id && E.id !== 'ucl' && !cupDone[c] && cupW && !taken.has(cupW)) id = cupW;
+            let id = low(E) && i === 0 && !cupDone[c] && cupW && !taken.has(cupW) ? cupW : nextOf(c, E);
+            if (!id && low(E) && !cupDone[c] && cupW && !taken.has(cupW)) id = cupW;
             if (id) { teams.push(id); taken.add(id); }
           }
-          if (E.id !== 'ucl' && quota[c] > 0) cupDone[c] = true;
+          if (low(E) && quota[c] > 0) cupDone[c] = true;
         }
-        if (teams.length !== 24) continue;
-        const e = { id: E.id, teams, md: [], ko: [], final: null, winner: null, phase: 'league' };
+        if (teams.length !== (E.size || 24)) continue;
+        const e = { id: E.id, teams, md: [], ko: [], final: null, winner: null, phase: E.format === 'ko' ? 'ko' : 'league' };
         s.euro[E.id] = e;
-        this.euroLeaguePhase(E, e);
+        if (E.format === 'ko') this.euroKoStart(E, e); else this.euroLeaguePhase(E, e);
         for (const id of teams) {
           this.teams[id].money += E.fee;
           if (id === s.user) {
             this.finLog(this.teams[id], `${E.name}: участие`, E.fee);
             for (const p of this.squad(this.teams[id])) if (p.bon && p.bon.euro) this.pay(this.teams[id], p.bon.euro, `Бонус за еврокубки: ${p.name}`);
-            this.msg(E.name, `Команда сыграет в общем этапе турнира «${E.name}». Первый матч — ${FM.fmtDate(this.s.matches[e.md[0].find((mid) => [this.s.matches[mid].h, this.s.matches[mid].a].includes(id))].date)}.`, 'cup');
+            if (E.format === 'ko') this.msg(E.name, `Команда сыграет в турнире «${E.name}»: 16 клубов, игры на вылет с 1/8 финала (весной).`, 'cup');
+            else this.msg(E.name, `Команда сыграет в общем этапе турнира «${E.name}». Первый матч — ${FM.fmtDate(this.s.matches[e.md[0].find((mid) => [this.s.matches[mid].h, this.s.matches[mid].a].includes(id))].date)}.`, 'cup');
           }
         }
       }
+    }
+
+    // турнир на вылет (16 клубов): сильнейшие посеяны против слабейших, клубы одной страны в 1/8 по возможности разведены
+    euroKoStart(E, e) {
+      const byRep = e.teams.slice().sort((a, b) => this.teams[b].rep - this.teams[a].rep), n = byRep.length;
+      const pairs = byRep.slice(0, n / 2).map((id, i) => [id, byRep[n - 1 - i]]);
+      const cOf = (id) => this.countryOf(this.teams[id].league);
+      for (let i = 0; i < pairs.length; i++) {
+        if (cOf(pairs[i][0]) !== cOf(pairs[i][1])) continue;
+        const j = pairs.findIndex((p, k) => k !== i && cOf(p[1]) !== cOf(pairs[i][0]) && cOf(pairs[i][1]) !== cOf(p[0]));
+        if (j >= 0) [pairs[i][1], pairs[j][1]] = [pairs[j][1], pairs[i][1]];
+      }
+      e.ko.push({ name: '1/8 финала', ties: this.euroTies(E, '1/8 финала', FM.shuffle(pairs), '02-16', '02-23') });
     }
 
     euroDate(E, md) {
@@ -1626,7 +1826,11 @@
           const loser = t.winner === t.hi ? t.lo : t.hi;
           if (loser === s.user) this.msg(E.name, `Команда выбыла из турнира «${E.name}» (${R.name}).`, 'cup');
         }
-        if (R.name === 'Стыки') {
+        if (R.name === '1/8 финала') {
+          this.euroReward(E, winners, E.ko[0], 'выход в 1/4 финала');
+          const pairs = []; for (let k = 0; k < winners.length; k += 2) pairs.push([winners[k], winners[k + 1]]);
+          e.ko.push({ name: '1/4 финала', ties: this.euroTies(E, '1/4 финала', pairs, '04-06', '04-13') });
+        } else if (R.name === 'Стыки') {
           // посев: 1-е место против победителя пары 8–9, 2-е — 7–10, 3-е — 6–11, 4-е — 5–12
           this.euroReward(E, winners, E.ko[0], 'выход в 1/4 финала');
           const pairs = e.direct.map((id, k) => [id, winners[3 - k]]);
@@ -1729,6 +1933,7 @@
 
     allDone() {
       const s = this.s;
+      if (s.cwc && !s.cwc.winner && s.cwc.year === s.season + 1) return false;
       for (const id in s.matches) if (!s.matches[id].played) return false;
       return !this.playoffPending();
     }
@@ -1824,7 +2029,7 @@
       for (const lid of s.order) if (s.leagues[lid].tier === 1 && this.table(lid)[0]) champs.add(this.table(lid)[0].id);
       for (const c in s.cups) if (s.cups[c].winner) cupW.add(s.cups[c].winner);
       const euroBonus = {};
-      const EB = { ucl: [26, 10, 5], uel: [10, 4, 2], uecl: [5, 2, 1] };
+      const EB = { ucl: [26, 10, 5], uel: [10, 4, 2], uecl: [5, 2, 1], lib: [14, 6, 3], sud: [6, 3, 1], acl: [8, 4, 2], cafcl: [6, 3, 1], ccc: [6, 3, 1] };
       for (const E of FM.EURO) {
         const e = s.euro && s.euro[E.id];
         if (!e) continue;
@@ -1882,6 +2087,8 @@
       s.awardsPending = Object.assign(this.computeAwards(), { date: `${y + 1}-10-26` });
       s.lastCupWinners = {};
       for (const c in s.cups) if (s.cups[c].winner) s.lastCupWinners[c] = s.cups[c].winner;
+      s.lastEuro = {};
+      for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) { s.lastEuro[E.id] = s.euro[E.id].winner; (s.contHist = s.contHist || []).push({ year: y + 1, cup: E.id, winner: s.euro[E.id].winner }); }
       const uc = this.userCup();
       const summary = { year: y, tables: {}, cup: uc && uc.winner, userPos: null, userLeague: null, moves: [], euro: {} };
       for (const E of FM.EURO) if (s.euro && s.euro[E.id] && s.euro[E.id].winner) summary.euro[E.id] = s.euro[E.id].winner;
@@ -2383,7 +2590,7 @@
       const isLeague = !!s.leagues[m.comp] && !natM;
       const SO = (p) => (natM ? (p.nst = p.nst || { apps: 0, g: 0, a: 0, yc: 0, rc: 0, rsum: 0, mins: 0, cs: 0 }) : isLeague ? p.st : p.cst);
       const euro = FM.EURO.find((E) => E.id === m.comp);
-      const cupKo = FM.isCup(m.comp) && m.cg == null && m.leg !== 1;
+      const cupKo = FM.isCup(m.comp) && m.cg == null && m.leg !== 1; // (матчи КЧМ — comp 'cwc', плей-офф помечен ko)
       if (m.ko || cupKo) m.winner = sim.winner();
       if (cupKo && !m.winner) m.winner = m.hg >= m.ag ? m.h : m.a;
       if (m.h === s.user || m.a === s.user) this.recordCoach(m);
@@ -2534,6 +2741,8 @@
       this.progressEuro();
       this.progressNations();
       this.progressSplit();
+      this.progressSupers();
+      this.progressCwc();
       this.setupPlayoff();
     }
 
@@ -2737,6 +2946,7 @@
 
     weekly() {
       this.trainWeek();
+      if (this.teams[this.s.user] && !this.teams[this.s.user].national) this.dressingWeek(this.teams[this.s.user]);
       this.naturalWeek();
       this.jobOfferWeek();
       const s = this.s;
@@ -3657,7 +3867,7 @@
         why.push('ищет клуб');
       }
       const euro = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(team.id));
-      if (euro) { sc += euro.id === 'ucl' ? 12 : 6; why.push(euro.name); }
+      if (euro) { sc += euro.id === 'ucl' ? 12 : euro.top ? 8 : 6; why.push(euro.name); }
       const better = this.squad(team).filter((x) => x.id !== p.id && FM.GROUP[x.pos] === FM.GROUP[p.pos] && x.ovr > p.ovr).length;
       const starter = better < { G: 1, D: 4, M: 3, F: 3 }[FM.GROUP[p.pos]];
       if (starter) { sc += 8; why.push('будет игроком основы'); } else { sc -= 8; why.push('придётся бороться за место'); }

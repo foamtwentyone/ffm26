@@ -2559,3 +2559,11 @@ html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page
 .pick-mode { margin-bottom: 12px; }
 /* двухэтапная лига: заголовки групп в таблице */
 .lt tr.grp-h td { padding: 10px 12px 6px; font: 600 var(--fs-xs) var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); background: transparent; }
+/* раздевалка */
+.dress-card .brd-row { align-items: center; }
+.dr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.dr-row:last-child { border-bottom: 0; }
+.dr-groups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.dr-g { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--glass2); font-size: var(--fs-sm); }
+.dr-g .flag { width: 16px; height: 16px; }
+.dr-g.bad b { color: var(--bad); } .dr-g.warn b { color: var(--warn); } .dr-g.good b { color: var(--good); }

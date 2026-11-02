@@ -125,12 +125,13 @@
     por: '#00a650', ned: '#ff6200', bel: '#e1a100', tur: '#e30a17', pol: '#00a0e9', sco: '#5b3fd6', sau: '#0aa36c', usa: '#1e4fd8',
     bra: '#00a859', arg: '#4aa8ff', mex: '#00843d', jpn: '#d7263d', kor: '#2f5bea', egy: '#c8102e', irn: '#239f40', per: '#d91023',
     chi: '#d52b1e', col: '#fcd116', uru: '#5cbfeb', par: '#0038a8', mar: '#c1272d', rsa: '#007a4d' };
-  const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166' };
+  const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', lib: '#d4af37', sud: '#2bb3a3', acl: '#e2425a', cafcl: '#2e9e4f', ccc: '#3a6fe0', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166', super: '#c08bff' };
   function themeOf(comp, m) {
     if (!comp) return null;
     if (euroOf(comp)) return m && m.neutral ? ['final', COMP_THEME.final] : [comp, COMP_THEME[comp]];
     if (FM.isCup(comp)) return m && m.neutral ? ['final', COMP_THEME.final] : ['cup', COMP_THEME.cup];
     if (comp === 'po') return ['po', COMP_THEME.po];
+    if (typeof comp === 'string' && comp.startsWith('super_')) return ['final', COMP_THEME.super];
     if (g().s.leagues[comp]) return ['league', LEAGUE_THEME[comp] || null];
     return null;
   }
@@ -225,7 +226,7 @@
   const status = (p) => (p.inj ? `<span class="ico bad" title="Травма: ${p.inj} дн.">${icon('medic')}${p.inj}</span>` : '') + (p.sus ? `<span class="ico bad" title="Дисквалификация">${icon('card', 'red')}${p.sus}</span>` : '') + (p.listed ? '<span class="ico warn" title="Выставлен на трансфер">$</span>' : '') + (p.contract <= g().s.season && !p.loan ? `<span class="ico warn" title="Контракт истекает летом">${icon('pencil')}</span>` : '') + (p.loan ? `<span class="ico loan" title="В аренде из «${esc(g().teams[p.loan.from].name)}»">А</span>` : '') + (p.club && g().teams[p.club] && g().isForeignIn(p, g().teams[p.club]) ? '<span class="ico leg" title="Легионер: попадает под лимит лиги">Л</span>' : '');
   const rt = (r) => `<span class="rt ${r >= 8 ? 'top' : r >= 7 ? 'hi' : r < 6 ? 'lo' : ''}">${r.toFixed(1)}</span>`;
   const euroOf = (c) => FM.EURO.find((E) => E.id === c);
-  const compName = (c) => (c === 'natfr' ? 'Товарищеский матч' : FM.isNat(c) && g().ntOfComp(c) && !g().s.leagues[c] ? g().ntOfComp(c).name : FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
+  const compName = (c) => (c === 'natfr' ? 'Товарищеский матч' : typeof c === 'string' && c.startsWith('super_') ? FM.superName(c.slice(6)) : c === 'cwc' ? `Клубный чемпионат мира${g().s.cwc ? ' ' + g().s.cwc.year : ''}` : FM.isNat(c) && g().ntOfComp(c) && !g().s.leagues[c] ? g().ntOfComp(c).name : FM.isCup(c) ? FM.cupName(FM.cupCountry(c)) : c === 'po' ? 'Плей-офф и стыки' : euroOf(c) ? euroOf(c).name : g().s.leagues[c] ? g().s.leagues[c].name : c);
   const compShort = (c) => (FM.isCup(c) ? 'Кубок' : c === 'po' ? 'Плей-офф' : euroOf(c) ? euroOf(c).short : g().s.leagues[c] ? g().s.leagues[c].short : c);
   // стадия матча: тур чемпионата, раунд кубка или этап еврокубка
   // пометка особого матча: дерби или матч лидеров
@@ -755,7 +756,7 @@
   }
 
   // Случайное событие: окно с выбором; после решения — итог и «Продолжить»
-  const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar', agent: 'mail', rumor: 'news', heat: 'alert', snow: 'calendar', legend: 'star', kits: 'shirt', leak: 'news', doping: 'medic', boardmoney: 'coin', audit: 'coin', fanaward: 'medal', captain: 'user', sellout: 'trophy', language: 'globe', family: 'user', physio: 'medic', flares: 'alert', callup: 'globe' };
+  const EV_ICON = { night: 'user', sponsor: 'coin', traininj: 'medic', raise: 'coin', fans: 'alert', press: 'news', youth: 'star', virus: 'medic', charity: 'shield', teamdinner: 'shirt', wantsout: 'out', conflict: 'swap', post: 'mail', tvbonus: 'coin', pitch: 'calendar', agent: 'mail', rumor: 'news', heat: 'alert', snow: 'calendar', legend: 'star', kits: 'shirt', leak: 'news', doping: 'medic', boardmoney: 'coin', audit: 'coin', fanaward: 'medal', captain: 'user', clique: 'swap', sellout: 'trophy', language: 'globe', family: 'user', physio: 'medic', flares: 'alert', callup: 'globe' };
   function eventModal(id) {
     const G = g(), u = G.userTeam(), m = G.s.inbox.find((x) => x.id === id);
     if (!m || !m.data) return;
@@ -1203,6 +1204,7 @@
     let body = '';
     if (euroOf(view) && !(s.euro && s.euro[view])) UI.tablesView = 'table';
     if (view === 'nat') body = natView();
+    else if (view === 'cwc') body = cwcView();
     else if (view === 'cup') body = cupView();
     else if (view === 'awards') body = awardsView();
     else if (view === 'po') body = playoffView();
@@ -1226,14 +1228,15 @@
       </table></div>
       <div class="small muted" style="padding:10px">${L.zmap ? '<span class="zone up"></span>победитель группы выходит в дивизион «А» (в «Серебро»), взамен опускаются четыре последних клуба «Серебра» · резервные команды не повышаются в классе' : L.grp ? (L.grp.stage === 1 ? '<span class="zone po_down"></span>переход в «Серебро» &nbsp; <span class="zone po"></span>переход в «Золото» · во 2-м этапе (март–июнь) три лучших клуба «Золота» выходят в Первую лигу' : '<span class="zone up"></span>выход в Первую лигу · <span class="zone down"></span>вылет в дивизион «Б» · очки 2-го этапа считаются заново' + (L.grp.s1 ? ` · после 1-го этапа в «Золото» поднялись ${L.grp.s1.up.map((id) => esc(T(id).name)).join(', ')}` : '')) + (L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : '') : (() => { const zs = new Set(Object.values(z)); const ep = L.tier === 1 ? G.euroPlaces(G.countryOf(lid)) : null;
         const cupNote = ep && ep.cupTo ? ` · ещё одна путёвка в ${euroOf(ep.cupTo).short} — у обладателя кубка` : '';
-        return [['champ', 'чемпион'], ['ucl', 'Лига чемпионов'], ['uel', 'Лига Европы'], ['uecl', 'Лига конференций'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; ') + cupNote; })() + (L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : '')}</div></div>
+        const nm = (ep && ep.names) || {};
+        return [['champ', 'чемпион'], ['ucl', nm.ucl || 'Лига чемпионов'], ['uel', nm.uel || 'Лига Европы'], ['uecl', nm.uecl || 'Лига конференций'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; ') + cupNote; })() + (L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : '')}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${roundDates(L.rounds[cur - 1])}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
     }
     main.innerHTML = `<div class="row" style="margin-bottom:10px"><div class="seg"><button data-v="table" class="${view === 'table' ? 'on' : ''}">Чемпионаты</button>
       <button data-v="cup" class="${view === 'cup' ? 'on' : ''}">Кубок</button>${s.playoff && s.playoff.ties.length ? `<button data-v="po" class="${view === 'po' ? 'on' : ''}">Плей-офф</button>` : ''}
-      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}${s.nt ? `<button data-v="nat" class="${view === 'nat' ? 'on' : ''}">Сборные</button>` : ''}<button data-v="awards" class="${view === 'awards' ? 'on' : ''}">Награды</button></div></div>
+      ${FM.EURO.filter((E) => s.euro && s.euro[E.id]).map((E) => `<button data-v="${E.id}" class="${view === E.id ? 'on' : ''}">${E.short}</button>`).join('')}${s.cwc && s.cwc.groups.length ? `<button data-v="cwc" class="${view === 'cwc' ? 'on' : ''}">КЧМ</button>` : ''}${s.nt ? `<button data-v="nat" class="${view === 'nat' ? 'on' : ''}">Сборные</button>` : ''}<button data-v="awards" class="${view === 'awards' ? 'on' : ''}">Награды</button></div></div>
       ${view === 'table' ? leaguePick(s.order.map((id) => s.leagues[id]), lid) : ''}${body}`;
     main.querySelectorAll('[data-lid]').forEach((b) => b.onclick = () => { UI.tablesLid = b.dataset.lid; UI.tablesView = 'table'; UI.round = null; render(); });
     main.querySelectorAll('[data-v]').forEach((b) => b.onclick = () => { UI.tablesView = b.dataset.v; render(); });
@@ -1385,11 +1388,28 @@
     };
     void line;
     const uid = G.s.user;
-    if (c.kind === 'rus') return pick + rusCupView(c);
+    // суперкубок страны — строкой над сеткой
+    const S = (s.supers || {})[cc], sm = S && s.matches[S.mid];
+    const sup = sm ? `<div class="card tight" style="margin-bottom:12px"><div class="list-item ${mineCls(sm)}"><span class="small muted" style="min-width:150px">${esc(S.name)} · ${FM.fmtDate(sm.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(sm.h).name)}</span><span class="score">${sm.played ? `${sm.hg}:${sm.ag}` : '–:–'}</span><span class="grow">${esc(T(sm.a).name)}${sm.pens ? ` <span class="small muted">(пен. ${sm.pens[0]}:${sm.pens[1]})</span>` : ''}</span>${S.winner ? `<b class="small">${icon('trophyF', 'tro')} ${esc(T(S.winner).name)}</b>` : ''}</div></div>` : '';
+    if (c.kind === 'rus') return pick + sup + rusCupView(c);
     // мой клуб — первым в колонке, дальше по дате
     const cols = c.rounds.map((R, i) => ({ name: R.name, date: brDate(R.date), ties: R.matches.map((id) => s.matches[id]).sort((x, y) => ((y.h === uid || y.a === uid) - (x.h === uid || x.a === uid))).map(cupTie),
       empty: i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => T(id).name).join(', ')}` : 'Жеребьёвка после предыдущего раунда' }));
-    return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}</h3>${bracket(cols, c.winner, c.name)}`;
+    return `${pick}${sup}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}</h3>${bracket(cols, c.winner, c.name)}`;
+  }
+
+  // клубный чемпионат мира: группы и сетка
+  function cwcView() {
+    const G = g(), s = G.s, C = s.cwc, uid = s.user;
+    if (!C || !C.groups.length) return '<div class="card muted">Клубный чемпионат мира ещё не разыгран.</div>';
+    const groups = `<div class="nat-groups">${C.groups.map((g0, i) => { const tab = G.cwcTable(i);
+      return `<div class="card tight"><h3>Группа ${'ABCDEFGH'[i]}</h3><table class="lt"><tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">Мячи</th><th class="num">О</th></tr>
+        ${tab.map((r) => `<tr class="${r.id === uid ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'up' : ''}"></span>${r.pos}</td><td>${badge(T(r.id), 'sm')} <span data-team="${r.id}">${esc(T(r.id).name)}</span> <span class="small muted">${flag(G.countryOf(T(r.id).league))}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('')}</div>`;
+    const cols = C.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0].legs[0]].date), ties: R.ties.map((t) => cupTie(s.matches[t.legs[0]])) }));
+    const hist = (s.cwcHist || []).length ? `<div class="small muted" style="margin-top:10px">Прошлые победители: ${s.cwcHist.map((h) => `${h.year} — ${esc(T(h.winner).name)}`).join(', ')}</div>` : '';
+    return `<h3 style="margin:4px 0 12px">${icon('trophyF', 'tro')} Клубный чемпионат мира ${C.year}${C.winner ? ` · победитель — ${esc(T(C.winner).name)}` : ''}</h3>${groups}
+      <div class="small muted" style="margin:8px 0 14px"><span class="zone up"></span> выход в 1/8 финала · все матчи на нейтральных полях, плей-офф — один матч</div>
+      ${cols.length ? `<div class="card">${bracket(cols, C.winner, 'Клубный ЧМ')}</div>` : ''}${hist}`;
   }
 
   // Кубок России: Путь РПЛ (группы и плей-офф) и Путь регионов (отбор и плей-офф), финал — победители путей
@@ -1417,6 +1437,11 @@
   function euroView(id) {
     const G = g(), s = G.s, u = G.userTeam();
     const E = euroOf(id), e = s.euro[id];
+    if (E.format === 'ko') {
+      const cols = e.ko.map((R) => ({ name: R.name, ties: R.ties.map(euroTie) }));
+      if (e.final) cols.push({ name: 'Финал', date: brDate(s.matches[e.final].date), ties: [cupTie(s.matches[e.final])] });
+      return `<div class="card"><h3>${esc(E.name)}</h3><div class="small muted" style="margin-bottom:10px">16 клубов, игры на вылет: 1/8, 1/4 и 1/2 финала — по два матча, финал — один матч на нейтральном поле.</div>${bracket(cols, e.winner, E.name)}</div>`;
+    }
     const tab = G.euroTable(id);
     const zone = (pos) => (pos <= 4 ? 'up' : pos <= 12 ? 'po' : '');
     const mdCount = e.md.length;
@@ -2640,6 +2665,20 @@
   }
 
   // ================== клуб ==================
+  // раздевалка: атмосфера, капитан и лидеры, группировки, недовольные
+  function dressCard(G, u) {
+    if (u.national) return '';
+    const d = G.dressing(u), P = (id) => G.players[id];
+    const mcls = (m) => (m < 35 ? 'bad' : m < 55 ? 'warn' : 'good');
+    const row = (id, tag) => { const p = P(id); return `<div class="dr-row"><span class="grow"><b data-player="${p.id}">${esc(p.name)}</b> <span class="small muted">${tag}${p.pers === 'leader' ? ' · лидер по характеру' : ''}</span></span><b class="${mcls(p.morale || 60)}">${Math.round(p.morale || 60)}</b></div>`; };
+    return `<div class="card dress-card"><h3>Раздевалка</h3>
+      <div class="brd-row">${ring(d.atmosphere, mcls(d.atmosphere), 'атмосфера')}
+        <div class="grow">${d.leaders.map((id, i) => row(id, i === 0 ? ((u.sp || {}).cap ? 'капитан' : 'капитан (авто)') : 'лидер')).join('')}</div></div>
+      ${d.groups.length ? `<div class="dr-groups">${d.groups.map((g0) => `<span class="dr-g ${mcls(g0.mood)}" title="${esc(g0.ids.map((id) => P(id).name).join(', '))}">${g0.flag ? flag(g0.flag) : ''}${esc(g0.name)} · ${g0.ids.length} · <b>${g0.mood}</b></span>`).join('')}</div>` : ''}
+      ${d.unhappy.length ? `<div class="small" style="margin-top:8px"><span class="bad">Недовольны:</span> ${d.unhappy.map((id) => `<span data-player="${id}">${esc(P(id).name)}</span>`).join(', ')}</div>` : ''}
+      <div class="small muted" style="margin-top:8px">Довольные лидеры понемногу успокаивают недовольных, недовольный лидер тянет вниз всю команду. Настроение группировки передаётся её участникам. Капитана можно назначить во вкладке «Состав».</div></div>`;
+  }
+
   function viewClub(main) {
     const G = g(), s = G.s, u = G.userTeam();
     const H = G.hall();
@@ -2672,6 +2711,7 @@
             <div class="bd-task"><span class="label">Задача на сезон</span><b>${esc(G.expectText())}</b>
               ${row && row.p ? `<div class="bd-vs"><span>Сейчас <b>${row.pos}-е</b></span><span class="${diff >= 0 ? 'good' : 'bad'}">${diff > 0 ? `на ${diff} выше плана` : diff < 0 ? `на ${-diff} ниже плана` : 'ровно по плану'}</span></div>` : '<div class="small muted">Сезон ещё не начался.</div>'}</div></div>
           <div class="small muted">Доверие растёт от побед и выполненной задачи, падает от поражений, вылета из кубков и долгов больше 3 млн €. Ниже 8% после 8 туров — увольнение.</div></div>
+        ${dressCard(G, u)}
         <div class="card"><h3>Трофеи <span class="muted small">· за карьеру: ${nT}</span></h3>
           <div class="shelf">${shelf.map(([n, list, cls]) => `<div class="sh-col ${list.length ? '' : 'empty'}"><div class="sh-cups">${list.length ? list.map(([y, nm]) => `<span class="sh-cup ${cls}" title="${esc(nm)} · ${y}/${String(y + 1).slice(2)}">${icon('trophyF')}</span>`).join('') : `<span class="sh-cup none">${icon('trophyF')}</span>`}</div><b>${list.length}</b><span>${n}</span></div>`).join('')}</div></div>
         <div class="card club-chart" style="--chc:${glow(u)}"><h3>Места по сезонам</h3>${lineChart(pts, { id: 'cl', invert: true, min: 1, max: Math.max(...pts.map((p) => p.y), 6), fmt: (v) => `${Math.round(v)}-е`, ticks: [1, Math.round((1 + Math.max(...pts.map((p) => p.y), 6)) / 2), Math.max(...pts.map((p) => p.y), 6)], area: false, title: 'Места по сезонам', empty: 'Здесь появятся места команды по итогам ваших сезонов в клубе.' })}</div>
