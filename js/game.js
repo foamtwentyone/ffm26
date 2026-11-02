@@ -894,6 +894,8 @@
     makeFixtures(L, year) {
       const def = this.splitDef(L);
       if (def) return this.makeSplit(L, year, def);
+      const zd = this.zonalDef(L);
+      if (zd) return this.makeZonal(L, year, zd);
       const ids = FM.shuffle(L.teams.slice());
       if (ids.length % 2) ids.push(null);
       const n = ids.length;
@@ -920,12 +922,57 @@
       return all.map((round, ri) => round.map(([h, a]) => this.addMatch({ comp: L.id, round: ri + 1, date: dates[ri], h, a })));
     }
 
+    // ---- зональная лига (Вторая лига Б): группы по регионам, два круга внутри группы ----
+    zonalDef(L) { const D = (FM.leagues || []).find((x) => x.id === L.id); return D && D.zones ? D : null; }
+    makeZonal(L, year, D) {
+      const prev = L.zmap || {}, zmap = {};
+      const dz = Object.fromEntries(D.teams.map((T) => [T.id, T.zone]));
+      const Z = D.zones.length, count = () => { const c = Array(Z + 1).fill(0); for (const id in zmap) c[zmap[id]]++; return c; };
+      for (const id of L.teams) if (prev[id] || dz[id]) zmap[id] = prev[id] || dz[id];
+      // новички (вылетевшие из дивизиона А) — в группу своего региона, если он неизвестен — в самую малочисленную
+      for (const id of L.teams) if (!zmap[id] && D.zoneOf && D.zoneOf[id]) zmap[id] = D.zoneOf[id];
+      for (const id of L.teams) if (!zmap[id]) { const c = count(); let best = 1; for (let z = 2; z <= Z; z++) if (c[z] < c[best]) best = z; zmap[id] = best; }
+      L.zmap = zmap; L.znames = D.zones;
+      const rounds = [];
+      for (let z = 1; z <= Z; z++) {
+        const R = rrRounds(FM.shuffle(L.teams.filter((id) => zmap[id] === z)), true);
+        R.forEach((pairs, i) => { (rounds[i] = rounds[i] || []).push(...pairs.map(([h, a]) => ({ h, a, zone: z }))); });
+      }
+      const dates = [];
+      let d = FM.nextWeekday(`${year}-${L.autumn.from}`, L.weekday);
+      for (let i = 0; i < L.autumn.rounds; i++) { dates.push(d); d = FM.addDays(d, 7); }
+      d = FM.nextWeekday(`${year + 1}-${L.spring.from}`, L.weekday);
+      while (dates.length < rounds.length) { dates.push(d); d = FM.addDays(d, 7); }
+      return rounds.map((r, ri) => r.map((x) => this.addMatch({ comp: L.id, round: ri + 1, date: dates[ri], h: x.h, a: x.a, zone: x.zone })));
+    }
+    zoneTable(L, z) {
+      const rows = {};
+      for (const id of L.teams) if (L.zmap[id] === z) rows[id] = { id, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0, form: [], zone: z };
+      for (const r of L.rounds) for (const mid of r) {
+        const m = this.s.matches[mid];
+        if (!m.played) continue;
+        const h = rows[m.h], a = rows[m.a];
+        if (!h || !a) continue;
+        h.p++; a.p++; h.gf += m.hg; h.ga += m.ag; a.gf += m.ag; a.ga += m.hg;
+        if (m.hg > m.ag) { h.w++; a.l++; h.pts += 3; h.form.push('W'); a.form.push('L'); }
+        else if (m.hg < m.ag) { a.w++; h.l++; a.pts += 3; h.form.push('L'); a.form.push('W'); }
+        else { h.d++; a.d++; h.pts++; a.pts++; h.form.push('D'); a.form.push('D'); }
+      }
+      return Object.values(rows).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga) || y.gf - x.gf || y.w - x.w || this.teams[x.id].name.localeCompare(this.teams[y.id].name));
+    }
+    // победители групп (первый клуб, который может повыситься)
+    zoneWinners(lid) {
+      const L = this.s.leagues[lid];
+      return (L.znames || []).map((_, i) => this.zoneTable(L, i + 1).find((r) => this.eligibleUp(r.id))).filter(Boolean).map((r) => r.id);
+    }
+
     // ---- Вторая лига А: два этапа, группы «Золото» и «Серебро» ----
     splitDef(L) { const D = (FM.leagues || []).find((x) => x.id === L.id); return D && D.split ? D.split : null; }
     makeSplit(L, year, def) {
       const prev = L.grp, G = def.gold || 10, rep = (id) => this.teams[id].rep;
       // «Золото»: прошлое «Золото» и новички сверху (вылетевшие из Первой лиги), остальные — «Серебро»
-      const gold = L.teams.filter((id) => !(prev ? prev.silver : def.silver).includes(id)).sort((a, b) => rep(b) - rep(a));
+      const fromBelow = (id) => { const f = this.s.leagues[this.teams[id].fromLeague]; return !!f && f.tier > L.tier; };
+      const gold = L.teams.filter((id) => !(prev ? prev.silver : def.silver).includes(id) && !fromBelow(id)).sort((a, b) => rep(b) - rep(a));
       const silver = L.teams.filter((id) => !gold.includes(id));
       while (gold.length > G) silver.push(gold.pop());
       silver.sort((a, b) => rep(b) - rep(a));
@@ -997,6 +1044,11 @@
     table(lid) {
       if (this._tables[lid]) return this._tables[lid];
       const L = this.s.leagues[lid];
+      if (L.zmap) {
+        const list = L.znames.flatMap((_, i) => this.zoneTable(L, i + 1).map((r, k) => Object.assign(r, { zpos: k + 1 })));
+        list.forEach((r, i) => { r.pos = i + 1; r.form = r.form.slice(-5); });
+        return (this._tables[lid] = list);
+      }
       if (L.grp) {
         const list = this.splitTable(L, 'gold', L.grp.stage).concat(this.splitTable(L, 'silver', L.grp.stage));
         list.forEach((r, i) => { r.pos = i + 1; r.form = r.form.slice(-5); });
@@ -1040,7 +1092,16 @@
       if (L.grp) {
         const G = L.grp.gold.length;
         if (L.grp.stage === 1) { const k = Math.min(4, Math.max(1, L.grp.silver.length - 3)); for (let i = 0; i < k; i++) { z[G - i] = 'po_down'; z[G + 1 + i] = 'po'; } }
-        else for (let i = 1; i <= FM.promoRule(c, L.tier - 1).up; i++) z[i] = 'up';
+        else {
+          for (let i = 1; i <= FM.promoRule(c, L.tier - 1).up; i++) z[i] = 'up';
+          const lower = this.leagueAt(c, L.tier + 1);
+          if (lower) { const k = this.zoneWinners(lower).length; for (let i = 0; i < k; i++) z[n - i] = 'down'; }
+        }
+        return z;
+      }
+      if (L.zmap) {
+        const win = new Set(this.zoneWinners(lid));
+        for (const r of this.table(lid)) if (win.has(r.id)) z[r.pos] = 'up';
         return z;
       }
       if (hasUpper) {
@@ -1702,6 +1763,12 @@
         if (!lower) continue;
         const r = FM.promoRule(c, L.tier);
         const tU = this.table(lid), tL = this.table(lower).filter((x) => this.eligibleUp(x.id));
+        if (s.leagues[lower].zmap) {
+          const ups = this.zoneWinners(lower).slice(0, r.up);
+          for (let i = 0; i < ups.length; i++) moves.push([tU[tU.length - 1 - i].id, lower]);
+          for (const id of ups) moves.push([id, lid]);
+          continue;
+        }
         for (let i = 0; i < r.down; i++) moves.push([tU[tU.length - 1 - i].id, lower]);
         for (let i = 0; i < r.up && i < tL.length; i++) moves.push([tL[i].id, lid]);
       }
@@ -1848,6 +1915,7 @@
         s.leagues[from].teams = s.leagues[from].teams.filter((x) => x !== tid);
         s.leagues[lid].teams.push(tid);
         t.league = lid;
+        t.fromLeague = from;
         t.rep = FM.clamp(t.rep + (up ? 4 : -4), 35, 99);
         summary.moves.push({ id: tid, up, to: lid });
         this.news(`«${t.name}» ${up ? 'повышается' : 'понижается'} в классе: ${s.leagues[lid].name}.`);
