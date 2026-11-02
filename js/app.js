@@ -123,7 +123,8 @@
   const LEAGUE_THEME = { rpl: '#1f5fd6', fnl: '#14a3c7', l2: '#2e8b57', eng: '#8a2be2', eng2: '#3d6fd8', eng3: '#d8342e', eng4: '#2b9348',
     esp: '#ff4b2b', esp2: '#1b8a5a', ita: '#2a7fff', ita2: '#4caf50', ger: '#e2001a', ger2: '#d50032', fra: '#3d5afe', fra2: '#ff6b35',
     por: '#00a650', ned: '#ff6200', bel: '#e1a100', tur: '#e30a17', pol: '#00a0e9', sco: '#5b3fd6', sau: '#0aa36c', usa: '#1e4fd8',
-    bra: '#00a859', arg: '#4aa8ff' };
+    bra: '#00a859', arg: '#4aa8ff', mex: '#00843d', jpn: '#d7263d', kor: '#2f5bea', egy: '#c8102e', irn: '#239f40', per: '#d91023',
+    chi: '#d52b1e', col: '#fcd116', uru: '#5cbfeb', par: '#0038a8', mar: '#c1272d', rsa: '#007a4d' };
   const COMP_THEME = { ucl: '#5b8cff', uel: '#ff7a00', uecl: '#1fe07a', cup: '#e8b84a', po: '#ff4d6d', final: '#ffd166' };
   function themeOf(comp, m) {
     if (!comp) return null;
@@ -496,10 +497,10 @@
               ${auto ? `<button class="mm-t big" id="cont" style="--sc:${anyTeam ? glow({ ...anyTeam, colors: auto.colors || anyTeam.colors }) : 'var(--accent)'}"><span class="mm-k">Продолжить карьеру</span>
                 <div class="mm-cont">${anyTeam ? badge(auto.logo ? { ...anyTeam, logoData: auto.logo } : anyTeam, 'xl') : ''}<div><b>${esc(auto.clubName || (auto.info || '').split(' · ')[1] || '')}</b>
                 <span>${esc(auto.mgr || '')}${auto.date ? ` · ${FM.fmtDate(auto.date)}` : ''}${auto.pos ? ` · ${auto.pos}-е место` : ''}</span></div></div><span class="mm-go">${icon('play')}</span></button>` : ''}
-              <button class="mm-t ${auto ? '' : 'big'}" id="mm-new" style="--sc:#1fbf75"><span class="mm-k">Новая карьера</span><b>Выбрать клуб</b><span>36 лиг · или свой клуб</span><span class="mm-go">${icon('play')}</span></button>
+              <button class="mm-t ${auto ? '' : 'big'}" id="mm-new" style="--sc:#1fbf75"><span class="mm-k">Новая карьера</span><b>Выбрать клуб</b><span>${(FM.leagues || []).length} лиг · сборные · свой клуб</span><span class="mm-go">${icon('play')}</span></button>
               <button class="mm-t" id="mm-saves" style="--sc:#5b8cff"><span class="mm-k">Сохранения</span><b>${nSlots + (auto ? 1 : 0)} из 4</b><span>слоты, загрузка из файла</span><span class="mm-go">${icon('play')}</span></button>
             </div>
-            <div class="mm-foot">${UI.cloud ? 'Сохранения синхронизируются между устройствами' : 'Россия, вся Европа, Америка, Саудовская Аравия и СНГ'}</div>
+            <div class="mm-foot">${UI.cloud ? 'Сохранения синхронизируются между устройствами' : 'Россия, Европа, обе Америки, Азия, Африка и СНГ'}</div>
           </div></div>`;
         const c = app.querySelector('#cont');
         if (c) c.onclick = () => loadSlot(SAVE_AUTO);
