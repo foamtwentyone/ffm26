@@ -154,6 +154,8 @@
       this.isHome = isHome;
       this.tactics = Object.assign({ ment: 0, press: 1, tempo: 1 }, team.tactics);
       this.onPitch = xi.map(({ pid, slot }) => ({ p: game.players[pid], slot }));
+      // позиция каждого игрока на поле (для тепловой карты): у вышедших на замену — позиция заменённого
+      this.slotOf = Object.fromEntries(xi.map(({ pid, slot }) => [pid, slot]));
       this.bench = bench.map((pid) => game.players[pid]);
       this.used = new Set(xi.map((x) => x.pid));
       this.subsLeft = 5;
@@ -328,8 +330,7 @@
         }
         this.discipline(s);
         // усталые игроки травмируются чаще
-        const tired = s.onPitch.reduce((x, o) => x + Math.max(0, 70 - s.fitness[o.p.id]), 0) / Math.max(1, s.onPitch.length);
-        if (Math.random() < 0.0008 * (1 + tired / 12)) this.injury(s);
+        if (Math.random() < 0.0008 * (1 + (s.tired || 0) / 12)) this.injury(s);
         this.tire(s);
       }
       if (!happened && Math.random() < 0.05) {
@@ -535,19 +536,22 @@
       s.recalc();
     }
 
+    // усталость считается раз в 5 минут (сразу за пять), минуты на поле — каждую минуту
     tire(s) {
-      const k = 0.36 * (1 + 0.22 * (s.tactics.press - 1)) * (1 + 0.1 * (s.tactics.tempo - 1));
+      const pace = this.minute % 5 === 0;
+      const k = pace ? 5 * 0.36 * (1 + 0.22 * (s.tactics.press - 1)) * (1 + 0.1 * (s.tactics.tempo - 1)) : 0;
+      let tired = 0;
       for (const o of s.onPitch) {
+        const id = o.p.id;
+        s.mins[id] = (s.mins[id] || 0) + 1;
+        if (!pace) continue;
         const age = o.p.age;
         const a = age > 31 ? 1.2 : age < 21 ? 0.95 : 1;
         const st = 1.35 - (o.p.sta || 65) / 150; // выносливость: 95 — устаёт на треть медленнее, 40 — быстрее
-        s.fitness[o.p.id] = Math.max(0, s.fitness[o.p.id] - k * a * st * (o.slot === 'GK' ? 0.25 : 1) * (0.7 + Math.random() * 0.6));
-        s.mins[o.p.id] = (s.mins[o.p.id] || 0) + 1;
-        // минуты по позициям — для тепловой карты игрока
-        const sm = s.slotMin || (s.slotMin = {}), r = sm[o.p.id] || (sm[o.p.id] = {});
-        r[o.slot] = (r[o.slot] || 0) + 1;
+        const f = s.fitness[id] = Math.max(0, s.fitness[id] - k * a * st * (o.slot === 'GK' ? 0.25 : 1) * (0.85 + Math.random() * 0.3));
+        if (f < 70) tired += 70 - f;
       }
-      if (this.minute % 5 === 0) s.recalc();
+      if (pace) { s.tired = tired / Math.max(1, s.onPitch.length); s.recalc(); }
     }
 
     bestSub(s, slot) {
@@ -565,6 +569,7 @@
       if (!s.canEnter(inn, out)) return false;
       const slot = slotOverride || s.onPitch[idx].slot;
       s.onPitch[idx] = { p: inn, slot };
+      s.slotOf[inn.id] = slot;
       s.used.add(inn.id);
       s.subsLeft--;
       s.rating[inn.id] = 6.3;

@@ -38,12 +38,14 @@ FM.weighted = (items, w) => {
 // ---------- даты ----------
 FM.parseDate = (s) => new Date(s + 'T12:00:00Z');
 FM.fmtISO = (d) => d.toISOString().slice(0, 10);
+// даты — номерами дней с кэшем: addDays вызывается сотни тысяч раз за сезон
+FM._dn = new Map(); FM._ds = new Map();
+FM.dayNum = (s) => { let v = FM._dn.get(s); if (v === undefined) { v = Math.floor(Date.parse(s + 'T12:00:00Z') / 864e5); FM._dn.set(s, v); } return v; };
+FM.dayStr = (n) => { let v = FM._ds.get(n); if (v === undefined) { v = new Date(n * 864e5).toISOString().slice(0, 10); FM._ds.set(n, v); } return v; };
 FM.addDays = (s, n) => {
-  const d = FM.parseDate(s);
-  d.setUTCDate(d.getUTCDate() + n);
-  return FM.fmtISO(d);
+  return FM.dayStr(FM.dayNum(s) + n);
 };
-FM.weekday = (s) => FM.parseDate(s).getUTCDay();
+FM.weekday = (s) => (FM.dayNum(s) + 4) % 7; // 1 января 1970 — четверг
 FM.nextWeekday = (s, wd) => {
   let d = s;
   while (FM.weekday(d) !== wd) d = FM.addDays(d, 1);

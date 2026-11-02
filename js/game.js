@@ -1202,7 +1202,8 @@
       const s = this.s;
       s.cups = {};
       const countries = [...new Set(s.order.map((lid) => this.countryOf(lid)))];
-      for (const c of countries) this.setupCup(c);
+      this._busyBatch = this.busyDates(); this._fixLater = false;
+      try { for (const c of countries) this.setupCup(c); } finally { this._busyBatch = null; if (this._fixLater) { this._fixLater = false; this.fixClashes(); } }
     }
 
     setupCup(c) {
@@ -1229,17 +1230,19 @@
       const R = cup.rounds[ri];
       const list = FM.shuffle(teamIds.slice());
       const final = ri === cup.rounds.length - 1;
-      const busy = this.busyDates();
+      const busy = this._busyBatch || this.busyDates();
       for (let i = 0; i + 1 < list.length; i += 2) {
         let h = list[i], a = list[i + 1];
         const th = this.tierOf(this.teams[h]), ta = this.tierOf(this.teams[a]);
         if (ta > th || (ta === th && Math.random() < 0.5)) [h, a] = [a, h];
         // если у клуба рядом другой матч (еврокубок, перенесённая игра) — кубковый сдвигается на день-два
         const date = [0, -1, 1].map((k) => FM.addDays(R.date, k)).find((d) => this.freeAround(busy, h, d, 1) && this.freeAround(busy, a, d, 1)) || R.date;
-        R.matches.push(this.addMatch({ comp: FM.cupId(c), round: ri + 1, date, h, a, ko: true, neutral: final }));
+        const mid = this.addMatch({ comp: FM.cupId(c), round: ri + 1, date, h, a, ko: true, neutral: final });
+        R.matches.push(mid);
+        if (this._busyBatch) this.busyAdd(this._busyBatch, this.s.matches[mid], date);
       }
-      // матчи чемпионата вплотную к кубковым сдвигаются
-      this.fixClashes();
+      // матчи чемпионата вплотную к кубковым сдвигаются (при пакетной жеребьёвке — один раз в конце)
+      if (this._busyBatch) this._fixLater = true; else this.fixClashes();
       if (teamIds.includes(s.user)) {
         const mid = R.matches.find((id) => [s.matches[id].h, s.matches[id].a].includes(s.user));
         if (mid) {
@@ -1398,6 +1401,13 @@
     userCup() { return this.s.cups[this.countryOf(this.userTeam().league)] || null; }
 
     progressCup() {
+      this._busyBatch = null; this._fixLater = false;
+      const s = this.s;
+      const due = Object.values(s.cups).filter((cup) => !cup.winner && cup.kind !== 'rus' && cup.rounds[cup.cur] && cup.rounds[cup.cur].matches.length && cup.rounds[cup.cur].matches.every((id) => s.matches[id].played));
+      if (due.length > 1) this._busyBatch = this.busyDates();
+      try { this.progressCupNow(); } finally { this._busyBatch = null; if (this._fixLater) { this._fixLater = false; this.fixClashes(); } }
+    }
+    progressCupNow() {
       const s = this.s;
       for (const c in s.cups) {
         const cup = s.cups[c];
@@ -1435,6 +1445,13 @@
     // ================== раздевалка: капитан, лидеры, группировки ==================
     // капитан: назначенный тренером, иначе — опытный и авторитетный игрок основы (лидер по характеру — в приоритете)
     autoCaptain(t) {
+      const C = (this._capC = this._capC || {}), key = `${this.s.date}|${t.players.length}`;
+      if (C[t.id] && C[t.id].key === key) return C[t.id].id;
+      const id = this.autoCaptainNow(t);
+      C[t.id] = { key, id };
+      return id;
+    }
+    autoCaptainNow(t) {
       const sq = this.squad(t).filter((p) => !p.loan || p.club === t.id);
       const sc = (p) => p.age * 2 + p.ovr + (p.pers === 'leader' ? 15 : 0) - (this.squadRank(p) > 16 ? 30 : 0);
       const best = sq.sort((a, b) => sc(b) - sc(a))[0];
@@ -2614,8 +2631,8 @@
           ratings[pid] = r;
           const st = SO(p);
           if (natM) { p.caps = (p.caps || 0) + 1; if (!p.ntc && t.natCode) p.ntc = t.natCode; }
-          const sm = side.slotMin && side.slotMin[pid];
-          if (sm) { p.hm = p.hm || {}; for (const k in sm) p.hm[k] = (p.hm[k] || 0) + sm[k]; }
+          const sl = side.slotOf && side.slotOf[pid], mn = side.mins[pid] || 0;
+          if (sl && mn) { p.hm = p.hm || {}; p.hm[sl] = (p.hm[sl] || 0) + mn; }
           st.apps++;
           st.mins += side.mins[pid] || 0;
           st.rsum += r;
@@ -3039,10 +3056,20 @@
       return 'закрыто до лета';
     }
 
+    // место игрока в составе по рейтингу (полевые — среди полевых). Пересчёт раз в день или при смене состава
     squadRank(p) {
       const t = this.teams[p.club];
       if (!t) return 99;
-      return this.squad(t).filter((x) => x.pos !== 'GK' || p.pos === 'GK').sort((a, b) => b.ovr - a.ovr).findIndex((x) => x.id === p.id) + 1;
+      const key = `${this.s.date}|${t.players.length}|${t.players[t.players.length - 1]}`;
+      const C = (this._rk = this._rk || {});
+      let c = C[t.id];
+      if (!c || c.key !== key) {
+        const sq = this.squad(t).slice().sort((a, b) => b.ovr - a.ovr), all = {}, out = {};
+        sq.forEach((x, i) => { all[x.id] = i + 1; });
+        sq.filter((x) => x.pos !== 'GK').forEach((x, i) => { out[x.id] = i + 1; });
+        c = C[t.id] = { key, all, out };
+      }
+      return (p.pos === 'GK' ? c.all[p.id] : c.out[p.id]) || 99;
     }
 
     askingPrice(p) {
@@ -3738,7 +3765,15 @@
     // ---- лимит на легионеров ----
     foreignRuleOf(team) { const L = this.s.leagues[team.league]; return FM.foreignRule(this.countryOf(team.league), L.tier); }
     isForeignIn(p, team) { const r = this.foreignRuleOf(team); return FM.isForeign(p, this.countryOf(team.league), r); }
-    foreignCount(team) { const r = this.foreignRuleOf(team), c = this.countryOf(team.league); return r ? team.players.filter((id) => this.players[id] && FM.isForeign(this.players[id], c, r)).length : 0; }
+    // число легионеров: кэш до смены состава или дня (вызывается тысячи раз при подборе свободных агентов)
+    foreignCount(team) {
+      const key = `${this.s.date}|${team.players.length}|${team.players[team.players.length - 1]}|${team.league}`, C = (this._fc = this._fc || {});
+      if (C[team.id] && C[team.id].key === key) return C[team.id].n;
+      const r = this.foreignRuleOf(team), c = this.countryOf(team.league);
+      const n = r ? team.players.filter((id) => this.players[id] && FM.isForeign(this.players[id], c, r)).length : 0;
+      C[team.id] = { key, n };
+      return n;
+    }
     // Можно ли заявить игрока: если клуб уже на пределе по легионерам — текст причины. Игроки, которые уже в клубе,
     // не отчисляются (в базе одно гражданство, поэтому часть клубов стартует сверх лимита), но новых легионеров
     // такой клуб заявить не может, пока не опустится ниже лимита.

@@ -2646,3 +2646,7 @@ html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page
 .heat-leg div { display: flex; justify-content: space-between; gap: 10px; padding: 2px 0; }
 .sh-cup:not(.none) .emb { filter: drop-shadow(0 4px 10px color-mix(in srgb, currentColor 55%, transparent)); }
 @media (max-width: 620px) { .shelf { grid-template-columns: repeat(3, 1fr); } }
+/* «Далее» во время перехода по дням: видна текущая дата, повторные нажатия не принимаются */
+.next-btn.busy { pointer-events: none; filter: saturate(.7); }
+.next-btn.busy span { animation: nb-pulse .8s ease-in-out infinite; }
+@keyframes nb-pulse { 50% { opacity: .35; } }

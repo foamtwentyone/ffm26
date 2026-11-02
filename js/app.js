@@ -401,7 +401,17 @@
   const localMeta = (key) => { try { return JSON.parse(ls.get(key + '_meta') || 'null'); } catch (e) { return null; } };
 
   // Локально и (на странице claude.ai) в облако. Возвращает false, если не удалось сохранить никуда.
-  function save(key = SAVE_AUTO) {
+  // Автосохранение откладывается: после серии действий оно выполняется один раз, когда игрок ничего не делает,
+  // и не тормозит нажатия. Слоты, выход в меню и сворачивание приложения сохраняют сразу.
+  let saveTimer = null, lastCloud = 0;
+  function save(key = SAVE_AUTO, now = false) {
+    if (key !== SAVE_AUTO || now) return saveNow(key, true);
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => { saveTimer = null; const run = () => { if (UI.g) saveNow(SAVE_AUTO, false); }; (window.requestIdleCallback || setTimeout)(run, { timeout: 4000 }); }, 1500);
+    return Promise.resolve(true);
+  }
+  function saveNow(key = SAVE_AUTO, cloudNow = true) {
+    clearTimeout(saveTimer); saveTimer = null;
     const s = g().s;
     s.savedAt = Date.now();
     const str = JSON.stringify(g().packState());
@@ -414,13 +424,13 @@
       if (ok) ls.set(key + '_meta', JSON.stringify(meta));
       else if (!UI.cloud) toast('Не удалось сохранить: браузер не дал места в хранилище. Используйте экспорт в файл.');
     }).catch(() => { /* остаётся облачная копия */ });
-    FM.Store.cloudSave(key, str, info);
+    if (cloudNow || key !== SAVE_AUTO || Date.now() - lastCloud > 120000) { lastCloud = Date.now(); FM.Store.cloudSave(key, str, info); }
     return done;
   }
   // Выход в главное меню: сначала автосохранение, потом стартовый экран.
   async function exitToMenu() {
     closeModal();
-    await save();
+    await saveNow();
     UI.g = null;
     UI.lastTab = null;
     scrollTop(0);
@@ -428,7 +438,7 @@
     toast('Карьера сохранена');
   }
   // Автосохранение, когда приложение сворачивают, переключают вкладку или закрывают.
-  const autoSave = () => { if (UI.g) try { save(); } catch (e) { /* не мешаем закрытию */ } };
+  const autoSave = () => { if (UI.g) try { saveNow(); } catch (e) { /* не мешаем закрытию */ } };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') autoSave(); });
   window.addEventListener('pagehide', autoSave);
   function loadState(state) {
@@ -623,7 +633,8 @@
     };
     // смена лиги перерисовывает только выбор лиги и список клубов — без перезагрузки всего экрана и анимаций
     const drawPick = () => {
-      const area = app.querySelector('#pick-area');
+      const area = app.querySelector('#pick-area'), keep = saveHScroll(area);
+      setTimeout(() => restoreHScroll(area, keep), 0);
       const mode = `<div class="seg pick-mode"><button data-pm="club" class="${UI.pickMode !== 'nat' ? 'on' : ''}">Клубы</button><button data-pm="nat" class="${UI.pickMode === 'nat' ? 'on' : ''}">Сборные</button></div>`;
       const bindMode = () => area.querySelectorAll('[data-pm]').forEach((b) => b.onclick = () => { UI.pickMode = b.dataset.pm; drawPick(); });
       if (UI.pickMode === 'nat') {
@@ -713,7 +724,17 @@
     scrollTop(0);
   }
 
-  function render() {
+  // горизонтальные ленты (страны, лиги, вкладки, широкие таблицы и сетки) после перерисовки остаются на месте
+  const H_SCROLL = '.lp-c, .seg, .nt-chips, .tbl-wrap, .br-wrap, .eu-tabs';
+  const saveHScroll = (root) => [...root.querySelectorAll(H_SCROLL)].map((el) => [el.className, el.scrollLeft]);
+  function restoreHScroll(root, saved) {
+    const els = [...root.querySelectorAll(H_SCROLL)];
+    saved.forEach(([cls, x], i) => { const el = els[i]; if (el && el.className === cls && x) el.scrollLeft = x; });
+    // выбранная кнопка ленты должна быть видна
+    for (const el of root.querySelectorAll('.lp-c')) { const on = el.querySelector('.on'); if (on && (on.offsetLeft < el.scrollLeft || on.offsetLeft + on.offsetWidth > el.scrollLeft + el.clientWidth)) el.scrollLeft = on.offsetLeft - 12; }
+  }
+  function render() { const saved = saveHScroll(app); renderNow(); restoreHScroll(app, saved); }
+  function renderNow() {
     if (!document.querySelector('.fx-bg')) { const bg = document.createElement('div'); bg.className = 'fx-bg'; document.body.prepend(bg); }
     if (!UI.g) return startScreen();
     const G = g(), s = G.s, u = G.userTeam();
@@ -770,7 +791,9 @@
   }
 
   // ================== ход игры ==================
-  function goOn() {
+  let advancing = false;
+  async function goOn() {
+    if (advancing) return;
     const G = g();
     if (G.s.sacked) return sackedModal();
     // сезон окончен и итоги просмотрены — «Новый сезон» запускает переходы, контракты и календарь
@@ -784,8 +807,21 @@
       render();
       return seasonModal(sum);
     }
-    let r, guard = 0;
-    do { r = G.advance(); } while (r === 'day' && guard++ < 400);
+    let r, guard = 0, t0 = performance.now();
+    advancing = true;
+    const btn = app.querySelector('#go');
+    if (btn) btn.classList.add('busy');
+    try {
+      do {
+        r = G.advance();
+        // каждые ~60 мс отдаём кадр браузеру: экран не замирает, на кнопке видна текущая дата
+        if (r === 'day' && performance.now() - t0 > 60) {
+          if (btn) btn.innerHTML = `${FM.fmtDate(G.s.date).replace(/ (\S{3})\S*$/, ' $1')} <span>${icon('play')}</span>`;
+          await new Promise((res) => setTimeout(res, 0));
+          t0 = performance.now();
+        }
+      } while (r === 'day' && guard++ < 400);
+    } finally { advancing = false; }
     // трофей решился в один из прошедших дней (чужие матчи) — праздник поверх следующего окна
     if (r !== 'season_end') setTimeout(celebrate, 0);
     if (r === 'match') { save(); render(); return preMatch(); }
