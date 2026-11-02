@@ -899,7 +899,7 @@
     // Кубки показываем, только если клуб в них участвует
     const euroMine = s.euro && FM.EURO.find((E) => s.euro[E.id] && s.euro[E.id].teams.includes(u.id));
     const cupRows = [];
-    if (c) cupRows.push(`<div class="kvl"><span>${esc(c.name)}</span><b>${c.winner ? (c.winner === u.id ? `${icon('trophyF', 'tro')} победа!` : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
+    if (c) cupRows.push(`<div class="kvl"><span>${esc(c.name)}</span><b>${c.winner ? (c.winner === u.id ? `${icon('trophyF', 'tro')} победа!` : `победил ${esc(T(c.winner).name)}`) : inCup ? esc(c.kind === 'rus' ? ((c.rounds.filter((R) => R.matches.some((id) => [s.matches[id].h, s.matches[id].a].includes(u.id))).at(-1) || {}).name || 'ждёт жеребьёвки') : c.rounds[c.cur].name) : 'выбыли'}</b></div>`);
     if (euroMine) {
       const e = s.euro[euroMine.id];
       let st;
@@ -1222,11 +1222,11 @@
       body = `<div class="grid" style="grid-template-columns:minmax(0,3fr) minmax(280px,2fr)">
       <div class="card tight"><div class="tbl-wrap"><table class="lt">
         <tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">В</th><th class="num">Н</th><th class="num">П</th><th class="num">Мячи</th><th class="num">О</th><th class="hide-m">Форма</th></tr>
-        ${tab.map((r) => `<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
+        ${tab.map((r) => `${L.grp && (r.pos === 1 || r.grp !== tab[r.pos - 2].grp) ? `<tr class="grp-h"><td colspan="9">${r.grp === 'gold' ? 'Группа «Золото»' : 'Группа «Серебро»'} · ${L.grp.stage}-й этап</td></tr>` : ''}<tr class="${r.id === u.id ? 'me' : ''}"><td class="num"><span class="zone ${z[r.pos] || ''}"></span>${r.pos}</td><td>${tname(T(r.id))}</td><td class="num">${r.p}</td><td class="num">${r.w}</td><td class="num">${r.d}</td><td class="num">${r.l}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td><td class="hide-m">${form(r.form)}</td></tr>`).join('')}
       </table></div>
-      <div class="small muted" style="padding:10px">${(() => { const zs = new Set(Object.values(z)); const ep = L.tier === 1 ? G.euroPlaces(G.countryOf(lid)) : null;
+      <div class="small muted" style="padding:10px">${L.grp ? (L.grp.stage === 1 ? '<span class="zone po_down"></span>переход в «Серебро» &nbsp; <span class="zone po"></span>переход в «Золото» · во 2-м этапе (март–июнь) три лучших клуба «Золота» выходят в Первую лигу' : '<span class="zone up"></span>выход в Первую лигу · очки 2-го этапа считаются заново' + (L.grp.s1 ? ` · после 1-го этапа в «Золото» поднялись ${L.grp.s1.up.map((id) => esc(T(id).name)).join(', ')}` : '')) + (L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : '') : (() => { const zs = new Set(Object.values(z)); const ep = L.tier === 1 ? G.euroPlaces(G.countryOf(lid)) : null;
         const cupNote = ep && ep.cupTo ? ` · ещё одна путёвка в ${euroOf(ep.cupTo).short} — у обладателя кубка` : '';
-        return [['champ', 'чемпион'], ['ucl', 'Лига чемпионов'], ['uel', 'Лига Европы'], ['uecl', 'Лига конференций'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; ') + cupNote; })()}${L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : ''}</div></div>
+        return [['champ', 'чемпион'], ['ucl', 'Лига чемпионов'], ['uel', 'Лига Европы'], ['uecl', 'Лига конференций'], ['up', 'повышение'], ['po', 'плей-офф / стыки за выход'], ['po_down', 'стыки'], ['down', 'вылет']].filter(([k]) => zs.has(k)).map(([k, n]) => `<span class="zone ${k}"></span>${n}`).join(' &nbsp; ') + cupNote; })() + (L.teams.some((id) => T(id).reserveOf) ? ' · резервные команды не повышаются в классе' : '')}</div></div>
       <div class="card"><div class="row" style="margin-bottom:8px"><button class="btn sm" id="rp">‹</button><b class="grow center">${cur}-й тур · ${roundDates(L.rounds[cur - 1])}</b><button class="btn sm" id="rn">›</button></div>
         ${L.rounds[cur - 1].map((id) => { const m = s.matches[id]; return m.played ? resultLine(m, null) : `<div class="list-item ${mineCls(m)}"><span class="small muted" style="width:56px">${FM.fmtDate(m.date).replace(/ (\S{3})\S*$/, ' $1')}</span><span class="grow right">${esc(T(m.h).name)}</span><span class="score">–:–</span><span class="grow">${esc(T(m.a).name)}</span></div>`; }).join('')}</div></div>`;
       UI.round = cur;
@@ -1246,6 +1246,7 @@
     if (ep) ep.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.max(1, UI.euroMd[view] - 1) } }); render(); };
     if (en) en.onclick = () => { UI.euroPin = Object.assign(UI.euroPin || {}, { [view]: { date: s.date, md: Math.min(8, UI.euroMd[view] + 1) } }); render(); };
     main.querySelectorAll('[data-nsub]').forEach((b) => b.onclick = () => { UI.natSub = b.dataset.nsub; render(); });
+    main.querySelectorAll('[data-rcs]').forEach((b) => b.onclick = () => { UI.rcupSub = b.dataset.rcs; render(); });
     main.querySelectorAll('[data-ntsel]').forEach((b) => b.onclick = () => { UI.ntSel = b.dataset.ntsel; UI.natSub = null; render(); });
     main.querySelectorAll('[data-eus]').forEach((b) => b.onclick = () => { UI.euroSub = Object.assign(UI.euroSub || {}, { [b.dataset.eid]: b.dataset.eus }); render(); });
   }
@@ -1384,10 +1385,33 @@
     };
     void line;
     const uid = G.s.user;
+    if (c.kind === 'rus') return pick + rusCupView(c);
     // мой клуб — первым в колонке, дальше по дате
     const cols = c.rounds.map((R, i) => ({ name: R.name, date: brDate(R.date), ties: R.matches.map((id) => s.matches[id]).sort((x, y) => ((y.h === uid || y.a === uid) - (x.h === uid || x.a === uid))).map(cupTie),
       empty: i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => T(id).name).join(', ')}` : 'Жеребьёвка после предыдущего раунда' }));
     return `${pick}<h3 style="margin:4px 0 12px">${flag(cc)} ${esc(c.name)}</h3>${bracket(cols, c.winner, c.name)}`;
+  }
+
+  // Кубок России: Путь РПЛ (группы и плей-офф) и Путь регионов (отбор и плей-офф), финал — победители путей
+  function rusCupView(c) {
+    const G = g(), s = G.s, uid = s.user;
+    const mine = c.rounds.find((R) => R.matches.some((id) => [s.matches[id].h, s.matches[id].a].includes(uid)));
+    const sub = UI.rcupSub || (mine && mine.path === 'reg' && !c.thirds?.includes(uid) ? 'reg' : 'rpl');
+    const tabs = `<div class="seg eu-tabs">${[['rpl', 'Путь РПЛ'], ['reg', 'Путь регионов']].map(([k, n]) => `<button data-rcs="${k}" class="${k === sub ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+    const tieOf = (t) => (t.legs.length > 1 ? euroTie(t) : cupTie(s.matches[t.legs[0]]));
+    const col = (R) => ({ name: R.name.replace(/^Путь (РПЛ|регионов): /, ''), date: brDate(R.date), ties: R.ties.map(tieOf), empty: 'Жеребьёвка после предыдущей стадии' });
+    const F = c.rounds.find((R) => R.key === 'f');
+    const head = `<h3 style="margin:4px 0 12px">${flag('RUS')} ${esc(c.name)}${c.winner ? ` · победитель — ${esc(T(c.winner).name)}` : ''}</h3>`;
+    if (sub === 'reg') {
+      const cols = c.rounds.filter((R) => R.path === 'reg').map(col).concat([col(F)]);
+      return tabs + head + `<div class="card">${bracket(cols, c.winner, c.name)}</div><div class="small muted" style="margin-top:8px">Отбор: клубы Первой и Второй лиги${c.byes.length ? ` (${c.byes.length} сильнейших стартуют со 2-го раунда)` : ''}. В 1/8 финала к 4 победителям отбора присоединяются клубы РПЛ, занявшие третьи места в группах; дома играет клуб не из РПЛ. 1/4 и 1/2 — по два матча.</div>`;
+    }
+    const groups = `<div class="nat-groups">${c.groups.map((g0, i) => { const tab = G.rusGroupTable(c, i);
+      return `<div class="card tight"><h3>Группа ${'ABCDEFGH'[i]}</h3><table class="lt"><tr><th>#</th><th>Клуб</th><th class="num">И</th><th class="num">Мячи</th><th class="num">О</th></tr>
+        ${tab.map((r) => `<tr class="${r.id === uid ? 'me' : ''}"><td class="num"><span class="zone ${r.pos <= 2 ? 'up' : r.pos === 3 ? 'po' : ''}"></span>${r.pos}</td><td>${badge(T(r.id), 'sm')} <span data-team="${r.id}">${esc(T(r.id).name)}</span></td><td class="num">${r.p}</td><td class="num">${r.gf}–${r.ga}</td><td class="num"><b>${r.pts}</b></td></tr>`).join('')}</table></div>`; }).join('')}</div>
+      <div class="small muted" style="margin:8px 0 14px"><span class="zone up"></span> 1/8 финала Пути РПЛ (дома — второе место) &nbsp; <span class="zone po"></span> 1/8 финала Пути регионов &nbsp; 4-е место выбывает. Шесть туров: август — ноябрь.</div>`;
+    const cols = c.rounds.filter((R) => R.path === 'rpl' && R.key !== 'grp').map(col).concat([col(F)]);
+    return tabs + head + groups + `<div class="card">${bracket(cols, c.winner, c.name)}</div>`;
   }
 
   function euroView(id) {

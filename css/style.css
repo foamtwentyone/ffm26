@@ -2557,3 +2557,5 @@ html.tch:not(.rot) #app:has(> .mm), html.tch:not(.rot) #app:has(> .mm-page) { pa
    (Safari применяет масштаб 0.86 к dvh по-своему, и снизу оставалась пустая полоса) */
 html.tch:not(.rot) .mm, html.tch:not(.rot) .mm-page, html.tch:not(.rot) .sk-page { min-height: 100% !important; }
 .pick-mode { margin-bottom: 12px; }
+/* двухэтапная лига: заголовки групп в таблице */
+.lt tr.grp-h td { padding: 10px 12px 6px; font: 600 var(--fs-xs) var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gold); background: transparent; }
