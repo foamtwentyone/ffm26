@@ -132,14 +132,16 @@
   // пять состояний: злой (красный), грустный (оранжевый), нейтральный (жёлтый), довольный (салатовый), счастливый (зелёный)
   const MOOD = [[25, 'злой', '#ff4d5e'], [45, 'расстроен', '#ff9a3c'], [60, 'нейтрально', '#ffd23f'], [78, 'доволен', '#8fe05a'], [101, 'счастлив', '#2ee87e']];
   const moodOf = (m) => MOOD.findIndex(([lim]) => (m ?? 60) < lim);
+  // смешать два цвета #rrggbb (t — доля второго): сплошная заливка без полупрозрачных пятен
+  const hexMix = (a, b, t) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(a.slice(k, k + 2), 16) * (1 - t) + parseInt(b.slice(k, k + 2), 16) * t).toString(16).padStart(2, '0')).join('');
   function moodFace(m, cls = '') {
     const i = moodOf(m), [, label, c] = MOOD[i];
     const mouth = ['M14 25q6-6 12 0', 'M14 24q6-3 12 0', 'M14 23h12', 'M14 22q6 4 12 0', 'M13 21q7 8 14 0z'][i];
     const brows = i === 0 ? '<path d="M11 13l6 2.5M29 13l-6 2.5" stroke="#1a1325" stroke-width="2.2" stroke-linecap="round"/>' : i === 1 ? '<path d="M11 14.5l5-1.5M29 14.5l-5-1.5" stroke="#1a1325" stroke-width="1.8" stroke-linecap="round"/>' : '';
     const eyes = i === 4 ? '<path d="M13 17q2.5-3 5 0M22 17q2.5-3 5 0" stroke="#1a1325" stroke-width="2.2" fill="none" stroke-linecap="round"/>' : '<circle cx="15.5" cy="17.5" r="2.1" fill="#1a1325"/><circle cx="24.5" cy="17.5" r="2.1" fill="#1a1325"/>';
     return `<svg class="mood ${cls}" viewBox="0 0 40 40" role="img" aria-label="${label}"><title>Настроение: ${label} (${Math.round(m ?? 60)})</title>
-      <defs><radialGradient id="mg${i}" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="${c}"/><stop offset="1" stop-color="${c}" stop-opacity=".85"/></radialGradient></defs>
-      <circle cx="20" cy="20" r="17" fill="url(#mg${i})" stroke="rgba(0,0,0,.25)" stroke-width="1"/>${brows}${eyes}
+      <circle cx="20" cy="20" r="17" fill="${c}" stroke="${hexMix(c, '#000000', 0.35)}" stroke-width="1.2"/>
+      <path d="M5.5 24a15 15 0 0 0 29 0a17 17 0 0 1-29 0z" fill="${hexMix(c, '#000000', 0.14)}"/>${brows}${eyes}
       <path d="${mouth}" stroke="#1a1325" stroke-width="2.2" fill="${i === 4 ? '#1a1325' : 'none'}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
   const moodLabel = (m) => MOOD[moodOf(m)][1];
@@ -361,10 +363,12 @@
   const moneyUnit = (k) => (k >= 1000 ? 'млн' : 'тыс.');
   const moneyField = (id, label, k, unit = moneyUnit(k), attrs = '') => {
     const m = unit === 'млн';
-    const v = m ? Math.round(k / 10) / 100 : Math.round(k);
-    return `<label>${label}, ${unit} €<input id="${id}" data-unit="${unit}" type="number" min="0" step="${m ? 0.05 : 5}" value="${v}" ${attrs}></label>`;
+    // в тысячах до 100 — с десятыми (0.3 тыс. €), иначе целые
+    const v = m ? Math.round(k / 10) / 100 : k < 100 ? Math.round(k * 10) / 10 : Math.round(k);
+    return `<label>${label}, ${unit} €<input id="${id}" data-unit="${unit}" type="number" min="0" step="any" inputmode="decimal" value="${v}" ${attrs}></label>`;
   };
-  const readMoney = (el) => Math.round((+el.value || 0) * (el.dataset.unit === 'млн' ? 1000 : 1));
+  // десятичная запятая тоже понимается; суммы в тысячах — с точностью до 0.1
+  const readMoney = (el) => { const x = parseFloat(String(el.value).replace(',', '.')) || 0; return el.dataset.unit === 'млн' ? Math.round(x * 1000) : Math.round(x * 10) / 10; };
   // удаления под голами своей команды: «🟥 Иванов 67'»
   const redLines = (reds, side) => (reds || []).filter((r) => r.side === side).map((r) => `<div class="red-line"><i class="rc-card"></i>${g().players[r.pid] ? esc(g().players[r.pid].name) : '?'} ${r.min}'</div>`).join('');
   // голы одного игрока — в одну строку: «Круговой 28', 90+2'»

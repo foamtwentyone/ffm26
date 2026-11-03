@@ -435,6 +435,8 @@
       if (!state.chmV1) { state.chmV1 = true; const t = state.teams.chernomorets; if (t) for (const id of t.players) { const p = this.players[id]; if (p && p.contract <= state.season) p.contract = state.season + 1 + (id % 2); } }
       // реальные смены спортивного гражданства: игрок закреплён за сборной (Дуглас Сантос в 2025 г. выбрал Бразилию)
       if (!state.tieV1) { state.tieV1 = true; for (const id in this.players) { const p = this.players[id]; if (p.name === 'Доуглас Сантос') p.name = 'Дуглас Сантос'; const c = FM.NT_TIE[p.name]; if (c && p.ntc !== c) { p.ntc = c; if (p.nat2 && p.nat2 !== c) delete p.nat2; for (const tid of (state.nt && state.nt.teams) || []) { const t = state.teams[tid]; if (t && t.natCode !== c && t.players.includes(p.id)) t.players = t.players.filter((x) => x !== p.id); } } } }
+      // сгенерированные игроки с русскими именами при другом гражданстве (Корея, Египет…) — даём имена их страны
+      if (!state.genNmV1) { state.genNmV1 = true; for (const id in this.players) { const p = this.players[id]; if (p.gen && FM.nameSet(p.nat) && FM.isRuGenName(p.name)) p.name = FM.genName(p.nat); } }
       if (!state.staV2) { state.staV2 = true; delete state.staV1; for (const id in this.players) delete this.players[id].sta; }
       if (!state.persV1) { state.persV1 = true; for (const id in this.players) { const k = FM.persFor(this.players[id].name); if (k) this.players[id].pers = k; } }
       if (!state.altV1) {

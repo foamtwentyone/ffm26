@@ -424,11 +424,65 @@ const NAMES = {
   KSA: [['Mohammed', 'Abdullah', 'Fahad', 'Saud', 'Faisal', 'Turki', 'Nawaf', 'Sultan', 'Khalid', 'Abdulrahman', 'Salem', 'Ali', 'Hassan', 'Yasser', 'Majed'],
     ['Al-Dawsari', 'Al-Shahrani', 'Al-Ghamdi', 'Al-Qahtani', 'Al-Harbi', 'Al-Otaibi', 'Al-Malki', 'Al-Zahrani', 'Al-Shehri', 'Al-Mutairi', 'Al-Anazi', 'Al-Yami', 'Al-Buraikan', 'Al-Faraj', 'Al-Amri']],
 };
+// остальные регионы: латиница (как в данных зарубежных лиг), страны СНГ — кириллица (как в данных их лиг)
+Object.assign(NAMES, {
+  LAT: [['José', 'Luis', 'Carlos', 'Jorge', 'Miguel', 'Alejandro', 'Juan', 'Diego', 'Eduardo', 'Fernando', 'Ricardo', 'Héctor', 'Andrés', 'Kevin', 'Brayan'],
+    ['Hernández', 'García', 'Martínez', 'López', 'González', 'Rodríguez', 'Pérez', 'Sánchez', 'Ramírez', 'Flores', 'Cruz', 'Reyes', 'Morales', 'Castillo', 'Vargas']],
+  ARAB: [['Mohamed', 'Ahmed', 'Mahmoud', 'Omar', 'Youssef', 'Karim', 'Hamza', 'Amr', 'Mostafa', 'Ibrahim', 'Ayoub', 'Bilal', 'Walid', 'Anas', 'Tarek'],
+    ['Hassan', 'Ibrahim', 'Mansour', 'Fathy', 'Abdelaziz', 'Hamdi', 'Gaber', 'Benali', 'El Idrissi', 'Bennani', 'Alaoui', 'Haddad', 'Saeed', 'Nasser', 'Kamal']],
+  IRN: [['Ali', 'Mehdi', 'Reza', 'Mohammad', 'Hossein', 'Amir', 'Saeed', 'Milad', 'Sajjad', 'Morteza', 'Ehsan', 'Omid', 'Vahid', 'Majid', 'Hamid'],
+    ['Rezaei', 'Mohammadi', 'Hosseini', 'Ahmadi', 'Karimi', 'Moradi', 'Jafari', 'Rahimi', 'Hashemi', 'Ghasemi', 'Sadeghi', 'Kazemi', 'Ebrahimi', 'Nouri', 'Shahbazi']],
+  KOR: [['Min-jae', 'Seung-ho', 'Ji-sung', 'Hyun-woo', 'Jun-ho', 'Dong-hyun', 'Sung-min', 'Tae-hwan', 'Young-woo', 'Jae-sung', 'Hee-chan', 'Woo-young', 'Ji-hoon', 'Sang-ho', 'Min-kyu'],
+    ['Kim', 'Lee', 'Park', 'Choi', 'Jung', 'Kang', 'Cho', 'Yoon', 'Jang', 'Lim', 'Han', 'Oh', 'Seo', 'Shin', 'Kwon']],
+  JPN: [['Haruto', 'Yuto', 'Sota', 'Riku', 'Kaito', 'Takumi', 'Daiki', 'Ryota', 'Kenta', 'Shota', 'Yuki', 'Kazuki', 'Hiroki', 'Ren', 'Sho'],
+    ['Sato', 'Suzuki', 'Takahashi', 'Tanaka', 'Watanabe', 'Ito', 'Yamamoto', 'Nakamura', 'Kobayashi', 'Kato', 'Yoshida', 'Yamada', 'Sasaki', 'Matsumoto', 'Inoue']],
+  CHN: [['Wei', 'Lei', 'Hao', 'Jun', 'Yang', 'Bin', 'Peng', 'Chen', 'Long', 'Tao', 'Jie', 'Xin', 'Yu', 'Kai', 'Ming'],
+    ['Wang', 'Li', 'Zhang', 'Liu', 'Chen', 'Yang', 'Zhao', 'Huang', 'Zhou', 'Wu', 'Xu', 'Sun', 'Ma', 'Zhu', 'Hu']],
+  SAF: [['Thabo', 'Sipho', 'Themba', 'Bongani', 'Lucky', 'Teboho', 'Siyabonga', 'Mandla', 'Kagiso', 'Tshepo', 'Sibusiso', 'Katlego', 'Thulani', 'Neo', 'Lebogang'],
+    ['Nkosi', 'Dlamini', 'Mokoena', 'Ndlovu', 'Khumalo', 'Mthembu', 'Zulu', 'Mahlangu', 'Sithole', 'Molefe', 'Mabaso', 'Ngcobo', 'Radebe', 'Shabalala', 'Maseko']],
+  WAF: [['Ibrahim', 'Moussa', 'Samuel', 'Emmanuel', 'Abdoulaye', 'Ousmane', 'Kwame', 'Mamadou', 'Cheikh', 'Yaw', 'Victor', 'Seydou', 'Kofi', 'Jean', 'Daniel'],
+    ['Traoré', 'Diallo', 'Koné', 'Mensah', 'Camara', 'Diop', 'Ndiaye', 'Okafor', 'Mendy', 'Touré', 'Sarr', 'Owusu', 'Boateng', 'Cissé', 'Bamba']],
+  BALK: [['Luka', 'Marko', 'Nikola', 'Stefan', 'Filip', 'Ivan', 'Petar', 'Milan', 'Josip', 'Dejan', 'Aleksandar', 'Matej', 'Mateo', 'Nemanja', 'Ante'],
+    ['Jovanović', 'Petrović', 'Nikolić', 'Marković', 'Đorđević', 'Horvat', 'Kovačević', 'Babić', 'Marić', 'Popović', 'Pavlović', 'Knežević', 'Vuković', 'Perić', 'Tomić']],
+  SCAN: [['Erik', 'Oscar', 'Lucas', 'William', 'Elias', 'Isak', 'Jonas', 'Magnus', 'Emil', 'Viktor', 'Anton', 'Sander', 'Henrik', 'Mikkel', 'Aleksi'],
+    ['Johansson', 'Andersson', 'Karlsson', 'Nilsson', 'Eriksson', 'Larsson', 'Hansen', 'Johansen', 'Olsen', 'Berg', 'Haugen', 'Lindqvist', 'Virtanen', 'Korhonen', 'Strand']],
+  INT: [['Daniel', 'David', 'Adam', 'Martin', 'Alex', 'Leo', 'Robert', 'Victor', 'Patrik', 'Denis', 'Andrei', 'Mihai', 'Tamás', 'Dávid', 'Gabriel'],
+    ['Novák', 'Horváth', 'Nagy', 'Popescu', 'Ionescu', 'Dimitrov', 'Georgiev', 'Kazlauskas', 'Ozols', 'Tamm', 'Hoxha', 'Berisha', 'Cohen', 'Levi', 'Georgiou']],
+  KAZ: [['Темирлан', 'Нурлан', 'Ерлан', 'Айбол', 'Бауыржан', 'Дамир', 'Арман', 'Даурен', 'Еркебулан', 'Абзал', 'Рамазан', 'Алибек', 'Санжар', 'Ислам', 'Олжас'],
+    ['Нурланов', 'Абенов', 'Жакупов', 'Турсунов', 'Беков', 'Сулейменов', 'Омаров', 'Ахметов', 'Искаков', 'Сериков', 'Джумабеков', 'Каримов', 'Есимов', 'Шоманов', 'Тажимбетов']],
+  UZB: [['Жасур', 'Азизбек', 'Отабек', 'Шерзод', 'Бахтиёр', 'Достон', 'Улугбек', 'Жамшид', 'Санжар', 'Ойбек', 'Фаррух', 'Абдулла', 'Хусниддин', 'Акмал', 'Бобур'],
+    ['Каримов', 'Юсупов', 'Рахимов', 'Турсунов', 'Абдуллаев', 'Ахмедов', 'Исмоилов', 'Хасанов', 'Ташкентов', 'Эргашев', 'Норматов', 'Усмонов', 'Холматов', 'Саидов', 'Мирзаев']],
+  ARM: [['Армен', 'Арам', 'Давид', 'Тигран', 'Нарек', 'Гор', 'Карен', 'Ашот', 'Ваган', 'Артур', 'Эдгар', 'Грант', 'Левон', 'Самвел', 'Айк'],
+    ['Григорян', 'Саркисян', 'Мартиросян', 'Акопян', 'Петросян', 'Овсепян', 'Карапетян', 'Арутюнян', 'Аветисян', 'Манукян', 'Геворгян', 'Мкртчян', 'Варданян', 'Галстян', 'Симонян']],
+  AZE: [['Эльвин', 'Орхан', 'Рамиль', 'Турал', 'Рашад', 'Эмин', 'Мурад', 'Фарид', 'Самир', 'Ровшан', 'Анар', 'Намик', 'Кенан', 'Гусейн', 'Махир'],
+    ['Мамедов', 'Алиев', 'Гусейнов', 'Гасанов', 'Исмайлов', 'Керимов', 'Ахмедов', 'Джафаров', 'Байрамов', 'Сафаров', 'Рагимов', 'Велиев', 'Наджафов', 'Абдуллаев', 'Гаджиев']],
+  GEO: [['Георгий', 'Гиорги', 'Леван', 'Давид', 'Нодар', 'Ираклий', 'Зураб', 'Сандро', 'Ника', 'Лука', 'Бачана', 'Отар', 'Гела', 'Шота', 'Торнике'],
+    ['Беридзе', 'Капанадзе', 'Гелашвили', 'Майсурадзе', 'Кварацхелия', 'Лобжанидзе', 'Цитаишвили', 'Абуладзе', 'Мамардашвили', 'Гоциридзе', 'Читаишвили', 'Чачуа', 'Квеквескири', 'Двали', 'Микаутадзе']],
+});
+// откуда брать имена: свой набор, соседний по языку или регион (русские — только Россия, Беларусь, Украина, Молдова)
+const NAME_ALIAS = {
+  SCO: 'ENG', WAL: 'ENG', IRL: 'ENG', NIR: 'ENG', AUS: 'ENG', NZL: 'ENG', JAM: 'ENG', TRI: 'ENG', GUY: 'ENG', BER: 'ENG', FIJ: 'ENG', SOL: 'ENG',
+  AUT: 'GER', SUI: 'GER', LIE: 'GER', LUX: 'FRA', CAN: 'USA', URU: 'ARG', CHI: 'ARG', HAI: 'FRA', GLP: 'FRA', MTQ: 'FRA', GUF: 'FRA', CUW: 'NED', SUR: 'NED', CPV: 'POR', ANG: 'POR', MOZ: 'POR', GNB: 'POR',
+  MEX: 'LAT', COL: 'LAT', PER: 'LAT', PAR: 'LAT', ECU: 'LAT', VEN: 'LAT', BOL: 'LAT', CRC: 'LAT', HON: 'LAT', PAN: 'LAT', GUA: 'LAT', SLV: 'LAT', NCA: 'LAT', CUB: 'LAT', DOM: 'LAT',
+  EGY: 'ARAB', MAR: 'ARAB', ALG: 'ARAB', TUN: 'ARAB', LBY: 'ARAB', SDN: 'ARAB', MTN: 'ARAB', IRQ: 'ARAB', SYR: 'ARAB', JOR: 'ARAB', QAT: 'ARAB', UAE: 'ARAB', OMA: 'ARAB', BHR: 'ARAB', PLE: 'ARAB', LBN: 'ARAB', KUW: 'ARAB', YEM: 'ARAB',
+  PRK: 'KOR', RSA: 'SAF', ZIM: 'SAF', ZAM: 'SAF', BOT: 'SAF', NAM: 'SAF', LES: 'SAF', SWZ: 'SAF', MWI: 'SAF',
+  SRB: 'BALK', CRO: 'BALK', BIH: 'BALK', MNE: 'BALK', MKD: 'BALK', SVN: 'BALK', SWE: 'SCAN', NOR: 'SCAN', FIN: 'SCAN', ISL: 'SCAN', FRO: 'SCAN',
+  KGZ: 'KAZ', TJK: 'UZB', TKM: 'UZB',
+};
+const RU_NAMES = new Set(['RUS', 'BLR', 'UKR', 'MDA']);
+FM.nameSet = (country) => {
+  if (RU_NAMES.has(country)) return null;
+  const n = NAMES[country] || NAMES[NAME_ALIAS[country]];
+  if (n) return n;
+  const conf = FM.CONF && FM.CONF[country];
+  return NAMES[{ CAF: 'WAF', CONMEBOL: 'LAT', CONCACAF: 'LAT', AFC: 'ARAB', OFC: 'ENG' }[conf] || 'INT'];
+};
 FM.genName = (country) => {
-  // страны без своего набора имён берут соседний
-  const n = NAMES[country] || NAMES[{ SCO: 'ENG', WAL: 'ENG', IRL: 'ENG', NIR: 'ENG', AUT: 'GER', SUI: 'GER', CAN: 'USA', URU: 'ARG', CHI: 'ARG' }[country]];
+  const n = FM.nameSet(country);
   return n ? `${FM.pick(n[0])} ${FM.pick(n[1])}` : `${FM.pick(FIRST)} ${FM.pick(LAST)}`;
 };
+// имя из русского набора (для исправления старых сохранений)
+FM.isRuGenName = (name) => { const [f, ...l] = String(name).split(' '); return FIRST.includes(f) && LAST.includes(l.join(' ')); };
 
 // ---------- рейтинг и стоимость ----------
 // Рейтинг выводится из рыночной стоимости: 1 млн € ≈ 64, каждые ×10 к цене дают +11.
