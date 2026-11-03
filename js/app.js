@@ -1857,7 +1857,8 @@
       if (f.afford) list = list.filter((p) => p.value <= Math.max(0, u.money));
       if (f.young) list = list.filter((p) => p.pot - p.ovr >= 6);
       const k = UI.sortKey, d = UI.sortDir;
-      list.sort((a, b) => (k === 'name' ? a.name.localeCompare(b.name) * -d : (a[k] - b[k]) * d));
+      // при равенстве — по рейтингу (сильнее выше), затем по имени: порядок не «прыгает»
+      list.sort((a, b) => (k === 'name' ? a.name.localeCompare(b.name) * -d : (a[k] - b[k]) * d || b.ovr - a.ovr || a.name.localeCompare(b.name)));
       const page = UI.tfPage, per = 48;
       const shown = list.slice(page * per, page * per + per);
       const winter = s.date >= `${s.season + 1}-01-01`;
@@ -1889,7 +1890,7 @@
           <div class="tf-bar"><span class="tf-found"><b>${list.length.toLocaleString('ru-RU')}</b> игроков</span><span class="grow"></span>
             <div class="seg sm"><button id="tf-list" class="${UI.tfCards ? '' : 'on'}">Список</button><button id="tf-cards" class="${UI.tfCards ? 'on' : ''}">Карточки</button></div></div>
           ${UI.tfCards ? `<div class="card tight"><div class="fut-grid">${shown.map((p) => futMini(p, p.club ? esc(T(p.club).name) : 'свободный агент', [[FM.money(p.value), `цена · потенциал ${G.potLabel(p)}`]])).join('')}</div></div>` : `<div class="card tight"><div class="tbl-wrap"><table class="lt tf-table"><tr><th></th>${th('name', 'Игрок', '')}<th>Клуб</th>${th('age', 'Возр')}${th('ovr', 'Рейт')}${th('pot', 'Потенциал')}${th('value', 'Цена')}</tr>
-            ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)} ${rowTags(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small">${G.potLabel(p)}</td><td class="num"><b>${FM.money(p.value)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Никого не нашли — ослабьте фильтры.</td></tr>'}</table></div></div>`}
+            ${shown.map((p) => `<tr class="click" data-player="${p.id}"><td class="nowrap">${posAlt(p)}</td><td>${flag(p.nat)}${esc(p.name)}${p.gen ? '<span class="gen">*</span>' : ''}${status(p)} ${rowTags(p)}</td><td>${p.club ? tname(T(p.club)) : '<span class="muted">свободный агент</span>'}</td><td class="num">${p.age}</td><td class="num">${ovr(p.ovr)}</td><td class="num small nowrap"><span class="muted">${G.potLabel(p)}</span> <b class="pot-n">${p.pot}</b></td><td class="num"><b>${FM.money(p.value)}</b></td></tr>`).join('') || '<tr><td colspan="7" class="muted">Никого не нашли — ослабьте фильтры.</td></tr>'}</table></div></div>`}
           <div class="row tf-pages"><button class="btn sm" id="pp" ${page ? '' : 'disabled'}>‹ Назад</button><span class="small">${page + 1} / ${Math.max(1, Math.ceil(list.length / per))}</span><button class="btn sm" id="pn" ${(page + 1) * per < list.length ? '' : 'disabled'}>Дальше ›</button></div>
         </div>
       </div>`;

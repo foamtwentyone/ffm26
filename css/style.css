@@ -2738,3 +2738,4 @@ img.emb.tlogo { object-fit: contain; filter: none; }
 .champ .ch-cup img.tlogo { width: 130px; height: 130px; filter: drop-shadow(0 10px 40px var(--tc)); }
 html.rot .champ .ch-cup img.tlogo { width: 84px; height: 84px; }
 @media (max-height: 500px) and (orientation: landscape) { .champ .ch-cup img.tlogo { width: 84px; height: 84px; } .br-cupic img.tlogo { width: 40px; height: 40px; } }
+.pot-n { display: inline-block; min-width: 2ch; text-align: right; margin-left: 4px; font-family: var(--f-display); font-size: var(--fs-md); }
