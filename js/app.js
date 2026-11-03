@@ -23,9 +23,10 @@
   const UI = { g: null, tab: 'home', sel: null, tablesLid: null, tablesView: 'table', round: null, statsKey: 'g', tf: {}, sortKey: 'ovr', sortDir: -1, tfPage: 0 };
   window.UI = UI;
   // для проверок и отладки: открыть карточку игрока или переговоры по id
-  UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id), team: (id) => teamModal(id) };
+  UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id), team: (id) => teamModal(id), ticket: (pid, from) => ticketModal(UI.g.players[pid], from ? UI.g.teams[from] : null, UI.g.userTeam(), { terms: { years: 3 }, fee: 5000 }) };
   UI.openEvent = (id) => eventModal(id);
   UI.go = (t) => go(t);
+  UI.save = () => save();
 
   // ================== помощники ==================
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -443,7 +444,9 @@
   function save(key = SAVE_AUTO, now = false) {
     if (key !== SAVE_AUTO || now) return saveNow(key, true);
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => { saveTimer = null; const run = () => { if (UI.g) saveNow(SAVE_AUTO, false); }; (window.requestIdleCallback || setTimeout)(run, { timeout: 4000 }); }, 1500);
+    // во время анимаций (талон трансфера, празднование) не сохраняем: запись большой карьеры на телефоне подвешивает кадры
+    const wait = Math.max(1500, (UI.animUntil || 0) - Date.now() + 300);
+    saveTimer = setTimeout(() => { saveTimer = null; const run = () => { if (UI.g) saveNow(SAVE_AUTO, false); }; (window.requestIdleCallback || setTimeout)(run, { timeout: 4000 }); }, wait);
     return Promise.resolve(true);
   }
   function saveNow(key = SAVE_AUTO, cloudNow = true) {
@@ -2249,6 +2252,8 @@
   // Талон выезжает, самолёт летит по пунктиру от прежнего клуба к новому, в конце — печать «ПОДПИСАН».
   function ticketModal(p, from, to, d) {
     const G = g(), s = G.s;
+    UI.animUntil = Date.now() + 3600;
+    if (saveTimer) save(); // уже запланированное автосохранение — после анимации
     // код «аэропорта»: инициалы для названий из нескольких слов, иначе первые три буквы
     const code = (t) => { if (!t) return 'FA'; const w = t.name.replace(/[«»"]/g, '').split(/[\s-]+/).filter(Boolean); return (w.length > 1 ? w.map((x) => x[0]).join('') : w[0]).slice(0, 3).toUpperCase(); };
     const fee = d.pre ? 'бесплатно' : d.fee ? FM.money(d.fee) : 'бесплатно';
@@ -2259,7 +2264,7 @@
           <div class="tk-top"><span>FM26 · ТРАНСФЕР</span><span>${d.pre ? 'ПРЕДВАРИТЕЛЬНЫЙ КОНТРАКТ' : 'ПОСАДОЧНЫЙ ТАЛОН'}</span></div>
           <div class="tk-route">
             <div class="tk-pt">${from ? badge(from, 'lg') : '<span class="ng-free">FA</span>'}<b>${code(from)}</b><small>${from ? esc(from.name) : 'свободный агент'}</small></div>
-            <div class="tk-path"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 32 Q100 -14 196 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/></svg><span class="tk-plane">${icon('plane')}</span></div>
+            <div class="tk-path"><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="M4 32 Q100 -14 196 32" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="5 5"/></svg><span class="tk-fly"><span class="tk-plane">${icon('plane')}</span></span></div>
             <div class="tk-pt">${badge(to, 'lg')}<b>${code(to)}</b><small>${esc(to.name)}</small></div>
           </div>
           <div class="tk-pass"><span class="label">Пассажир</span><b>${flag(p.nat)}${esc(p.name)}</b></div>

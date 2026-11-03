@@ -1335,9 +1335,15 @@ table.lt td:first-child { font: 800 var(--fs-base) var(--f-display); }
 .tk-pt .ng-free { width: 50px; height: 50px; font-size: var(--fs-lg); background: #dde2ee; color: #555d7a; }
 .tk-path { position: relative; height: 46px; color: #9aa3bd; }
 .tk-path svg { width: 100%; height: 100%; display: block; }
-.tk-plane { position: absolute; left: 0; top: 50%; font-size: var(--fs-2xl); color: var(--c1); transform: translate(-50%, -50%) rotate(0deg); filter: drop-shadow(0 2px 2px rgba(0,0,0,.25));
-  offset-path: path("M4 32 Q100 -14 196 32"); animation: tkFly 1.8s .5s ease-in-out both; }
-@keyframes tkFly { from { left: 2%; top: 70%; } 50% { top: 0%; } to { left: 98%; top: 70%; } }
+.tk-fly { position: absolute; inset: 0; pointer-events: none; transform: translateX(2%); animation: tkX 1.8s .5s cubic-bezier(.45,.05,.55,.95) both; will-change: transform; }
+.tk-plane { position: absolute; left: 0; top: 70%; font-size: var(--fs-2xl); color: var(--c1); transform: translate(-50%, -50%) rotate(60deg);
+  animation: tkY 1.8s .5s both; will-change: transform; }
+/* полёт только трансформациями (без пересчёта раскладки): по горизонтали — контейнер, по высоте и наклону — сам самолёт */
+@keyframes tkX { from { transform: translateX(2%); } to { transform: translateX(98%); } }
+@keyframes tkY {
+  0% { transform: translate(-50%, -50%) rotate(55deg); animation-timing-function: cubic-bezier(.2,.6,.4,1); }
+  50% { transform: translate(-50%, calc(-50% - 30px)) rotate(90deg); animation-timing-function: cubic-bezier(.6,0,.8,.4); }
+  100% { transform: translate(-50%, -50%) rotate(125deg); } }
 .tk-pass b { display: flex; align-items: center; gap: 6px; font: 800 var(--fs-3xl)/1.05 var(--f-display); text-transform: uppercase; }
 .tk-pass .label { color: #555d7a; }
 .tk-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; }
@@ -1355,7 +1361,7 @@ table.lt td:first-child { font: 800 var(--fs-base) var(--f-display); }
 .tk-stamp b { font-size: var(--fs-sm); line-height: 1.1; max-width: 120px; }
 @keyframes tkStamp { from { opacity: 0; transform: rotate(-16deg) scale(2.6); } 70% { opacity: 1; } }
 .tk-msg { font: 800 var(--fs-xl) var(--f-display); text-transform: uppercase; animation: rise .5s 2.8s both; }
-@media (prefers-reduced-motion: reduce) { .tk, .tk-plane, .tk-stamp, .tk-msg, .ng-route span { animation: none !important; } .tk-plane { left: 98%; top: 70%; } }
+@media (prefers-reduced-motion: reduce) { .tk, .tk-fly, .tk-plane, .tk-stamp, .tk-msg, .ng-route span { animation: none !important; } .tk-fly { transform: translateX(98%); } .tk-plane { transform: translate(-50%, -50%) rotate(90deg); } }
 @media (max-width: 620px), (max-height: 500px) and (orientation: landscape) {
   .tk { grid-template-columns: minmax(0, 1fr) 70px; } .tk-main { padding: 12px 12px 10px; gap: 8px; }
   .tk-pt b { font-size: var(--fs-2xl); } .tk-pass b { font-size: var(--fs-xl); } .tk-fields b { font-size: var(--fs-base); } .tk-stub b { font-size: var(--fs-4xl); }
