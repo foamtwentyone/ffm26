@@ -122,8 +122,15 @@
         { t: 'Торт и поздравление', h: 'Именинник доволен', run: (g, c, p) => { mor(p, 5); return `${p.name} тронут вниманием.`; } },
       ], def: 1 },
     { id: 'saudi', w: 4, title: 'Соблазн большими деньгами',
-      when: (g, u) => { if (g.countryOf(u.league) === 'KSA') return null; const p = FM.pick(g.squad(u).filter((x) => !x.loan && x.age >= 27 && g.squadRank(x) <= 8)); return p && { pid: p.id, mult: FM.pick([3, 4, 5]), who: [p.id] }; },
-      text: (g, c) => { const p = g.players[c.pid]; return `Агент сообщает: клуб из Саудовской Аравии предлагает ${p.name} зарплату в ${c.mult} раз${c.mult < 5 ? 'а' : ''} больше нынешней (${FM.money(p.wage * c.mult)} в неделю). Официального запроса клубу пока нет, но игрок задумался.`; },
+      when: (g, u) => {
+        if (g.countryOf(u.league) === 'KSA') return null;
+        // саудовским клубам нужен игрок их уровня: слабому клубу из низшей лиги такое письмо не придёт
+        const ksa = g.clubs().filter((t) => g.countryOf(t.league) === 'KSA' && !t.reserveOf && t.rep >= u.rep - 4);
+        const p = FM.pick(g.squad(u).filter((x) => !x.loan && x.age >= 26 && x.age <= 33 && x.ovr >= 68 && g.squadRank(x) <= 8 && ksa.some((t) => g.fitsClub(x, t) && x.ovr >= g.baseOf(t))));
+        const club = p && FM.pick(ksa.filter((t) => g.fitsClub(p, t) && p.ovr >= g.baseOf(t)));
+        return club && { pid: p.id, club: club.id, mult: FM.pick([3, 4, 5]), who: [p.id] };
+      },
+      text: (g, c) => { const p = g.players[c.pid]; return `Агент сообщает: «${c.club && g.teams[c.club] ? g.teams[c.club].name : 'клуб из Саудовской Аравии'}» (Саудовская Аравия) предлагает ${p.name} зарплату в ${c.mult} раз${c.mult < 5 ? 'а' : ''} больше нынешней (${FM.money(p.wage * c.mult)} в неделю). Официального запроса клубу пока нет, но игрок задумался.`; },
       opts: [
         { t: 'Поговорить: «Ты нужен здесь»', h: 'Лидер по характеру и преданный останутся спокойны', run: (g, c, p) => { const ok = p.pers === 'loyal' || p.pers === 'leader' || Math.random() < 0.5; mor(p, ok ? 3 : -8); return ok ? `${p.name} остаётся сосредоточен на сезоне.` : `${p.name} внешне спокоен, но мыслями уже далеко.`; } },
         { t: 'Повысить зарплату на 20%', h: 'Игрок доволен, расходы растут', run: (g, c, p) => { p.wage = Math.round(p.wage * 1.2 * 10) / 10; mor(p, 12); return `${p.name} благодарен — он остаётся.`; } },
@@ -256,7 +263,7 @@
         { t: 'Отказаться', h: '', run: () => 'Агент обещал предложить игрока другим клубам.' },
       ], def: 1, free: true },
     { id: 'rumor', w: 6, title: 'Слухи о переходе',
-      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 4)); const big = FM.pick(Object.values(g.teams).filter((t) => t.rep >= u.rep + 6 && t.id !== u.id)); return p && big && { pid: p.id, club: big.id }; },
+      when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 4)); const big = p && FM.pick(g.clubs().filter((t) => t.rep >= u.rep + 6 && t.id !== u.id && !t.reserveOf && g.fitsClub(p, t) && (p.ovr >= 70 || g.countryOf(t.league) === g.countryOf(u.league)))); return p && big && { pid: p.id, club: big.id }; },
       text: (g, c) => `Пресса пишет об интересе «${g.teams[c.club].name}»: в клубе хотят видеть ${g.players[c.pid].name}. Игрок выглядит рассеянным на тренировках.`,
       opts: [
         { t: 'Заверить игрока', h: 'Пообещать ключевую роль — игрок успокоится', run: (g, c, p) => { mor(p, 8); return `${p.name} благодарит за доверие и сосредоточен на сезоне.`; } },
@@ -697,6 +704,10 @@
       return this.createPlayer({ name: FM.genName(c), pos, age, ovr, nat: c, gen: true }, team);
     }
 
+    // уровень клуба (кэш на день)
+    baseOf(t) { const d = this.s.date; if (!this._bo || this._bo.d !== d) this._bo = { d, m: {} }; return this._bo.m[t.id] ?? (this._bo.m[t.id] = this.teamBaseOvr(t)); }
+    // нужен ли игрок такому клубу: должен быть не хуже его ротации; молодому таланту — скидка за потенциал
+    fitsClub(p, t) { const b = this.baseOf(t); return p.ovr >= b - 2 || (p.age <= 21 && p.pot >= b + 4 && p.ovr >= b - 8); }
     teamBaseOvr(team) {
       // уровень сгенерированных игроков: ориентир — реальные игроки клуба, иначе репутация
       const real = team.players.map((id) => this.players[id]).filter((p) => !p.gen).map((p) => p.ovr).sort((a, b) => b - a);
@@ -4320,9 +4331,12 @@
         let pr = 0.0018 * Math.pow(p.ovr / 65, 4) * (rank <= 5 ? 1.4 : 1);
         if (p.listed) pr = 0.06;
         if (!FM.chance(pr)) continue;
-        const buyers = this.clubs().filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && !this.foreignBlock(t, p));
+        const buyers = this.clubs().filter((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 12 && t.money > p.value * 0.9 && t.players.length < MAX_SQUAD - 1 && this.fitsClub(p, t) && !this.foreignBlock(t, p));
         if (!buyers.length) continue;
-        const b = FM.pick(buyers);
+        // чаще интересуются клубы своей страны: легионеров из низших лиг за границей почти не ищут
+        const uc = this.countryOf(u.league);
+        const home = buyers.filter((t) => this.countryOf(t.league) === uc);
+        const b = FM.pick(home.length && FM.chance(0.75) ? home : buyers);
         const fee = FM.roundValue(p.value * (p.listed ? FM.rnd() * 0.3 + 0.75 : FM.rnd() * 0.45 + 0.9));
         if (fee > b.money) continue;
         this.msg(`Предложение за ${p.name}`, `«${b.name}» предлагает ${FM.money(fee)} за ${p.name}. Ответить нужно в течение 5 дней.`, 'offer', { pid, from: b.id, fee, until: FM.addDays(s.date, 5) });
@@ -4331,7 +4345,7 @@
       for (const pid of u.national ? [] : u.players.slice()) {
         const p = this.players[pid];
         if (!p.release || p.release > p.value * 1.6 || !FM.chance(0.004)) continue;
-        const b = this.clubs().find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5);
+        const b = this.clubs().find((t) => t.id !== u.id && !t.reserveOf && t.rep >= u.rep - 5 && t.money > p.release * 1.5 && this.fitsClub(p, t));
         if (!b) continue;
         this.msg('Отступные активированы', `«${b.name}» выплатил отступные ${FM.money(p.release)} — ${p.name} уходит из клуба.`, 'transfer');
         this.transfer(p, b, p.release, null, FM.ri(3, 5));
@@ -4401,7 +4415,8 @@
         for (const pid of t.players) {
           const p = this.players[pid];
           if (p.pos !== pos || p.ovr < wv + 2 || p.ovr > wv + 12 || p.inj || p.pre || p.loan) continue;
-          if (t.rep > buyer.rep + 3 && p.age < 30 && p.ovr >= this.teamBaseOvr(t)) continue; // в клубе выше уровнем игрок основы не уйдёт вниз
+          if (t.rep > buyer.rep + 3 && p.age < 30 && p.ovr >= this.baseOf(t)) continue; // в клубе выше уровнем игрок основы не уйдёт вниз
+          if (!this.fitsClub(p, buyer)) continue;
           cands.push(p);
         }
       }
@@ -4644,13 +4659,13 @@
     randomEvent() {
       const s = this.s, u = this.userTeam();
       if (u.national) return null;
-      // Событие может случиться в любой день: после предыдущего — короткая пауза в 2–4 дня (s.evNext),
-      // дальше каждый день шанс 7,5% (в среднем раз в две недели, но бывает и через три дня, и через месяц).
-      if (!s.evNext) s.evNext = FM.addDays(s.date, FM.ri(2, 4));
+      // Событие может случиться в любой день: после предыдущего — пауза 12–18 дней (s.evNext),
+      // дальше каждый день шанс 8% (в среднем раз в 3–4 недели, около 10 за сезон).
+      if (!s.evNext || s.evNext < s.date && !s.evV2) { s.evV2 = true; s.evNext = FM.addDays(s.date, FM.ri(5, 10)); }
       if (s.date < s.evNext || s.seasonOver) return null;
       if (s.inbox.some((m) => m.type === 'event' && m.data && !m.data.closed)) return null;
-      if (!FM.chance(0.075)) return null;
-      s.evNext = FM.addDays(s.date, FM.ri(2, 4));
+      if (!FM.chance(0.08)) return null;
+      s.evNext = FM.addDays(s.date, FM.ri(12, 18));
       const recent = (s.evLog || []).slice(-8);
       const cands = [];
       for (const E of EVENTS) {
