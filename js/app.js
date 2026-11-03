@@ -1811,6 +1811,15 @@
     ['all', 'Все', {}], ['stars', 'Звёзды 85+', { minOvr: 85 }], ['young', 'Таланты до 21', { maxAge: 21, young: true }],
     ['afford', 'По карману', { afford: true }], ['free', 'Свободные агенты', { league: 'free' }], ['exp', 'Контракт истекает', { expiring: true }], ['listed', 'Выставлены на продажу', { listed: true }],
   ];
+  // страны, игроки которых есть в базе (по русскому названию), — для фильтра «Гражданство»; кэш на игру
+  function natList(G) {
+    if (UI._natList && UI._natList.g === G) return UI._natList.list;
+    const set = new Set();
+    for (const id in G.players) { const p = G.players[id]; if (p.nat) set.add(p.nat); if (p.nat2) set.add(p.nat2); }
+    const list = [...set].map((c) => [c, FM.NAT[c] || c]).sort((a, b) => a[1].localeCompare(b[1], 'ru'));
+    UI._natList = { g: G, list };
+    return list;
+  }
   function viewTransfers(main) {
     const G = g(), s = G.s, u = G.userTeam();
     if (u.national) { main.innerHTML = `<div class="card"><h3>Трансферы</h3><div class="muted">Сборная не покупает игроков. Вызывайте лучших футболистов страны во вкладке «Состав» — игроки остаются в клубах и приезжают на окна сборных.</div><div class="row" style="margin-top:10px"><button class="btn primary" data-tab="squad">Вызов в сборную</button></div></div>`; main.querySelector('[data-tab]').onclick = () => go('squad'); return; }
@@ -1838,7 +1847,9 @@
       if (f.league === 'free') list = list.filter((p) => !p.club);
       else if (f.league) list = list.filter((p) => p.club && T(p.club).league === f.league);
       if (f.maxPrice) list = list.filter((p) => p.value <= f.maxPrice * 1000);
+      if (f.nat) list = list.filter((p) => p.nat === f.nat || p.nat2 === f.nat);
       if (f.minOvr) list = list.filter((p) => p.ovr >= f.minOvr);
+      if (f.maxOvr) list = list.filter((p) => p.ovr <= f.maxOvr);
       if (f.maxAge) list = list.filter((p) => p.age <= f.maxAge);
       if (f.listed) list = list.filter((p) => p.listed);
       if (f.realOnly) list = list.filter((p) => !p.gen);
@@ -1861,12 +1872,13 @@
           <span class="tf-age">${p.age}<small>лет</small></span>${ovr(p.ovr)}${potBar(p)}<span class="tf-val">${FM.money(p.value)}</span></div>`).join('');
       body = `      <div class="tf-layout">
         <aside class="card tf-filters ${UI.tfFiltersOpen ? 'open' : ''}">
-          <h3 id="tf-ftoggle">Фильтры <span class="tf-fcount">${['name', 'league', 'maxPrice', 'minOvr', 'maxAge', 'listed', 'expiring', 'realOnly'].filter((key) => f[key]).length + [].concat(f.pos || []).length || ''}</span><span class="tf-fchev">${icon('chevDown')}</span></h3>
+          <h3 id="tf-ftoggle">Фильтры <span class="tf-fcount">${['name', 'league', 'nat', 'maxPrice', 'minOvr', 'maxOvr', 'maxAge', 'listed', 'expiring', 'realOnly'].filter((key) => f[key]).length + [].concat(f.pos || []).length || ''}</span><span class="tf-fchev">${icon('chevDown')}</span></h3>
           <label>Имя<input id="f-name" placeholder="Например, Кисляк" value="${esc(f.name || '')}"></label>
           <div><span class="tf-lbl">Позиции</span><div class="pos-pick">${FM.POS.map((p) => `<button class="pos-chip ${[].concat(f.pos || []).includes(p) ? 'on' : ''}" data-fpos="${p}" title="${FM.POS_NAME[p]}">${pos(p)}</button>`).join('')}</div></div>
           <label>Лига<select id="f-league"><option value="">Все лиги</option>${[...new Set(s.order.map((id) => G.countryOf(id)))].map((c) => `<optgroup label="${esc(FM.NAT[c] || c)}">${s.order.filter((id) => G.countryOf(id) === c).map((id) => `<option value="${id}" ${f.league === id ? 'selected' : ''}>${esc(s.leagues[id].name)}</option>`).join('')}</optgroup>`).join('')}<option value="free" ${f.league === 'free' ? 'selected' : ''}>Свободные агенты</option></select></label>
-          <div class="tf-pair"><label>Рейтинг от<input id="f-ovr" type="number" value="${f.minOvr || ''}"></label><label>Возраст до<input id="f-age" type="number" value="${f.maxAge || ''}"></label></div>
-          <label>Цена до, млн €<input id="f-price" type="number" step="0.1" value="${f.maxPrice || ''}"></label>
+          <label>Гражданство<select id="f-nat"><option value="">Все страны</option>${natList(G).map(([c, nm]) => `<option value="${c}" ${f.nat === c ? 'selected' : ''}>${esc(nm)}</option>`).join('')}</select></label>
+          <div class="tf-pair"><label>Рейтинг от<input id="f-ovr" type="number" inputmode="numeric" min="30" max="99" placeholder="30" value="${f.minOvr || ''}"></label><label>Рейтинг до<input id="f-ovr2" type="number" inputmode="numeric" min="30" max="99" placeholder="99" value="${f.maxOvr || ''}"></label></div>
+          <div class="tf-pair"><label>Возраст до<input id="f-age" type="number" inputmode="numeric" value="${f.maxAge || ''}"></label><label>Цена до, млн €<input id="f-price" type="number" step="0.1" inputmode="decimal" value="${f.maxPrice || ''}"></label></div>
           <label class="check"><input type="checkbox" id="f-listed" ${f.listed ? 'checked' : ''}> выставлены на продажу</label>
           <label class="check"><input type="checkbox" id="f-exp" ${f.expiring ? 'checked' : ''}> контракт истекает летом</label>
           <label class="check"><input type="checkbox" id="f-real" ${f.realOnly ? 'checked' : ''}> только реальные игроки</label>
@@ -1947,7 +1959,7 @@
     const ft = main.querySelector('#tf-ftoggle');
     if (ft) ft.onclick = () => { UI.tfFiltersOpen = !UI.tfFiltersOpen; main.querySelector('.tf-filters').classList.toggle('open', UI.tfFiltersOpen); };
     bindF('#f-name', 'name'); bindF('#f-league', 'league'); bindF('#f-price', 'maxPrice', true);
-    bindF('#f-ovr', 'minOvr', true); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly'); bindF('#f-exp', 'expiring');
+    bindF('#f-ovr', 'minOvr', true); bindF('#f-ovr2', 'maxOvr', true); bindF('#f-nat', 'nat'); bindF('#f-age', 'maxAge', true); bindF('#f-listed', 'listed'); bindF('#f-real', 'realOnly'); bindF('#f-exp', 'expiring');
     const pp = main.querySelector('#pp'), pn = main.querySelector('#pn');
     if (pp) pp.onclick = () => { UI.tfPage--; render(); scrollTop(0); };
     if (pn) pn.onclick = () => { UI.tfPage++; render(); scrollTop(0); };
@@ -2250,6 +2262,24 @@
 
   // ================== посадочный талон после подписания ==================
   // Талон выезжает, самолёт летит по пунктиру от прежнего клуба к новому, в конце — печать «ПОДПИСАН».
+  // Самолёт строго по пунктиру: кривая M4 32 Q100 -14 196 32 в поле 200×40, растянутом на весь .tk-path.
+  // x(u) = 4 + 192u, y(u) = 32 − 92u + 92u² — положение и наклон носа считаем по ней в 30 точках;
+  // общая плавность (разгон и торможение) задаётся для всей анимации, поэтому обе части движутся синхронно.
+  function flyPlane(root) {
+    const path = root.querySelector('.tk-path'), fly = root.querySelector('.tk-fly'), pl = root.querySelector('.tk-plane');
+    if (!path || !fly || !pl || !fly.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const W = path.clientWidth || 200, H = path.clientHeight || 46, sx = W / 200, sy = H / 40;
+    const N = 30, xs = [], ps = [];
+    for (let k = 0; k <= N; k++) {
+      const u = k / N, x = 4 + 192 * u, y = 32 - 92 * u + 92 * u * u;
+      const ang = Math.atan2((-92 + 184 * u) * sy, 192 * sx) * 180 / Math.PI + 90; // иконка смотрит вверх
+      xs.push({ offset: u, transform: `translateX(${(x / 200) * 100}%)` });
+      ps.push({ offset: u, transform: `translate(-50%, -50%) translateY(${(y * sy).toFixed(2)}px) rotate(${ang.toFixed(1)}deg)` });
+    }
+    const opt = { duration: 1800, delay: 500, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'both' };
+    fly.animate(xs, opt);
+    pl.animate(ps, opt);
+  }
   function ticketModal(p, from, to, d) {
     const G = g(), s = G.s;
     UI.animUntil = Date.now() + 3600;
@@ -2280,6 +2310,7 @@
       </div>
       <div class="center tk-msg">${d.pre ? `${esc(p.name)} присоединится к «${esc(to.name)}» летом.` : `${esc(p.name)} — игрок «${esc(to.name)}»!`}</div>
       <div class="row" style="justify-content:center"><button class="btn primary" data-close>Отлично</button></div></div>`, 'ticket');
+    flyPlane(el);
     return el;
   }
 
