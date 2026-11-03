@@ -25,6 +25,7 @@
   // для проверок и отладки: открыть карточку игрока или переговоры по id
   UI.open = { player: (id) => playerModal(id), nego: (id) => negoModal(id), team: (id) => teamModal(id) };
   UI.openEvent = (id) => eventModal(id);
+  UI.go = (t) => go(t);
 
   // ================== помощники ==================
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -199,23 +200,37 @@
     return 'league';
   }
   // стиль: { key, c1, c2, pat, emb }; у лиг второй цвет — цвет лиги
-  function tourStyle(key, lid) {
+  // ключ настоящего логотипа турнира (FM.TLOGO): лига, cup_XXX, super_XXX, еврокубок, cwc, nt_<база>
+  function tlogoKey(comp) {
+    const G = g();
+    if (!comp || typeof comp !== 'string') return null;
+    if (comp === 'cup') return 'cup_RUS';
+    if (FM.isCup(comp) || comp.startsWith('super_') || euroOf(comp) || comp === 'cwc') return comp;
+    if (comp === 'natfr') return null;
+    if (FM.isNat(comp)) { const T = G.ntOfComp(comp); return T ? `nt_${T.base}` : null; }
+    return G.s.leagues[comp] && !G.s.leagues[comp].national ? comp : null;
+  }
+  function tourStyle(key, lid, lk) {
     const st = Object.assign({ key }, TS[key] || TS.league);
+    lk = lk || (/^(ucl|uel|uecl|lib|sud|acl|cafcl|ccc|cwc)$/.test(key) ? key : key === 'cupRUS' ? 'cup_RUS' : key === 'league' ? lid : null);
+    st.logo = (lk && FM.TLOGO && FM.TLOGO[lk]) || null;
     if (key === 'league') st.c2 = (lid && LEAGUE_THEME[lid]) || '#4d8dff';
     if (key === 'league' && lid && g().countryOf(lid) === 'RUS') st.pat = 'tri';
     return st;
   }
-  const tourOf = (comp) => tourStyle(tourKey(comp), g().s.leagues[comp] && !g().s.leagues[comp].national ? comp : null);
+  const tourOf = (comp) => tourStyle(tourKey(comp), g().s.leagues[comp] && !g().s.leagues[comp].national ? comp : null, tlogoKey(comp));
+  // эмблема турнира: настоящий логотип, если есть, иначе рисованная
+  const semb = (st, cls = '') => (st && st.logo ? `<img class="emb tlogo ${cls}" src="${st.logo}" alt="">` : emb(st ? st.emb : 'cup', cls));
   const tvars = (st) => `--t1:${st.c1};--t2:${st.c2}`;
   // плашка турнира у матча: эмблема + название (+ стадия)
   function tchip(m, withRound = true) {
     const st = tourOf(m.comp), rt = withRound ? roundText(m) : '';
-    return `<span class="tchip" style="${tvars(st)}">${emb(st.emb)}<span>${esc(compName(m.comp))}${rt ? ` · ${esc(rt)}` : ''}</span></span>`;
+    return `<span class="tchip" style="${tvars(st)}">${semb(st)}<span>${esc(compName(m.comp))}${rt ? ` · ${esc(rt)}` : ''}</span></span>`;
   }
   const holder = (id, label) => (id && T(id) ? `${badge(T(id), 'lg')}<div><span>${label}</span><b>${esc(T(id).name)}</b></div>` : '');
   // шапка раздела турнира: узор, эмблема, название, подпись (стадия, действующий победитель)
   function tourBanner(st, title, sub, right = '') {
-    return `<div class="tban tp-${st.pat}" style="${tvars(st)}"><div class="tban-emb">${emb(st.emb)}</div><div class="tban-tx">${sub ? `<span class="tban-k">${sub}</span>` : ''}<h2>${esc(title)}</h2></div>${right ? `<div class="tban-r">${right}</div>` : ''}</div>`;
+    return `<div class="tban tp-${st.pat}" style="${tvars(st)}"><div class="tban-emb">${semb(st)}</div><div class="tban-tx">${sub ? `<span class="tban-k">${sub}</span>` : ''}<h2>${esc(title)}</h2></div>${right ? `<div class="tban-r">${right}</div>` : ''}</div>`;
   }
   // путь команды к финалу: её матчи плей-офф этого турнира
   function finPath(m, tid) {
@@ -229,7 +244,7 @@
   function finalBlock(m) {
     const st = tourOf(m.comp), h = T(m.h), a = T(m.a);
     return `<div class="fin-block" style="${tvars(st)}"><div class="fin-path"><h4>Путь «${esc(h.name)}»</h4>${finPath(m, m.h)}</div>
-      <div class="fin-cup">${emb(st.emb)}<div class="podium"></div><b>Финал</b><span>${esc(compName(m.comp))}</span><br><span>${m.neutral ? 'нейтральное поле' : esc(h.stadium || '')} · ${esc(FM.fmtDateWd(m.date))}</span></div>
+      <div class="fin-cup">${semb(st)}<div class="podium"></div><b>Финал</b><span>${esc(compName(m.comp))}</span><br><span>${m.neutral ? 'нейтральное поле' : esc(h.stadium || '')} · ${esc(FM.fmtDateWd(m.date))}</span></div>
       <div class="fin-path away"><h4>Путь «${esc(a.name)}»</h4>${finPath(m, m.a)}</div></div>`;
   }
   // финал ли это
@@ -863,18 +878,18 @@
     const G = g(), s = G.s, uid = s.user;
     const done = new Set(s.celebrated || []);
     const key = (k) => `${s.season}:${k}`;
-    const withSt = (t, st) => Object.assign(t, { color: st.c2, emb: st.emb });
-    for (const c in s.cups || {}) if (s.cups[c].winner === uid && !done.has(key('cup:' + c))) return withSt({ key: key('cup:' + c), kind: 'cup', title: 'Обладатель кубка', name: s.cups[c].name || FM.cupName(c) }, tourStyle(c === 'RUS' ? 'cupRUS' : 'cup'));
+    const withSt = (t, st) => Object.assign(t, { color: st.c2, emb: st.emb, logo: st.logo });
+    for (const c in s.cups || {}) if (s.cups[c].winner === uid && !done.has(key('cup:' + c))) return withSt({ key: key('cup:' + c), kind: 'cup', title: 'Обладатель кубка', name: s.cups[c].name || FM.cupName(c) }, tourStyle(c === 'RUS' ? 'cupRUS' : 'cup', null, `cup_${c}`));
     for (const E of FM.EURO) { const e = s.euro && s.euro[E.id]; if (e && e.winner === uid && !done.has(key('euro:' + E.id))) return withSt({ key: key('euro:' + E.id), kind: 'euro', title: 'Победитель', name: E.name }, tourStyle(E.id)); }
-    for (const c in s.supers || {}) if (s.supers[c].winner === uid && !done.has(key('super:' + c))) return withSt({ key: key('super:' + c), kind: 'cup', title: 'Обладатель суперкубка', name: s.supers[c].name }, tourStyle('super'));
+    for (const c in s.supers || {}) if (s.supers[c].winner === uid && !done.has(key('super:' + c))) return withSt({ key: key('super:' + c), kind: 'cup', title: 'Обладатель суперкубка', name: s.supers[c].name }, tourStyle('super', null, `super_${c}`));
     if (s.cwc && s.cwc.winner === uid && !done.has(key('cwc'))) return withSt({ key: key('cwc'), kind: 'euro', title: 'Чемпион мира', name: `Клубный чемпионат мира ${s.cwc.year}` }, tourStyle('cwc'));
-    for (const NT of (s.nt && s.nt.list) || []) if (NT.winner === uid && !done.has(key('nt:' + NT.id))) return withSt({ key: key('nt:' + NT.id), kind: 'euro', title: 'Победитель', name: NT.name }, tourStyle(NT_STYLE[NT.base] || 'natwc'));
+    for (const NT of (s.nt && s.nt.list) || []) if (NT.winner === uid && !done.has(key('nt:' + NT.id))) return withSt({ key: key('nt:' + NT.id), kind: 'euro', title: 'Победитель', name: NT.name }, tourStyle(NT_STYLE[NT.base] || 'natwc', null, `nt_${NT.base}`));
     const lid = G.userTeam().league, tab = G.table(lid);
     if (tab.length > 1 && tab[0].id === uid && !done.has(key('league:' + lid))) {
       const second = tab[1];
       const left = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === second.id || m.a === second.id)).length;
       const mine = Object.values(s.matches).filter((m) => m.comp === lid && !m.played && (m.h === uid || m.a === uid)).length;
-      if (tab[0].p > 0 && tab[0].pts - second.pts > left * 3) return { key: key('league:' + lid), kind: 'league', title: 'Чемпион', name: s.leagues[lid].name, color: LEAGUE_THEME[lid] || glow(G.userTeam()), emb: 'shield', early: mine };
+      if (tab[0].p > 0 && tab[0].pts - second.pts > left * 3) return { key: key('league:' + lid), kind: 'league', title: 'Чемпион', name: s.leagues[lid].name, color: LEAGUE_THEME[lid] || glow(G.userTeam()), emb: 'shield', logo: FM.TLOGO && FM.TLOGO[lid], early: mine };
     }
     return null;
   }
@@ -889,7 +904,7 @@
     el.className = `champ ${t.kind}`;
     el.style.setProperty('--cc', c); el.style.setProperty('--tc', t.color);
     el.innerHTML = `<div class="ch-rays"></div><div class="ch-in">
-        <div class="ch-cup">${emb(t.emb || 'cup')}</div>
+        <div class="ch-cup">${t.logo ? `<img class="emb tlogo" src="${t.logo}" alt="">` : emb(t.emb || 'cup')}</div>
         <div class="ch-badge">${badge(u, 'xl')}</div>
         <div class="ch-k">${esc(t.name)} · ${seasonLabel(s)}</div>
         <h1 class="ch-t">${esc(t.title)}!</h1>
@@ -1042,7 +1057,7 @@
       const duel = (label, x, y) => { const w = (v) => FM.clamp((v - 40) * 2.2, 6, 100); return `<div class="bc-duel"><b>${x}</b><div class="bc-bar l"><i style="width:${w(x)}%"></i></div><span>${label}</span><div class="bc-bar r"><i style="width:${w(y)}%"></i></div><b>${y}</b></div>`; };
       const hfin = isFinal(nm);
       hero = `<section class="bc ${hfin ? 'final' : ''}" data-go="fixtures" style="--hcb:${glow(h)};--acb:${glow(a)};${tvars(tourOf(nm.comp))}">
-        <div class="bc-head">${tchip(nm)}${hfin ? `<span class="fin-rib">${emb(tourOf(nm.comp).emb)}Финал</span>` : ''}${bigTag(nm)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
+        <div class="bc-head">${tchip(nm)}${hfin ? `<span class="fin-rib">${semb(tourOf(nm.comp))}Финал</span>` : ''}${bigTag(nm)}${dRec ? `<span class="small muted">личные встречи ${dRec[0]}–${dRec[1]}–${dRec[2]}</span>` : ''}</div>
         <div class="bc-vs">${side(h)}
           <div class="bc-kick"><span class="bc-when">${days === 0 ? 'сегодня' : days === 1 ? 'завтра' : esc(FM.fmtDateWd(nm.date))}</span><span class="bc-v">VS</span><span class="bc-where">${nm.neutral ? 'нейтральное поле' : esc(h.stadium || '')}</span></div>
           ${side(a, true)}</div>
@@ -1089,7 +1104,7 @@
       ${u.national ? tile('Турниры сборной', 'tables:nat', ntTiles(u), '', 'trophy') : ''}${u.national && !L.nt ? '' : tile(esc(L.name), 'tables', tab.slice(0, 5).concat(myRow.pos > 5 ? [myRow] : []).map((r) => `<div class="mini ${r.id === u.id ? 'me' : ''}"><span class="pos-n">${r.pos}</span>${badge(T(r.id), 'sm')}<span class="grow ell">${esc(T(r.id).name)}</span><span class="hide-m">${form(r.form)}</span><b>${r.pts}</b></div>`).join(''), '', 'trophy')}
       ${tile('Ближайшие матчи', 'fixtures', upcoming.slice(0, 4).map((m) => {
         const home = m.h === u.id, opp = T(home ? m.a : m.h);
-        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="tmini" style="${tvars(tourOf(m.comp))}" title="${esc(compName(m.comp))}">${emb(tourOf(m.comp).emb)}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
+        return `<div class="sched"><b>${shortDate(m.date)}</b><span class="tmini" style="${tvars(tourOf(m.comp))}" title="${esc(compName(m.comp))}">${semb(tourOf(m.comp))}</span>${badge(opp, 'sm')}<span class="grow ell">${esc(opp.name)}</span><span class="muted">${home ? 'дома' : 'в гостях'}</span></div>`;
       }).join('') || '<div class="muted">Сезон завершён</div>', '', 'calendar')}
       ${tile(u.national ? 'Сборная' : 'Клуб', 'club', `${u.national ? `<div class="kvl"><span>Турнир</span><b>${esc((G.ntMain(u.id) || {}).name || 'товарищеские матчи')}</b></div>` : `<div class="kvl"><span>Деньги</span><b class="${u.money < 0 ? 'bad' : 'good'}">${FM.money(u.money)}</b></div>`}
         <div class="kvl"><span>Задача</span><b>${esc(G.expectText())}</b></div>
@@ -1346,7 +1361,7 @@
           cls = my > op ? 'W' : my < op ? 'L' : 'D';
           if (m.winner && my === op) cls = m.winner === u.id ? 'W' : 'L';
         }
-        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted"><span class="tmini" style="${tvars(tourOf(m.comp))}">${emb(tourOf(m.comp).emb)}</span>${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''} ${bigTag(m)}</td>
+        return `<tr class="${m.played ? 'click' : ''}" ${m.played ? `data-match="${m.id}"` : ''}><td>${FM.fmtDateWd(m.date)}</td><td class="small muted"><span class="tmini" style="${tvars(tourOf(m.comp))}">${semb(tourOf(m.comp))}</span>${esc(compName(m.comp))}${roundText(m) ? ` · ${esc(roundText(m))}` : ''} ${bigTag(m)}</td>
           <td class="small muted">${m.h === u.id ? 'дома' : 'в гостях'}</td>
           <td class="right">${esc(h.name)} ${badge(h, 'sm')}</td><td class="center">${m.played ? `<span class="score ${cls}">${m.hg}:${m.ag}${m.pens ? ` <span class="small">(${m.pens[0]}:${m.pens[1]})</span>` : ''}</span>` : '<span class="muted">—</span>'}</td><td>${badge(a, 'sm')} ${esc(a.name)}</td></tr>`;
       }).join('')}
@@ -1427,7 +1442,7 @@
     const flag = (id) => `${badge(T_(id), 'sm')} <span data-team="${id}">${esc(T_(id).name)}</span>`;
     const status = T.winner ? `победитель — ${esc(T_(T.winner).name)}` : T.pend ? 'участники определятся в отборе' : T.done ? 'завершён' : '';
     const hostTx = T.hostsText ? `Хозяева: ${esc(T.hostsText)}` : T.hosts && T.hosts.length ? `Хозяева: ${T.hosts.map((id) => esc(T_(id).name)).join(', ')}` : '';
-    const head = tourBanner(tourStyle(NT_STYLE[T.base] || (T.kind === 'qual' || T.kind === 'ip' ? 'natqual' : 'natwc')), T.name, [status, hostTx].filter(Boolean).join(' · ') || (T.kind === 'qual' ? 'Отбор' : T.kind === 'nl' ? 'Лига наций' : 'Финальный турнир'), T.winner ? holder(T.winner, 'Победитель') : '');
+    const head = tourBanner(tourStyle(NT_STYLE[T.base] || (T.kind === 'qual' || T.kind === 'ip' ? 'natqual' : 'natwc'), null, `nt_${T.base}`), T.name, [status, hostTx].filter(Boolean).join(' · ') || (T.kind === 'qual' ? 'Отбор' : T.kind === 'nl' ? 'Лига наций' : 'Финальный турнир'), T.winner ? holder(T.winner, 'Победитель') : '');
     if (T.pend) {
       const got = [...new Set((T.direct || []).concat(...T.pend.map((id) => (G.ntT(id) || {}).qualified || [])))];
       return chips + head + `<div class="card"><div class="small muted" style="margin-bottom:10px">${T.size} сборных. Жеребьёвка групп — сразу после отбора, турнир — ${FM.fmtDate(T.gDates[0])}. Уже известны: ${got.length}.</div>
@@ -1440,7 +1455,7 @@
     if (sub === 'po') {
       const cols = T.ko.map((R) => ({ name: R.name, date: brDate(s.matches[R.ties[0]].date), ties: R.ties.map((id) => cupTie(s.matches[id])) }));
       const wait = T.kind === 'final' ? `Плей-офф — с ${FM.fmtDate(T.koDates[0])}: по две лучшие сборные из групп${T.groups.length * 2 < 2 ** Math.ceil(Math.log2(T.groups.length * 2)) ? ' и лучшие третьи' : ''}, игры на вылет.` : T.kind === 'nl' ? `1/4 финала (${FM.fmtDate(T.koDates[0])}) — по две лучшие сборные из групп Лиги A, «Финал четырёх» — в июне.` : `Стыки — ${FM.fmtDate(T.koDates[0])}.`;
-      return chips + head + tabs + (cols.length ? `<div class="card">${bracket(cols, T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' ? T.winner : null, T.name, tourStyle(NT_STYLE[T.base] || 'natqual'))}</div>` : `<div class="card muted">${wait}</div>`);
+      return chips + head + tabs + (cols.length ? `<div class="card">${bracket(cols, T.kind === 'final' || T.kind === 'nl' || T.kind === 'single' ? T.winner : null, T.name, tourStyle(NT_STYLE[T.base] || 'natqual', null, `nt_${T.base}`))}</div>` : `<div class="card muted">${wait}</div>`);
     }
     // зоны: после отбора — по факту, до — по месту в группе
     const G0 = T.groups.length, qd = T.kind === 'qual' && T.gdone;
@@ -1498,7 +1513,7 @@
     cols.forEach((c, i) => c.ties.forEach((t, j) => { t.k = `${i}-${j}`; }));
     cols.forEach((c, i) => { if (i) c.ties.forEach((t) => { t.from = cols[i - 1].ties.filter((x) => x.w && (x.w === t.a || x.w === t.b)).map((x) => x.k); }); });
     return `<div class="br-wrap ${st ? 'themed' : ''}" ${st ? `style="${tvars(st)}"` : ''}><div class="br">${cols.map((c, i) => `<div class="br-col ${c.ties.some((t) => t.a === uid || t.b === uid) ? 'path' : ''}"><div class="br-h">${esc(c.name)}${c.date ? `<span>${esc(c.date)}</span>` : ''}</div><div class="br-list">${c.ties.length ? c.ties.map(brTie).join('') : `<div class="br-empty">${esc(c.empty || 'Жеребьёвка после предыдущего раунда')}</div>`}</div></div>${i < cols.length - 1 ? '<div class="br-arrow">' + icon('play') + '</div>' : ''}`).join('')}
-      <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${st ? emb(st.emb) : icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
+      <div class="br-cup ${winner ? 'won' : ''} ${winner === uid ? 'me' : ''}"><div class="br-cupic">${st ? semb(st) : icon('trophyF')}</div><span>${esc(title)}</span>${winner ? `${badge(T(winner), 'lg')}<b>${esc(T(winner).name)}</b>` : '<em>ждёт победителя</em>'}</div></div></div>`;
   }
   const brDate = (d) => FM.fmtDate(d).replace(/ (\S{3})\S*$/, ' $1');
   // Линии сетки рисуются после вёрстки: от правого края пары-источника к левому краю пары следующего раунда
@@ -1557,7 +1572,7 @@
     // мой клуб — первым в колонке, дальше по дате
     const cols = c.rounds.map((R, i) => ({ name: R.name, date: brDate(R.date), ties: R.matches.map((id) => s.matches[id]).sort((x, y) => ((y.h === uid || y.a === uid) - (x.h === uid || x.a === uid))).map(cupTie),
       empty: i === 1 && c.byes.length ? `С этой стадии стартуют: ${c.byes.map((id) => T(id).name).join(', ')}` : 'Жеребьёвка после предыдущего раунда' }));
-    return `${pick}${tourBanner(tourStyle('cup'), c.name, `${esc(FM.NAT[cc] || cc)} · ${c.winner ? 'турнир завершён' : esc((c.rounds[c.cur] || {}).name || '')}`, c.winner ? holder(c.winner, 'Обладатель') : holder((s.lastCupWinners || {})[cc], 'Действующий обладатель'))}${sup}${bracket(cols, c.winner, c.name, tourStyle('cup'))}`;
+    return `${pick}${tourBanner(tourStyle('cup', null, `cup_${cc}`), c.name, `${esc(FM.NAT[cc] || cc)} · ${c.winner ? 'турнир завершён' : esc((c.rounds[c.cur] || {}).name || '')}`, c.winner ? holder(c.winner, 'Обладатель') : holder((s.lastCupWinners || {})[cc], 'Действующий обладатель'))}${sup}${bracket(cols, c.winner, c.name, tourStyle('cup'))}`;
   }
 
   // клубный чемпионат мира: группы и сетка

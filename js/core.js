@@ -64,6 +64,27 @@ FM.pl = (n, a, b, c) => { const m = Math.abs(n) % 100, d = m % 10; return `${n} 
 FM.yrs = (n) => FM.pl(n, 'год', 'года', 'лет');
 // игроки, уже выбравшие сборную в реальности (за другую сыграть не могут)
 FM.NT_TIE = { 'Дуглас Сантос': 'BRA' };
+// Склонение имени игрока (мужские имена): 'g' — родительный (он же винительный), 'd' — дательный, 'i' — творительный.
+// Каждое слово по правилам русского языка; несклоняемые (на гласную, на -их/-ых), частицы («де», «ван») и латиница — как есть.
+FM.ncWord = (w, c, last) => {
+  if (w.includes('-')) return w.split('-').map((x) => FM.ncWord(x, c, last)).join('-');
+  if (!/^[А-ЯЁ]/.test(w) || w.length < 2) return w;
+  const lw = w.toLowerCase();
+  const R = (cut, g, d, i) => w.slice(0, w.length - cut) + ({ g, d, i }[c] ?? '');
+  if (last && /(ых|их)$/.test(lw)) return w;
+  if (/(ский|цкий|ской|цкой)$/.test(lw)) return R(2, 'ого', 'ому', 'им');
+  if (last && /[^и]ой$|ый$/.test(lw)) return R(2, 'ого', 'ому', 'ым');
+  if (lw === 'илья') return R(1, 'и', 'е', 'ёй');
+  const fl = { лев: 'Льв', павел: 'Павл' }[lw]; if (fl) return fl + ({ g: 'а', d: 'у', i: 'ом' }[c] ?? '');
+  if (/[йь]$/.test(lw)) return R(1, 'я', 'ю', 'ем');
+  if (/ия$/.test(lw)) return R(1, 'и', 'и', 'ей');
+  if (/я$/.test(lw)) return R(1, 'и', 'е', 'ей');
+  if (/а$/.test(lw)) { if (/[аеёиоуэюя]а$/.test(lw)) return w; return R(1, /[гкхжшчщ]а$/.test(lw) ? 'и' : 'ы', 'е', /[жшчщц]а$/.test(lw) ? 'ей' : 'ой'); }
+  if (/[аеёиоуыэю]$/.test(lw)) return w;
+  if (last && /(ов|ев|ёв|ин|ын)$/.test(lw)) return R(0, 'а', 'у', 'ым');
+  return R(0, 'а', 'у', /[жшчщц]$/.test(lw) ? 'ем' : 'ом');
+};
+FM.nc = (name, c) => { if (!name || !c || c === 'n') return name; const ws = String(name).split(' '); return ws.map((w, i) => FM.ncWord(w, c, ws.length > 1 && i === ws.length - 1)).join(' '); };
 FM.money = (k) => {
   const neg = k < 0;
   k = Math.abs(k);

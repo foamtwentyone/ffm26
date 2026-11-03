@@ -2723,3 +2723,18 @@ html.rot .when .show-m { display: inline; }
 .evp span { display: block; font-size: var(--fs-sm); color: var(--muted); line-height: 1.45; }
 .evp em { font-style: normal; color: var(--text); font-weight: 700; }
 .evp i { font-style: normal; color: var(--accent); }
+
+/* настоящие логотипы турниров: на тёмной подложке, без перекраски */
+img.emb.tlogo { object-fit: contain; filter: none; }
+.tchip img.tlogo { padding: 1px; border-radius: 4px; background: rgba(4,8,20,.55); }
+.tmini:has(img.tlogo) { background: rgba(4,8,20,.55); border-radius: 5px; padding: 2px; }
+.tmini img.tlogo { width: 14px; height: 14px; }
+.tban-emb:has(img.tlogo) { background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.08), rgba(4,8,20,.65)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--t2) 55%, transparent), 0 6px 20px rgba(0,0,0,.35); }
+.tban-emb img.tlogo { width: 44px; height: 44px; }
+.fin-rib img.tlogo { width: 16px; height: 16px; }
+.fin-cup img.tlogo { width: 84px; height: 84px; filter: drop-shadow(0 6px 22px color-mix(in srgb, var(--t2) 55%, transparent)); }
+.br-wrap.themed .br-cupic img.tlogo, .br-cupic img.tlogo { width: 56px; height: 56px; filter: drop-shadow(0 4px 14px color-mix(in srgb, var(--t2, #f2c14e) 50%, transparent)); }
+.br-cup:not(.won) .br-cupic img.tlogo { opacity: .55; }
+.champ .ch-cup img.tlogo { width: 130px; height: 130px; filter: drop-shadow(0 10px 40px var(--tc)); }
+html.rot .champ .ch-cup img.tlogo { width: 84px; height: 84px; }
+@media (max-height: 500px) and (orientation: landscape) { .champ .ch-cup img.tlogo { width: 84px; height: 84px; } .br-cupic img.tlogo { width: 40px; height: 40px; } }

@@ -40,13 +40,13 @@
       },
       text: (g, c) => { const a = g.players[c.a], b = g.players[c.b];
         return { spot: `${a.name} публично заявил, что ${b.name} занимает его место в составе «по старой памяти». На тренировке они сцепились, партнёры разнимали.`,
-          tackle: `На двусторонней игре ${a.name} жёстко въехал в ноги ${b.name}. ${b.name} ответил толчком, дошло до потасовки. Оба считают себя правыми.`,
-          pen: `В прошлом матче ${a.name} забрал мяч у штатного пенальтиста ${b.name} и не забил. В раздевалке ${b.name} высказал всё, что думает, при всей команде.`,
+          tackle: `На двусторонней игре ${a.name} жёстко въехал в ноги ${FM.nc(b.name, 'g')}. ${b.name} ответил толчком, дошло до потасовки. Оба считают себя правыми.`,
+          pen: `В прошлом матче ${a.name} забрал мяч у штатного пенальтиста ${FM.nc(b.name, 'g')} и не забил. В раздевалке ${b.name} высказал всё, что думает, при всей команде.`,
           late: `${a.name} в третий раз опоздал на тренировку. ${b.name} при всех назвал его «туристом» и потребовал наказания, ${a.name} вспылил.`,
-          social: `${a.name} выложил в соцсети видео, где смеётся над ошибкой ${b.name} в последнем матче. ${b.name} пришёл на тренировку разбираться.` }[c.why]; },
+          social: `${a.name} выложил в соцсети видео, где смеётся над ошибкой ${FM.nc(b.name, 'g')} в последнем матче. ${b.name} пришёл на тренировку разбираться.` }[c.why]; },
       opts: [
-        { t: (g, c) => `Встать на сторону: ${g.players[c.a].name}`, h: (g, c) => `${g.players[c.a].name} доволен, ${g.players[c.b].name} затаит обиду`, run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(a, 8); mor(b, -15); return `Вы поддержали ${a.name}. ${b.name} затаил обиду.`; } },
-        { t: (g, c) => `Встать на сторону: ${g.players[c.b].name}`, h: (g, c) => `${g.players[c.b].name} доволен, ${g.players[c.a].name} затаит обиду`, run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(b, 8); mor(a, -15); return `Вы поддержали ${b.name}. ${a.name} затаил обиду.`; } },
+        { t: (g, c) => `Встать на сторону ${FM.nc(g.players[c.a].name, 'g')}`, h: (g, c) => `${g.players[c.a].name} доволен, ${g.players[c.b].name} затаит обиду`, run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(a, 8); mor(b, -15); return `Вы поддержали ${FM.nc(a.name, 'g')}. ${b.name} затаил обиду.`; } },
+        { t: (g, c) => `Встать на сторону ${FM.nc(g.players[c.b].name, 'g')}`, h: (g, c) => `${g.players[c.b].name} доволен, ${g.players[c.a].name} затаит обиду`, run: (g, c) => { const a = g.players[c.a], b = g.players[c.b]; mor(b, 8); mor(a, -15); return `Вы поддержали ${FM.nc(b.name, 'g')}. ${a.name} затаил обиду.`; } },
         { t: 'Оштрафовать обоих', h: 'Оба недовольны, руководство одобряет дисциплину', run: (g, c, p, u) => { mor(g.players[c.a], -8); mor(g.players[c.b], -8); g.boardConf(2); g.teamMorale(u, 1); return 'Оба оштрафованы. Команда получила сигнал: драк не будет.'; } },
         { t: 'Собрание команды', h: 'Оба слегка недовольны, команда сплотится', run: (g, c, p, u) => { mor(g.players[c.a], -4); mor(g.players[c.b], -4); g.teamMorale(u, 2); return 'На собрании всё обсудили. Конфликт исчерпан.'; } },
       ], def: 3 },
@@ -102,21 +102,21 @@
       ], def: 1 },
     { id: 'mentor', w: 5, title: 'Наставник для молодого',
       when: (g, u) => { const v = FM.pick(g.squad(u).filter((x) => x.age >= 30 && !x.loan && (x.pers === 'leader' || x.pers === 'pro' || x.morale >= 60))); const y = FM.pick(g.squad(u).filter((x) => x.age <= 20 && x.pot >= x.ovr + 8)); return v && y && { a: v.id, b: y.id, who: [v.id, y.id] }; },
-      text: (g, c) => { const v = g.players[c.a], y = g.players[c.b]; return `${v.name} (${FM.yrs(v.age)}) предлагает взять шефство над ${y.name} (${FM.yrs(y.age)}, потенциал до ${y.pot}): дополнительные занятия после тренировок и разбор матчей.`; },
+      text: (g, c) => { const v = g.players[c.a], y = g.players[c.b]; return `${v.name} (${FM.yrs(v.age)}) предлагает взять шефство над ${FM.nc(y.name, 'i')} (${FM.yrs(y.age)}, потенциал до ${y.pot}): дополнительные занятия после тренировок и разбор матчей.`; },
       opts: [
         { t: 'Отличная идея', h: 'Молодой прибавит, ветеран почувствует доверие', run: (g, c) => { const v = g.players[c.a], y = g.players[c.b]; y.ovr = Math.min(y.pot, y.ovr + 1); mor(v, 6); mor(y, 5); g.revalue(y); return `${y.name} прибавил на дополнительных занятиях, ${v.name} рад помочь.`; } },
         { t: 'Молодой работает по своему плану', h: 'Ветеран немного обидится', run: (g, c) => { mor(g.players[c.a], -4); return 'Вы оставили всё как есть.'; } },
       ], def: 0 },
     { id: 'chant', w: 4, title: 'Трибуны просят запасного',
       when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && x.age <= 23 && g.squadRank(x) > 11 && x.ovr >= g.teamBaseOvr(u) - 6)); return p && { pid: p.id, who: [p.id] }; },
-      text: (g, c) => { const p = g.players[c.pid]; return `На последней домашней игре трибуна весь второй тайм скандировала имя ${p.name}. В соцсетях фанаты требуют дать ему шанс в стартовом составе.`; },
+      text: (g, c) => { const p = g.players[c.pid]; return `На последней домашней игре трибуна весь второй тайм скандировала имя ${FM.nc(p.name, 'g')}. В соцсетях фанаты требуют дать ему шанс в стартовом составе.`; },
       opts: [
         { t: 'Пообещать шанс в ближайших матчах', h: 'Игрок и фанаты довольны', run: (g, c, p, u) => { mor(p, 12); g.boardConf(1); return `${p.name} на седьмом небе. Болельщики ждут его в составе.`; } },
         { t: '«Состав определяет тренер»', h: 'Игрок расстроится, фанаты тоже', run: (g, c, p) => { mor(p, -5); g.boardConf(-1); return 'Фанаты недовольны ответом.'; } },
       ], def: 0 },
     { id: 'birthday', w: 4, title: 'День рождения в команде',
       when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan)); return p && { pid: p.id, cost: FM.roundValue(Math.max(5, g.wageBill(u) * 0.05)), who: [p.id] }; },
-      text: (g, c) => { const p = g.players[c.pid]; return `У ${p.name} сегодня день рождения — ${FM.yrs(p.age)}. Игроки предлагают устроить праздник после тренировки за счёт клуба.`; },
+      text: (g, c) => { const p = g.players[c.pid]; return `У ${FM.nc(p.name, 'g')} сегодня день рождения — ${FM.yrs(p.age)}. Игроки предлагают устроить праздник после тренировки за счёт клуба.`; },
       opts: [
         { t: 'Праздник за счёт клуба', h: 'Команда сплотится', cost: true, run: (g, c, p, u) => { g.pay(u, c.cost, 'Праздник в команде'); mor(p, 10); g.teamMorale(u, 3); return 'Отличный вечер — команда сплотилась.'; } },
         { t: 'Торт и поздравление', h: 'Именинник доволен', run: (g, c, p) => { mor(p, 5); return `${p.name} тронут вниманием.`; } },
@@ -130,7 +130,7 @@
         const club = p && FM.pick(ksa.filter((t) => g.fitsClub(p, t) && p.ovr >= g.baseOf(t)));
         return club && { pid: p.id, club: club.id, mult: FM.pick([3, 4, 5]), who: [p.id] };
       },
-      text: (g, c) => { const p = g.players[c.pid]; return `Агент сообщает: «${c.club && g.teams[c.club] ? g.teams[c.club].name : 'клуб из Саудовской Аравии'}» (Саудовская Аравия) предлагает ${p.name} зарплату в ${c.mult} раз${c.mult < 5 ? 'а' : ''} больше нынешней (${FM.money(p.wage * c.mult)} в неделю). Официального запроса клубу пока нет, но игрок задумался.`; },
+      text: (g, c) => { const p = g.players[c.pid]; return `Агент сообщает: «${c.club && g.teams[c.club] ? g.teams[c.club].name : 'клуб из Саудовской Аравии'}» (Саудовская Аравия) предлагает ${FM.nc(p.name, 'd')} зарплату в ${c.mult} раз${c.mult < 5 ? 'а' : ''} больше нынешней (${FM.money(p.wage * c.mult)} в неделю). Официального запроса клубу пока нет, но игрок задумался.`; },
       opts: [
         { t: 'Поговорить: «Ты нужен здесь»', h: 'Лидер по характеру и преданный останутся спокойны', run: (g, c, p) => { const ok = p.pers === 'loyal' || p.pers === 'leader' || Math.random() < 0.5; mor(p, ok ? 3 : -8); return ok ? `${p.name} остаётся сосредоточен на сезоне.` : `${p.name} внешне спокоен, но мыслями уже далеко.`; } },
         { t: 'Повысить зарплату на 20%', h: 'Игрок доволен, расходы растут', run: (g, c, p) => { p.wage = Math.round(p.wage * 1.2 * 10) / 10; mor(p, 12); return `${p.name} благодарен — он остаётся.`; } },
@@ -170,7 +170,7 @@
       ], def: 1 },
     { id: 'night', w: 10, title: 'Ночной клуб',
       when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => x.age <= 30 && !x.loan && g.squadRank(x) <= 16)); return p && { pid: p.id }; },
-      text: (g, c) => `Фото ${g.players[c.pid].name} в ночном клубе за два дня до матча разлетелись по соцсетям. Журналисты ждут реакции тренера.`,
+      text: (g, c) => `Фото ${FM.nc(g.players[c.pid].name, 'g')} в ночном клубе за два дня до матча разлетелись по соцсетям. Журналисты ждут реакции тренера.`,
       opts: [
         { t: 'Оштрафовать', h: 'Недельная зарплата в кассу клуба, игрок обидится', run: (g, c, p, u) => { const f = Math.round(p.wage); g.earn(u, f, `Штраф: ${p.name}`); mor(p, -15); g.teamMorale(u, 2, p); return `${p.name} оштрафован на ${FM.money(f)}. Команда восприняла решение как справедливое.`; } },
         { t: 'Поговорить один на один', h: 'Без последствий для игрока, руководство недовольно', run: (g, c, p) => { mor(p, 4); g.boardConf(-2); return `Разговор прошёл спокойно. ${p.name} обещает, что такого не повторится.`; } },
@@ -257,14 +257,14 @@
       ], def: 1 },
     { id: 'agent', w: 6, title: 'Звонок агента',
       when: (g, u) => { if (!g.inWindow() || u.players.length >= MAX_SQUAD) return null; const base = g.teamBaseOvr(u); const p = FM.pick((g.s.freeAgents || []).map((id) => g.players[id]).filter((x) => x && x.ovr >= base - 3 && x.ovr <= base + 6 && x.age <= 32 && !g.foreignBlock(u, x))); return p && { pid: p.id, wage: g.wageDemand(p, u) }; },
-      text: (g, c) => { const p = g.players[c.pid]; return `Агент свободного агента ${p.name} (${FM.POS_NAME[p.pos].toLowerCase()}, ${FM.yrs(p.age)}, рейтинг ${p.ovr}) предлагает подписать контракт на два года за ${FM.money(c.wage)} в неделю — без трансферной суммы.`; },
+      text: (g, c) => { const p = g.players[c.pid]; return `Агент свободного агента ${FM.nc(p.name, 'g')} (${FM.POS_NAME[p.pos].toLowerCase()}, ${FM.yrs(p.age)}, рейтинг ${p.ovr}) предлагает подписать контракт на два года за ${FM.money(c.wage)} в неделю — без трансферной суммы.`; },
       opts: [
         { t: 'Подписать', h: 'Игрок сразу в заявке', run: (g, c, p, u) => { if (p.club) return `${p.name} уже подписал контракт с другим клубом.`; const b = g.foreignBlock(u, p); if (b) return b; if (u.players.length >= MAX_SQUAD) return g.squadFullText(); g.s.freeAgents = g.s.freeAgents.filter((x) => x !== p.id); g.transfer(p, u, 0, c.wage, 2); return `${p.name} подписал контракт с «${u.name}».`; } },
         { t: 'Отказаться', h: '', run: () => 'Агент обещал предложить игрока другим клубам.' },
       ], def: 1, free: true },
     { id: 'rumor', w: 6, title: 'Слухи о переходе',
       when: (g, u) => { const p = FM.pick(g.squad(u).filter((x) => !x.loan && g.squadRank(x) <= 4)); const big = p && FM.pick(g.clubs().filter((t) => t.rep >= u.rep + 6 && t.id !== u.id && !t.reserveOf && g.fitsClub(p, t) && (p.ovr >= 70 || g.countryOf(t.league) === g.countryOf(u.league)))); return p && big && { pid: p.id, club: big.id }; },
-      text: (g, c) => `Пресса пишет об интересе «${g.teams[c.club].name}»: в клубе хотят видеть ${g.players[c.pid].name}. Игрок выглядит рассеянным на тренировках.`,
+      text: (g, c) => `Пресса пишет об интересе «${g.teams[c.club].name}»: в клубе хотят видеть ${FM.nc(g.players[c.pid].name, 'g')}. Игрок выглядит рассеянным на тренировках.`,
       opts: [
         { t: 'Заверить игрока', h: 'Пообещать ключевую роль — игрок успокоится', run: (g, c, p) => { mor(p, 8); return `${p.name} благодарит за доверие и сосредоточен на сезоне.`; } },
         { t: 'Не комментировать', h: 'Игрок может расстроиться', run: (g, c, p) => { mor(p, -6); return `${p.name} думает о своём будущем.`; } },
