@@ -2738,3 +2738,7 @@ img.emb.tlogo { object-fit: contain; filter: none; }
 .champ .ch-cup img.tlogo { width: 130px; height: 130px; filter: drop-shadow(0 10px 40px var(--tc)); }
 html.rot .champ .ch-cup img.tlogo { width: 84px; height: 84px; }
 @media (max-height: 500px) and (orientation: landscape) { .champ .ch-cup img.tlogo { width: 84px; height: 84px; } .br-cupic img.tlogo { width: 40px; height: 40px; } }
+
+/* ролик спонсора за награду (только на игровых площадках) */
+.ad-bonus { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px dashed rgba(255,255,255,.18); }
+.ad-bonus > div { flex: 1; display: grid; gap: 2px; }

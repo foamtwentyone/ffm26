@@ -863,7 +863,7 @@
     } finally { advancing = false; }
     // трофей решился в один из прошедших дней (чужие матчи) — праздник поверх следующего окна
     if (r !== 'season_end') setTimeout(celebrate, 0);
-    if (r === 'match') { save(); render(); return preMatch(); }
+    if (r === 'match') { save(); render(); if (FM.Platform && FM.Platform.canInterstitial && FM.Platform.canInterstitial()) await FM.Platform.interstitial(); return preMatch(); }
     if (r === 'season_end') {
       G.s.seasonOver = true;
       save();
@@ -2928,6 +2928,15 @@
   const CAT_ICON = { sponsor: 'coin', tickets: 'shirt', transfers: 'swap', prizes: 'trophy', wages: 'user', other: 'mail' };
 
   // ================== финансы ==================
+  // реклама за награду (только на площадках): раз в игровую неделю — недельные спонсорские деньги
+  const adWeek = (s) => `${s.season}:${Math.floor(FM.dayNum(s.date) / 7)}`;
+  const adBonusSum = (u) => Math.max(50, Math.round(u.sponsor));
+  function adBonusBox(G, u) {
+    if (!FM.Platform || !FM.Platform.ads) return '';
+    const used = G.s.adWeek === adWeek(G.s);
+    return `<div class="ad-bonus"><div><b>Ролик спонсора</b><span class="small muted">${used ? 'Уже получено на этой неделе — следующий ролик через неделю.' : `Посмотрите рекламу и получите ${FM.money(adBonusSum(u))} (раз в игровую неделю).`}</span></div>
+      <button class="btn ${used ? '' : 'primary'}" id="ad-bonus" ${used ? 'disabled' : ''}>${icon('play')} Смотреть</button></div>`;
+  }
   function viewFinance(main) {
     const G = g(), s = G.s, u = G.userTeam();
     if (u.national) { main.innerHTML = '<div class="card"><h3>Финансы</h3><div class="muted">Финансами сборной занимается федерация: у тренера сборной нет бюджета, зарплат игроков и трансферов.</div></div>'; return; }
@@ -2957,7 +2966,7 @@
           <div class="fw-total"><span>Итог без билетов</span><b class="${net < 0 ? 'bad' : 'good'}">${net >= 0 ? '+' : ''}${FM.money(net)}</b></div>
           <div class="kv small"><div><span>Стоимость состава</span><b>${FM.money(G.squadValue(u))}</b></div>
           ${u.fin.prev ? `<div><span>Прошлый сезон</span><b class="${u.fin.prev.income - u.fin.prev.expense < 0 ? 'bad' : 'good'}">${FM.money(u.fin.prev.income - u.fin.prev.expense)}</b></div>` : ''}</div>
-          <div class="small muted">Долг больше 3 млн € раздражает руководство.</div></div>
+          <div class="small muted">Долг больше 3 млн € раздражает руководство.</div>${adBonusBox(G, u)}</div>
         <div class="card"><h3>Доходы сезона</h3>${donut(inc, FM.money(incT), 'доходы')}</div>
         <div class="card"><h3>Расходы сезона</h3>${donut(exp, FM.money(expT), 'расходы')}</div>
         <div class="card"><h3>Билеты и банк</h3>
@@ -2978,6 +2987,19 @@
   function bindFinance(main) {
     const G = g(), u = G.userTeam();
     main.querySelectorAll('[data-tk]').forEach((b) => b.onclick = () => { u.tk = +b.dataset.tk; save(); render(); });
+    const adb = main.querySelector('#ad-bonus');
+    if (adb) adb.onclick = async () => {
+      const s = G.s;
+      if (s.adWeek === adWeek(s)) return;
+      adb.disabled = true;
+      const ok = await FM.Platform.rewarded();
+      if (!ok) { adb.disabled = false; return toast('Ролик не досмотрен — бонуса нет.'); }
+      const sum = adBonusSum(u);
+      s.adWeek = adWeek(s);
+      G.earn(u, sum, 'Спонсоры');
+      save(); render();
+      toast(`Спонсор доволен: +${FM.money(sum)}`);
+    };
     main.querySelectorAll('[data-ln]').forEach((b) => b.onclick = () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Точно? Нажмите ещё раз'; return; } toast(esc(G.takeLoan(+b.dataset.ln)), 4500); save(); render(); });
     const rp = main.querySelector('#ln-repay'); if (rp) rp.onclick = () => { toast(esc(G.repayLoan())); save(); render(); };
   }
@@ -3502,5 +3524,8 @@
   }
 
   // ================== запуск ==================
-  startScreen();
+  // на площадках (Яндекс, VK, OK) сначала подключаем их SDK (не дольше 6 с), потом стартовый экран и сигнал «игра готова»
+  const PF = FM.Platform;
+  if (!PF || PF.name === 'web') startScreen();
+  else Promise.race([PF.init(), new Promise((res) => setTimeout(res, 6000))]).catch(() => {}).then(() => { startScreen(); PF.ready(); PF.gameplay(true); });
 })();
