@@ -5,3 +5,4 @@ V=$(date -u +%Y%m%d%H%M)
 sed -i -E "s#\?v=[0-9]+\"#?v=$V\"#g" index.html
 sed -i -E "s#^const VERSION = '[^']*';#const VERSION = 'v$V';#" sw.js
 echo "$V"
+python3 "$(dirname "$0")/build-platforms.py" --pages > /dev/null

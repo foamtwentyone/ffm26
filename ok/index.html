@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>Футбольный менеджер 26</title>
+  <meta name="theme-color" content="#070b22">
+  <link rel="icon" type="image/png" href="../icons/icon-192.png">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ФМ 26">
+  <link rel="stylesheet" href="../fonts/fonts.css">
+  <link rel="stylesheet" href="../css/style.css?v=202611121239">
+<script>
+  // Телефон вертикально → игра повёрнута на 90° (всегда горизонтальный вид). Подсказка «Поверните телефон» — один раз при входе.
+  (function () {
+    var mq = matchMedia('(orientation: portrait) and (pointer: coarse) and (max-width: 900px)'), h = document.documentElement, first = true;
+    if (matchMedia('(pointer: coarse)').matches) h.classList.add('tch'); // сенсорный экран: прокрутка внутри игры, без «резинки»
+    // размеры повёрнутого «экрана» в пикселях: ширина = видимая высота телефона, высота = его ширина (с учётом масштаба 0.86)
+    function size() { if (!h.classList.contains('rot')) return; var v = window.visualViewport, W = v ? v.height : innerHeight, H = v ? v.width : innerWidth; h.style.setProperty('--rw', (W / 0.86) + 'px'); h.style.setProperty('--rh', (H / 0.86) + 'px'); }
+    function upd() { h.classList.toggle('rot', mq.matches); if (mq.matches && first) h.classList.add('rot-hint'); if (!mq.matches) h.classList.remove('rot-hint'); first = false; size(); }
+    upd(); (mq.addEventListener ? mq.addEventListener('change', upd) : mq.addListener(upd));
+    addEventListener('resize', size); if (window.visualViewport) visualViewport.addEventListener('resize', size);
+  })();
+</script>
+
+</head>
+<body>
+  <div class="rotate-lock" aria-live="polite"><div class="rl-ph"><i></i></div><b>Поверните телефон</b><span>Игра всегда в горизонтальном виде — держите телефон боком</span><button class="btn primary rl-go" onclick="document.documentElement.classList.remove('rot-hint')">Играть</button></div><div id="app"><div class="sk-page" aria-label="Загрузка"><div class="sk-logo">FM <b>26</b></div><div class="sk sk-bar"></div><div class="sk-row"><div class="sk sk-card"></div><div class="sk sk-card"></div><div class="sk sk-card"></div></div></div></div>
+  <script src="../js/core.js?v=202611121239"></script>
+  <script>window.FM_PLATFORM = 'ok';</script>
+  <script src="../js/platform.js?v=202611121239"></script>
+  <script src="../js/store.js?v=202611121239"></script>
+  <script src="../js/data/rpl.js?v=202611121239"></script>
+  <script src="../js/data/fnl.js?v=202611121239"></script>
+  <script src="../js/data/l2.js?v=202611121239"></script>
+  <script src="../js/data/l2b.js?v=202611121239"></script>
+  <script src="../js/data/eng.js?v=202611121239"></script>
+  <script src="../js/data/esp.js?v=202611121239"></script>
+  <script src="../js/data/ita.js?v=202611121239"></script>
+  <script src="../js/data/ger.js?v=202611121239"></script>
+  <script src="../js/data/fra.js?v=202611121239"></script>
+  <script src="../js/data/por.js?v=202611121239"></script>
+  <script src="../js/data/ned.js?v=202611121239"></script>
+  <script src="../js/data/bel.js?v=202611121239"></script>
+  <script src="../js/data/tur.js?v=202611121239"></script>
+  <script src="../js/data/pol.js?v=202611121239"></script>
+  <script src="../js/data/eng2.js?v=202611121239"></script>
+  <script src="../js/data/eng3.js?v=202611121239"></script>
+  <script src="../js/data/eng4.js?v=202611121239"></script>
+  <script src="../js/data/esp2.js?v=202611121239"></script>
+  <script src="../js/data/ita2.js?v=202611121239"></script>
+  <script src="../js/data/ger2.js?v=202611121239"></script>
+  <script src="../js/data/fra2.js?v=202611121239"></script>
+  <script src="../js/data/cze.js?v=202611121239"></script>
+  <script src="../js/data/sco.js?v=202611121239"></script>
+  <script src="../js/data/gre.js?v=202611121239"></script>
+  <script src="../js/data/den.js?v=202611121239"></script>
+  <script src="../js/data/aut.js?v=202611121239"></script>
+  <script src="../js/data/sui.js?v=202611121239"></script>
+  <script src="../js/data/sau.js?v=202611121239"></script>
+  <script src="../js/data/usa.js?v=202611121239"></script>
+  <script src="../js/data/bra.js?v=202611121239"></script>
+  <script src="../js/data/arg.js?v=202611121239"></script>
+  <script src="../js/data/blr.js?v=202611121239"></script>
+  <script src="../js/data/aze.js?v=202611121239"></script>
+  <script src="../js/data/arm.js?v=202611121239"></script>
+  <script src="../js/data/kaz.js?v=202611121239"></script>
+  <script src="../js/data/uzb.js?v=202611121239"></script>
+  <script src="../js/data/mex.js?v=202611121239"></script>
+  <script src="../js/data/col.js?v=202611121239"></script>
+  <script src="../js/data/chi.js?v=202611121239"></script>
+  <script src="../js/data/per.js?v=202611121239"></script>
+  <script src="../js/data/uru.js?v=202611121239"></script>
+  <script src="../js/data/par.js?v=202611121239"></script>
+  <script src="../js/data/jpn.js?v=202611121239"></script>
+  <script src="../js/data/kor.js?v=202611121239"></script>
+  <script src="../js/data/irn.js?v=202611121239"></script>
+  <script src="../js/data/egy.js?v=202611121239"></script>
+  <script src="../js/data/mar.js?v=202611121239"></script>
+  <script src="../js/data/rsa.js?v=202611121239"></script>
+  <script src="../js/data/logos.js?v=202611121239"></script>
+  <script src="../js/data/tlogos.js?v=202611121239"></script>
+  <script src="../js/data/flags.js?v=202611121239"></script>
+  <script src="../js/engine.js?v=202611121239"></script>
+  <script src="../js/game.js?v=202611121239"></script>
+  <script src="../js/app.js?v=202611121239"></script>
+</body>
+</html>

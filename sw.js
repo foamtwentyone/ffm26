@@ -1,6 +1,6 @@
 // Офлайн-режим: файлы игры хранятся на устройстве. VERSION меняется при каждом обновлении (tools/bump.sh) —
 // тогда новая версия скачивается целиком, а старая удаляется.
-const VERSION = 'v202611121222';
+const VERSION = 'v202611121239';
 const CACHE = `ffm26-${VERSION}`;
 const FONTS = 'ffm26-fonts';
 
@@ -32,6 +32,8 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // страницы площадок (ok/, vk/) работают без офлайн-кэша
+  if (/\/(ok|vk)\/[^/]*$/.test(url.pathname)) return;
   // страница — сначала из сети (чтобы видеть обновления), без сети — из кэша
   if (req.mode === 'navigate') {
     // мимо HTTP-кэша: GitHub Pages разрешает браузеру держать страницу 10 минут — без этого обновление видно не сразу

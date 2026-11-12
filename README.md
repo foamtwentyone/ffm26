@@ -351,7 +351,8 @@ npx serve .
 ## Публикация на игровых площадках (Яндекс Игры, Игры ВКонтакте, Одноклассники)
 
 Сборка: `python3 tools/build-platforms.py` → `dist/ffm26-yandex.zip`, `dist/ffm26-vk.zip`, `dist/ffm26-ok.zip`
-(папка `dist/` в git не попадает). Отличия от сайта:
+(папка `dist/` в git не попадает). Страницы `ok/` и `vk/` на сайте генерирует `tools/bump.sh`
+(`build-platforms.py --pages`): свой `index.html`, файлы игры общие с сайтом. Отличия от сайта:
 
 - шрифты Manrope и Oswald лежат в архиве (`fonts/`, лицензия OFL), запросов к Google Fonts нет;
 - нет офлайн-кэша (service worker) и манифеста — файлы раздаёт площадка;
@@ -366,8 +367,10 @@ npx serve .
 горизонтальную ориентацию, русский язык, иконку 512×512, обложку и скриншоты.
 
 **Игры ВКонтакте**: создать приложение-игру (HTML5) в разделе разработчиков VK, архив `ffm26-vk.zip`
-разместить на хостинге VK (или своём HTTPS-сервере) и указать адрес. VK Bridge (MIT) лежит в архиве:
+разместить на хостинге VK (`npx @vkontakte/vk-miniapps-deploy`) или указать адрес
+`https://foamtwentyone.github.io/ffm26/vk/`. VK Bridge (MIT) лежит в архиве:
 `VKWebAppInit`, реклама — `VKWebAppShowNativeAds` (`interstitial`, `reward`).
 
-**Одноклассники**: создать игру на ok.ru/dk, разместить `ffm26-ok.zip` на своём HTTPS-хостинге и указать адрес.
+**Одноклассники**: создать игру (ok.ru/devaccess → «Приложения» → Web) и указать адрес
+`https://foamtwentyone.github.io/ffm26/ok/` — страница площадки на этом же сайте (`ok/index.html`).
 FAPI подгружается с api.ok.ru: `FAPI.init`, реклама — `FAPI.UI.showAd` и `loadAd/showLoadedAd` (ответы в `API_callback`).

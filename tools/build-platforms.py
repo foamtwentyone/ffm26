@@ -24,14 +24,8 @@ PLATFORMS = {
 COPY = ['css', 'js', 'icons', 'fonts']
 
 
-def build(name):
-    out = os.path.join(DIST, name)
-    shutil.rmtree(out, ignore_errors=True)
-    os.makedirs(out)
-    for d in COPY:
-        shutil.copytree(os.path.join(ROOT, d), os.path.join(out, d), ignore=shutil.ignore_patterns('*.map'))
-    if name != 'vk':
-        shutil.rmtree(os.path.join(out, 'js', 'vendor'), ignore_errors=True)
+def page(name, prefix=''):
+    """index.html для площадки; prefix — путь к файлам игры (для страниц на сайте: '../')."""
     html = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
     # шрифты — локально
     html, n = re.subn(r'\s*<link rel="preconnect"[^\n]*fonts\.googleapis\.com[^\n]*\n', '\n  <link rel="stylesheet" href="fonts/fonts.css">\n', html)
@@ -45,6 +39,27 @@ def build(name):
     html, n = re.subn(r'(\s*)(<script src="js/platform\.js)', lambda m: f'{m.group(1)}{tag}{m.group(1)}{m.group(2)}', html, count=1)
     assert n == 1, 'не нашёл js/platform.js в index.html'
     assert 'googleapis' not in html and 'serviceWorker' not in html
+    if prefix:
+        html = re.sub(r'((?:src|href)=")((?:css|js|fonts|icons)/)', lambda m: m.group(1) + prefix + m.group(2), html)
+    return html
+
+
+def pages():
+    """Страницы площадок на самом сайте (GitHub Pages): ok/ и vk/ — общие файлы игры, свой index.html."""
+    for nm in ('ok', 'vk'):
+        os.makedirs(os.path.join(ROOT, nm), exist_ok=True)
+        open(os.path.join(ROOT, nm, 'index.html'), 'w', encoding='utf-8').write(page(nm, '../'))
+
+
+def build(name):
+    out = os.path.join(DIST, name)
+    shutil.rmtree(out, ignore_errors=True)
+    os.makedirs(out)
+    for d in COPY:
+        shutil.copytree(os.path.join(ROOT, d), os.path.join(out, d), ignore=shutil.ignore_patterns('*.map'))
+    if name != 'vk':
+        shutil.rmtree(os.path.join(out, 'js', 'vendor'), ignore_errors=True)
+    html = page(name)
     open(os.path.join(out, 'index.html'), 'w', encoding='utf-8').write(html)
     z = os.path.join(DIST, f'ffm26-{name}.zip')
     if os.path.exists(z):
@@ -58,6 +73,10 @@ def build(name):
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--pages']:
+        pages()
+        print('ok/index.html, vk/index.html — обновлены')
+        sys.exit()
     names = sys.argv[1:] or list(PLATFORMS)
     for nm in names:
         if nm not in PLATFORMS:
